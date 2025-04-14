@@ -19,7 +19,8 @@
         "me-dutour-mathieu.vscode-github-actions",
         "redhat.vscode-yaml",
         "rvest.vs-code-prettier-eslint",
-        "yzhang.markdown-all-in-one"
+        "yzhang.markdown-all-in-one",
+        "Orta.vscode-jest"
       ],
       "settings": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -36,6 +37,14 @@
   },
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers-contrib/features/prettier:1": {}
+    "ghcr.io/devcontainers-contrib/features/prettier:1": {},
+    "ghcr.io/devcontainers/features/dotnet:2.2.1": {
+      "version": "8.0",
+      "installDotnetCore": true,
+      "installDotnetFramework": true,
+      "installAspNetCore": true,
+      "installMono": false,
+      "installPowerShell": false
+    }
   }
 }
