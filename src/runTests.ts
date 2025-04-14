@@ -63,7 +63,8 @@ export async function runTests(): Promise<void> {
           inputs.envName,
           inputs.testFolder,
           inputs.testOutputFolder,
-          inputs.testFormat
+          inputs.testFormat,
+          inputs.useGlobalDotnetEf // Pass the flag to use global or local dotnet-ef
         )
         resultFolder = inputs.testOutputFolder
         resultFilePath = path.join(

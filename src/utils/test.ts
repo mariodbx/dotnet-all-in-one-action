@@ -3,7 +3,7 @@ import * as artifact from '@actions/artifact'
 import * as path from 'path'
 import * as fs from 'fs'
 import { runCommand } from './command.js'
-import { rollbackMigrations } from './migrations.js'
+import { installDotnetEfLocally } from './dotnetEfInstaller.js'
 
 const ARTIFACT_NAME = 'test-results'
 const ARTIFACT_RETENTION_DAYS = 7
@@ -30,6 +30,7 @@ function logError(error: unknown, message: string): void {
  * @param {string} testFolder - The folder containing the test project to execute.
  * @param {string} testOutputFolder - The folder where test result files will be stored.
  * @param {string} testFormat - The format for test results (e.g., 'trx', 'html', 'json'). If provided, test results will be logged to a file.
+ * @param {boolean} useGlobalDotnetEf - A flag indicating whether to use the global dotnet-ef tool or install a local version.
  *
  * @returns {Promise<void>} A Promise that resolves when the test execution and artifact upload process is complete.
  *
@@ -46,7 +47,8 @@ function logError(error: unknown, message: string): void {
  *       'Development',          // Environment name
  *       './tests/MyTestProject',// Test folder
  *       './output',             // Test output folder
- *       'trx'                   // Test result format (e.g., trx, html, json)
+ *       'trx',                  // Test result format (e.g., trx, html, json)
+ *       false                   // Use global dotnet-ef tool
  *     );
  *   } catch (error) {
  *     console.error(`Error running tests: ${error.message}`);
@@ -69,11 +71,15 @@ export async function tests(
   envName: string,
   testFolder: string,
   testOutputFolder: string,
-  testFormat: string
+  testFormat: string,
+  useGlobalDotnetEf: boolean
 ): Promise<void> {
   core.info(`Setting environment to ${envName} for test execution...`)
 
-  // Set the DOTNET_ENVIRONMENT variable for the test run
+  // Ensure dotnet-ef is available if not using the global version
+  if (!useGlobalDotnetEf) {
+    await installDotnetEfLocally()
+  } // Set the DOTNET_ENVIRONMENT variable for the test run
   process.env.DOTNET_ENVIRONMENT = envName
 
   core.info(`Running tests in ${testFolder}...`)
@@ -138,66 +144,5 @@ export async function tests(
   // If there was an error during test execution, throw it now to mark the action as failed.
   if (testExecError) {
     throw testExecError
-  }
-}
-
-interface TestInputs {
-  envName: string
-  testFolder: string
-  testOutputFolder: string
-  testFormat: string
-  onFailedRollbackMigrations: boolean
-  showFullOutput: boolean
-  migrationsFolder: string
-  dotnetRoot: string
-  useGlobalDotnetEf: boolean
-}
-
-// Updated `inputs` parameter to use the `TestInputs` interface
-export async function runAndHandleTests(
-  inputs: TestInputs,
-  baselineMigration: string
-): Promise<void> {
-  try {
-    await tests(
-      true, // Capture output
-      inputs.envName,
-      inputs.testFolder,
-      inputs.testOutputFolder,
-      inputs.testFormat
-    )
-  } catch (testError) {
-    core.error('Tests failed.')
-    if (
-      inputs.onFailedRollbackMigrations &&
-      baselineMigration &&
-      baselineMigration !== '0'
-    ) {
-      core.info(
-        `Rolling back migrations to baseline: ${baselineMigration} due to test failure...`
-      )
-      await rollbackMigrations(
-        inputs.showFullOutput,
-        inputs.envName,
-        '', // Removed `inputs.home` as it is not defined in the new inputs
-        inputs.migrationsFolder,
-        inputs.dotnetRoot,
-        inputs.useGlobalDotnetEf,
-        baselineMigration
-      )
-    } else {
-      core.info(
-        'Rollback skipped as no valid baseline migration was available.'
-      )
-    }
-    throw testError
-  }
-}
-
-export function handleError(error: unknown): void {
-  core.error('An error occurred during execution.')
-  if (error instanceof Error) {
-    core.error(`Error: ${error.message}`)
-    core.setFailed(error.message)
   }
 }

@@ -163,10 +163,13 @@ export function getInputOrDefaultBoolean(
  */
 export function getInputs(): ActionInputs {
   return {
-    showFullOutput: getInputOrDefaultBoolean('show_full_output', false),
+    showFullOutput: getInputOrDefaultBoolean('show_full_output', true),
     runMigrations: getInputOrDefaultBoolean('run_migrations', true),
-    migrationsFolder: getInputOrDefault('migrations_folder', ''),
-    envName: getInputOrDefault('env_name', ''),
+    migrationsFolder: getInputOrDefault(
+      'migrations_folder',
+      './sample-project/sample-project.MVC'
+    ),
+    envName: getInputOrDefault('env_name', 'Test'),
     dotnetRoot: getInputOrDefault('dotnet_root', ''),
     useGlobalDotnetEf: getInputOrDefaultBoolean('use_global_dotnet_ef', false),
     onFailedRollbackMigrations: getInputOrDefaultBoolean(
@@ -174,18 +177,27 @@ export function getInputs(): ActionInputs {
       false
     ),
     runTests: getInputOrDefaultBoolean('run_tests', true),
-    testFolder: getInputOrDefault('test_folder', ''),
-    testOutputFolder: getInputOrDefault('test_output_folder', ''),
+    testFolder: getInputOrDefault(
+      'test_folder',
+      './sample-project/sample-project.Tests'
+    ),
+    testOutputFolder: getInputOrDefault('test_output_folder', 'TestResults'),
     testFormat: getInputOrDefault('test_format', 'trx'),
     runVersioning: getInputOrDefaultBoolean('run_versioning', true),
-    csprojDepth: parseInt(getInputOrDefault('csproj_depth', '1'), 10),
-    csprojName: getInputOrDefault('csproj_name', '*.csproj'),
-    useCommitMessage: getInputOrDefaultBoolean('use_commit_message', true),
+    csprojDepth: parseInt(getInputOrDefault('csproj_depth', '3'), 10),
+    csprojName: getInputOrDefault('csproj_name', 'sample-project.MVC.csproj'),
+    useCommitMessage: getInputOrDefaultBoolean('use_commit_message', false),
     runPushToRegistry: getInputOrDefaultBoolean('run_push_to_registry', true),
     dockerComposeFiles: getInputOrDefault('docker_compose_files', ''),
     images: getInputOrDefault('images', ''),
-    dockerfiles: getInputOrDefault('dockerfiles', ''),
-    dockerfileImages: getInputOrDefault('dockerfile_images', ''),
+    dockerfiles: getInputOrDefault(
+      'dockerfiles',
+      './sample-project/sample-project.MVC/Dockerfile'
+    ),
+    dockerfileImages: getInputOrDefault(
+      'dockerfile_images',
+      'sample-project.mvc'
+    ),
     dockerfileContexts: getInputOrDefault('dockerfile_contexts', '.'),
     registryType: getInputOrDefault('registry_type', 'GHCR'),
     pushWithVersion: getInputOrDefaultBoolean('push_with_version', true),
@@ -201,7 +213,7 @@ export function getInputs(): ActionInputs {
     ),
     commitMessagePrefix: getInputOrDefault(
       'commit_message_prefix',
-      'chore: bump version to '
+      'New Version: bump version to '
     ),
     majorKeywords: getInputOrDefault('major_keywords', 'breaking, overhaul'),
     minorKeywords: getInputOrDefault('minor_keywords', 'feature, enhancement'),
@@ -218,7 +230,7 @@ export function getInputs(): ActionInputs {
       false
     ),
     runTestsMigrations: getInputOrDefaultBoolean('run_tests_migrations', true),
-    testMigrationsFolder: getInputOrDefault('test_migrations_folder', ''),
+    testMigrationsFolder: getInputOrDefault('test_migrations_folder', 'sa'),
     currentVersion: getInputOrDefault('current_version', ''),
     newVersion: getInputOrDefault('new_version', ''),
     bumpType: getInputOrDefault('bump_type', ''),

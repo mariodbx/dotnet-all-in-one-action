@@ -30,7 +30,8 @@ export async function runTests() {
                     core.info('Skipping migrations as requested.');
                 }
                 // Run tests and capture result file path and folder
-                await tests(inputs.showFullOutput, inputs.envName, inputs.testFolder, inputs.testOutputFolder, inputs.testFormat);
+                await tests(inputs.showFullOutput, inputs.envName, inputs.testFolder, inputs.testOutputFolder, inputs.testFormat, inputs.useGlobalDotnetEf // Pass the flag to use global or local dotnet-ef
+                );
                 resultFolder = inputs.testOutputFolder;
                 resultFilePath = path.join(resultFolder, `TestResults.${inputs.testFormat}`);
             }

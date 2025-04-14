@@ -1,5 +1,6 @@
 import * as core from '@actions/core'
 import { runCommand } from './command.js'
+import { installDotnetEfLocally } from './dotnetEfInstaller.js'
 
 /**
  * Executes EF Core migrations.
@@ -38,6 +39,11 @@ export async function processMigrations(
   useGlobalDotnetEf: boolean
 ): Promise<string> {
   let migrationOutput = ''
+
+  if (!useGlobalDotnetEf) {
+    core.info('Ensuring local dotnet-ef tool is installed...')
+    await installDotnetEfLocally()
+  }
 
   const baseEnv: Record<string, string> = {
     DOTNET_ROOT: dotnetRoot,
@@ -119,6 +125,11 @@ export async function getCurrentAppliedMigration(
   dotnetRoot: string,
   useGlobalDotnetEf: boolean
 ): Promise<string> {
+  if (!useGlobalDotnetEf) {
+    core.info('Ensuring local dotnet-ef tool is installed...')
+    await installDotnetEfLocally()
+  }
+
   const baseEnv: Record<string, string> = {
     DOTNET_ROOT: dotnetRoot,
     HOME: process.env.HOME || home,
@@ -185,6 +196,11 @@ export async function getLastNonPendingMigration(
   dotnetRoot: string,
   useGlobalDotnetEf: boolean
 ): Promise<string> {
+  if (!useGlobalDotnetEf) {
+    core.info('Ensuring local dotnet-ef tool is installed...')
+    await installDotnetEfLocally()
+  }
+
   const baseEnv: Record<string, string> = {
     DOTNET_ROOT: dotnetRoot,
     HOME: process.env.HOME || home,
@@ -253,6 +269,11 @@ export async function rollbackMigrations(
   useGlobalDotnetEf: boolean,
   targetMigration: string
 ): Promise<void> {
+  if (!useGlobalDotnetEf) {
+    core.info('Ensuring local dotnet-ef tool is installed...')
+    await installDotnetEfLocally()
+  }
+
   core.info(`Rolling back to migration: ${targetMigration}...`)
 
   const baseEnv = {

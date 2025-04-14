@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import { runCommand } from './command.js';
+import { installDotnetEfLocally } from './dotnetEfInstaller.js';
 /**
  * Executes EF Core migrations.
  *
@@ -30,6 +31,10 @@ import { runCommand } from './command.js';
  */
 export async function processMigrations(getExecOutput, envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
     let migrationOutput = '';
+    if (!useGlobalDotnetEf) {
+        core.info('Ensuring local dotnet-ef tool is installed...');
+        await installDotnetEfLocally();
+    }
     const baseEnv = {
         DOTNET_ROOT: dotnetRoot,
         HOME: process.env.HOME || home,
@@ -89,6 +94,10 @@ export async function processMigrations(getExecOutput, envName, home, migrations
  * ```
  */
 export async function getCurrentAppliedMigration(getExecOutput, envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
+    if (!useGlobalDotnetEf) {
+        core.info('Ensuring local dotnet-ef tool is installed...');
+        await installDotnetEfLocally();
+    }
     const baseEnv = {
         DOTNET_ROOT: dotnetRoot,
         HOME: process.env.HOME || home,
@@ -137,6 +146,10 @@ export async function getCurrentAppliedMigration(getExecOutput, envName, home, m
  * ```
  */
 export async function getLastNonPendingMigration(getExecOutput, envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
+    if (!useGlobalDotnetEf) {
+        core.info('Ensuring local dotnet-ef tool is installed...');
+        await installDotnetEfLocally();
+    }
     const baseEnv = {
         DOTNET_ROOT: dotnetRoot,
         HOME: process.env.HOME || home,
@@ -186,6 +199,10 @@ export async function getLastNonPendingMigration(getExecOutput, envName, home, m
  * ```
  */
 export async function rollbackMigrations(getExecOutput, envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf, targetMigration) {
+    if (!useGlobalDotnetEf) {
+        core.info('Ensuring local dotnet-ef tool is installed...');
+        await installDotnetEfLocally();
+    }
     core.info(`Rolling back to migration: ${targetMigration}...`);
     const baseEnv = {
         DOTNET_ROOT: dotnetRoot,

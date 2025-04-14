@@ -38,10 +38,6 @@ inputs:
     description: 'Use globally installed dotnet-ef instead of local'
     required: false
     default: 'false'
-  rollback_migrations_on_test_failed:
-    description: 'Rollback migrations if tests fail'
-    required: false
-    default: 'false'
 
   # Tests
   run_tests:
@@ -56,6 +52,10 @@ inputs:
     description: 'Path to the test migrations folder'
     required: false
     default: ''
+  test_env_name:
+    description: 'Environment name for ASP.NET Core'
+    required: false
+    default: 'Test'
   test_folder:
     description: 'Path to the test project folder'
     required: true
@@ -68,7 +68,10 @@ inputs:
     description: 'Format for test results (e.g., trx, html, json)'
     required: false
     default: 'html'
-
+  rollback_migrations_on_test_failed:
+    description: 'Rollback migrations if tests fail'
+    required: false
+    default: 'false'
   # Versioning
   run_versioning:
     description: 'Run versioning step? (true/false)'
