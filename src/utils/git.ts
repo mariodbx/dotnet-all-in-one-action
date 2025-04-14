@@ -1,0 +1,127 @@
+import * as core from '@actions/core'
+import { runCommand } from './command.js'
+
+/**
+ * Retrieves the latest commit subject.
+ *
+ * @param {boolean} showFullOutput - If true, returns the full output of the command; otherwise, returns only the exit code.
+ * @returns {Promise<string>} The latest commit subject as a string.
+ * @throws {Error} If the Git command fails.
+ * @example
+ * const subject: string = await getLatestCommitSubject(true);
+ * console.log(subject);
+ * @remarks
+ * This function executes a Git command to retrieve the latest commit subject.
+ * Ensure that the repository is initialized and contains at least one commit.
+ */
+export async function getLatestCommitSubject(
+  showFullOutput: boolean
+): Promise<string> {
+  return await runCommand(
+    'git',
+    ['log', '-1', '--pretty=format:%s'],
+    {},
+    showFullOutput
+  )
+}
+
+/**
+ * Retrieves the latest commit message.
+ *
+ * @param {boolean} showFullOutput - If true, returns the full output of the command; otherwise, returns only the exit code.
+ * @returns {Promise<string>} The latest commit message as a string.
+ * @throws {Error} If the Git command fails.
+ * @example
+ * const message: string = await getLatestCommitMessage(false);
+ * console.log(message);
+ * @remarks
+ * This function retrieves the full commit message of the latest commit.
+ * Ensure that the repository is initialized and contains at least one commit.
+ */
+export async function getLatestCommitMessage(
+  showFullOutput: boolean
+): Promise<string> {
+  return await runCommand(
+    'git',
+    ['log', '-1', '--pretty=%B'],
+    {},
+    showFullOutput
+  )
+}
+
+/**
+ * Extracts version from a commit message in the format "bump version to x.x.x.x".
+ *
+ * @param {string} commitMessage - The commit message to extract the version from.
+ * @returns {string | null} The extracted version as a string, or null if no version is found.
+ * @example
+ * const version: string | null = extractVersionFromCommit("bump version to 1.2.3.4");
+ * console.log(version); // "1.2.3.4"
+ * @remarks
+ * This function uses a regular expression to extract the version number.
+ * The expected format is "bump version to x.x.x.x", where x is a digit.
+ */
+export function extractVersionFromCommit(commitMessage: string): string | null {
+  const match = commitMessage.match(/bump version to (\d+\.\d+\.\d+\.\d+)/)
+  return match ? match[1] : null
+}
+
+/**
+ * Updates the Git repository with a new version.
+ *
+ * @param {string} newVersion - The new version to set.
+ * @param {string} csprojPath - The path to the .csproj file to add to the commit.
+ * @param {string} commitUser - The Git username for the commit.
+ * @param {string} commitEmail - The Git email for the commit.
+ * @param {string} commitMessagePrefix - The prefix for the commit message.
+ * @param {boolean} showFullOutput - If true, shows the full output of Git commands; otherwise, only executes them.
+ * @returns {Promise<void>} A promise that resolves when the update is complete.
+ * @throws {Error} If any Git command fails.
+ * @example
+ * await updateGit(
+ *   "1.2.3.4",
+ *   "path/to/project.csproj",
+ *   "user",
+ *   "email@example.com",
+ *   "Bump version to ",
+ *   true
+ * );
+ * @remarks
+ * This function performs the following steps:
+ * 1. Configures the Git username and email.
+ * 2. Stages the specified .csproj file.
+ * 3. Commits the changes with the provided message.
+ * 4. Pushes the commit to the remote repository.
+ * Ensure that the repository is initialized, and the user has push permissions.
+ */
+export async function updateGit(
+  newVersion: string,
+  csprojPath: string,
+  commitUser: string,
+  commitEmail: string,
+  commitMessagePrefix: string,
+  showFullOutput: boolean
+): Promise<void> {
+  await runCommand(
+    'git',
+    ['config', 'user.name', commitUser],
+    {},
+    showFullOutput
+  )
+  await runCommand(
+    'git',
+    ['config', 'user.email', commitEmail],
+    {},
+    showFullOutput
+  )
+  await runCommand('git', ['add', csprojPath], {}, showFullOutput)
+  const commitMessageFinal = `${commitMessagePrefix}${newVersion}`
+  await runCommand(
+    'git',
+    ['commit', '-m', commitMessageFinal],
+    {},
+    showFullOutput
+  )
+  await runCommand('git', ['push'], {}, showFullOutput)
+  core.info(`Committed and pushed version update: "${commitMessageFinal}"`)
+}

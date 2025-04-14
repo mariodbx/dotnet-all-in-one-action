@@ -5,7 +5,7 @@ import nodeResolve from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 
 const config = {
-  input: 'src/index.ts',
+  input: 'src/index.ts', // Updated to point to the unified entry point
   output: {
     esModule: true,
     file: 'dist/index.js',

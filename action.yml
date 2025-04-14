@@ -1,23 +1,161 @@
-name: The name of your action here
-description: Provide a description here
-author: Your name or organization here
+name: Dotnet All In One
+description:
+  A GitHub Action for .NET projects that automates migrations, tests,
+  versioning, Docker image building, and release management.
+author: Mario De Benedictis (mariodbx)
 
-# Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
   icon: heart
-  color: red
+  color: purple
 
-# Define your inputs here.
 inputs:
-  milliseconds:
-    description: Your input description here
-    required: true
-    default: '1000'
+  show_full_putput:
+    description: 'Get the output of the executed command? (true/false)'
+    required: false
+    default: 'false'
+  # Migrations
+  run_migrations:
+    description: 'Run migrations? (true/false)'
+    required: false
+    default: 'true'
+  migrations_folder:
+    description: 'Path to the migrations folder.'
+    required: false
+    default: ''
+  env_name:
+    description: 'Environment name for migrations.'
+    required: false
+    default: ''
+  dotnet_root:
+    description: 'Path to the .NET root directory.'
+    required: false
+    default: ''
+  use_global_dotnet_ef:
+    description: 'Use global dotnet-ef CLI? (true/false)'
+    required: false
+    default: 'false'
+  on_failed_rollback_migrations:
+    description: 'Rollback migrations if tests fail? (true/false)'
+    required: false
+    default: 'false'
 
-# Define your outputs here.
+  # Tests
+  run_tests:
+    description: 'Run tests? (true/false)'
+    required: false
+    default: 'true'
+  test_folder:
+    description: 'Path to the test folder.'
+    required: false
+    default: ''
+  test_output_folder:
+    description: 'Path to the test output folder.'
+    required: false
+    default: ''
+  test_format:
+    description: 'Format for test results (e.g., trx, xml).'
+    required: false
+    default: 'trx'
+
+  # Versioning
+  run_versioning:
+    description: 'Run versioning step? (true/false)'
+    required: false
+    default: 'true'
+  csproj_depth:
+    description: 'Maximum depth for locating the .csproj file.'
+    required: false
+    default: '1'
+  csproj_name:
+    description: 'Name pattern for the .csproj file (e.g., "*.csproj").'
+    required: false
+    default: '*.csproj'
+  use_commit_message:
+    description: 'Use the commit message to extract the version? (true/false)'
+    required: false
+    default: 'true'
+
+  # Docker
+  run_push_to_registry:
+    description: 'Push images to the registry? (true/false)'
+    required: false
+    default: 'true'
+  docker_compose_files:
+    description:
+      'Comma-separated list of Docker Compose files to build images from
+      (optional).'
+    required: false
+    default: ''
+  images:
+    description:
+      'Comma-separated list of image repositories (used with Docker Compose
+      builds).'
+    required: false
+    default: ''
+  dockerfiles:
+    description:
+      'Comma-separated list of Dockerfile paths (for Dockerfile builds,
+      optional).'
+    required: false
+    default: ''
+  dockerfile_images:
+    description:
+      'Comma-separated list of image names corresponding to each Dockerfile.'
+    required: false
+    default: ''
+  dockerfile_contexts:
+    description:
+      'Comma-separated list of build contexts for each Dockerfile (defaults to
+      "." if not provided).'
+    required: false
+    default: ''
+  registry_type:
+    description: 'Type of container registry (e.g., ghcr, acr, dockerhub).'
+    required: false
+    default: 'GHCR'
+  push_with_version:
+    description: 'Push images tagged with the version? (true/false)'
+    required: false
+    default: 'true'
+  push_with_latest:
+    description: 'Push images tagged as latest? (true/false)'
+    required: false
+    default: 'true'
+
+  # Release and Changelog
+  run_release_and_changelog:
+    description: 'Run release and changelog step? (true/false)'
+    required: false
+    default: 'true'
+  changelog_token:
+    description: 'GitHub token for generating changelog and creating releases.'
+    required: false
+    default: ''
+
 outputs:
-  time:
-    description: Your output description here
+  # Migrations
+  lastMigration:
+    description: 'The last applied database migration.'
+
+  # Tests
+  startTime:
+    description: 'Time when the workflow started.'
+  endTime:
+    description: 'Time when the workflow finished.'
+
+  # Versioning
+  version:
+    description: 'Extracted version from .csproj or commit message.'
+
+  # Docker
+  docker_push_status:
+    description: 'Status of Docker image push (success/failure).'
+
+  # Release and Changelog
+  changelog:
+    description: 'Generated changelog for the release.'
+  release_status:
+    description: 'Status of the release creation (success/failure).'
 
 runs:
   using: node20
