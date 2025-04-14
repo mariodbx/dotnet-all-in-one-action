@@ -6,7 +6,7 @@ import {
   rollbackMigrations
 } from './utils/migrations.js'
 import { tests } from './utils/test.js'
-import { uploadTestArtifact } from './utils/artifactUploader.js'
+import { uploadTestArtifact } from './utils/artifact.js'
 import * as path from 'path'
 
 export async function runTests(): Promise<void> {

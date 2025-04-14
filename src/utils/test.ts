@@ -3,7 +3,7 @@ import * as artifact from '@actions/artifact'
 import * as path from 'path'
 import * as fs from 'fs'
 import { runCommand } from './command.js'
-import { installDotnetEfLocally } from './dotnetEfInstaller.js'
+import { installDotnetEfLocally } from './dotnet.js'
 
 const ARTIFACT_NAME = 'test-results'
 const ARTIFACT_RETENTION_DAYS = 7

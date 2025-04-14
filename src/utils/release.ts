@@ -1,4 +1,7 @@
 import * as core from '@actions/core'
+import * as fs from 'fs/promises'
+import { runCommand } from './command.js'
+import { buildKeywordRegex, categorize } from './changelog.js'
 
 /**
  * Checks if a GitHub release with the specified version exists.
@@ -96,4 +99,68 @@ export async function createRelease(
   }
 
   core.info(`Release v${version} created successfully.`)
+}
+
+export async function generateChangelog(): Promise<string> {
+  let lastTag = ''
+  try {
+    lastTag = await runCommand(
+      'git',
+      ['describe', '--tags', '--abbrev=0'],
+      {},
+      true
+    )
+    core.info(`Found last tag: ${lastTag}`)
+  } catch {
+    core.info('No tags found, using all commits.')
+  }
+
+  const range = lastTag ? `${lastTag}..HEAD` : ''
+  const commits = await runCommand(
+    'git',
+    ['log', ...(range ? [range] : []), '--no-merges', '--pretty=format:%h %s'],
+    {},
+    true
+  )
+
+  const changelog = [
+    [
+      '### Major Changes',
+      buildKeywordRegex(getActionInput('major_keywords', 'major'))
+    ],
+    [
+      '### Minor Changes',
+      buildKeywordRegex(getActionInput('minor_keywords', 'minor'))
+    ],
+    [
+      '### Patch/Bug Fixes',
+      buildKeywordRegex(
+        getActionInput('patch_keywords', 'patch,bug-fix,bug fix')
+      )
+    ],
+    [
+      '### Hotfixes',
+      buildKeywordRegex(getActionInput('hotfix_keywords', 'hotfix'))
+    ],
+    [
+      '### Additions',
+      buildKeywordRegex(getActionInput('added_keywords', 'added'))
+    ],
+    [
+      '### Dev Changes',
+      buildKeywordRegex(getActionInput('dev_keywords', 'dev'))
+    ]
+  ]
+    .map(
+      ([label, regex]) => `${label}\n${categorize(commits, regex as RegExp)}`
+    )
+    .join('\n\n')
+
+  await fs.writeFile('changelog.txt', changelog, 'utf8')
+  core.info('Generated changelog:\n' + changelog)
+  return changelog
+}
+
+function getActionInput(name: string, defaultValue: string): string {
+  return core.getInput(name) || defaultValue
 }
