@@ -1,306 +1,332 @@
-# Create a GitHub Action Using TypeScript
+# :warning: WORK IN PROGRESS :warning:
 
-[![GitHub Super-Linter](https://github.com/actions/typescript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/actions/typescript-action/actions/workflows/ci.yml/badge.svg)
-[![Check dist/](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml/badge.svg)](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml)
-[![CodeQL](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml)
-[![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
+This action is still in an experimental phase, to use with discretion.
 
-Use this template to bootstrap the creation of a TypeScript action. :rocket:
+# Dotnet All-in-One GitHub Action
 
-This template includes compilation support, tests, a validation workflow,
-publishing, and versioning guidance.
+A GitHub Action for .NET projects that automates migrations, tests, versioning,
+Docker image building, and release management. This action is designed to
+streamline CI/CD workflows for .NET applications.
 
-If you are new, there's also a simpler introduction in the
-[Hello world JavaScript action repository](https://github.com/actions/hello-world-javascript-action).
+---
 
-## Create Your Own Action
+## Features
 
-To create your own action, you can use this repository as a template! Just
-follow the below instructions:
+- **EF Core Migrations**: Automatically applies pending migrations with rollback
+  support.
+- **Testing**: Runs .NET tests, captures results, and uploads them as artifacts.
+- **Versioning**: Extracts and bumps versions from `.csproj` files or commit
+  messages.
+- **Docker**: Builds and pushes Docker images with versioned and `latest` tags.
+- **Release Management**: Generates changelogs and creates GitHub releases.
+- **Customizable Inputs**: Configure paths, environment variables, and other
+  parameters.
 
-1. Click the **Use this template** button at the top of the repository
-1. Select **Create a new repository**
-1. Select an owner and name for your new repository
-1. Click **Create repository**
-1. Clone your new repository
-
-> [!IMPORTANT]
->
-> Make sure to remove or update the [`CODEOWNERS`](./CODEOWNERS) file! For
-> details on how to use this file, see
-> [About code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
-
-## Initial Setup
-
-After you've cloned the repository to your local machine or codespace, you'll
-need to perform some initial setup steps before you can develop your action.
-
-> [!NOTE]
->
-> You'll need to have a reasonably modern version of
-> [Node.js](https://nodejs.org) handy (20.x or later should work!). If you are
-> using a version manager like [`nodenv`](https://github.com/nodenv/nodenv) or
-> [`fnm`](https://github.com/Schniz/fnm), this template has a `.node-version`
-> file at the root of the repository that can be used to automatically switch to
-> the correct version when you `cd` into the repository. Additionally, this
-> `.node-version` file is used by GitHub Actions in any `actions/setup-node`
-> actions.
-
-1. :hammer_and_wrench: Install the dependencies
-
-   ```bash
-   npm install
-   ```
-
-1. :building_construction: Package the TypeScript for distribution
-
-   ```bash
-   npm run bundle
-   ```
-
-1. :white_check_mark: Run the tests
-
-   ```bash
-   $ npm test
-
-   PASS  ./index.test.js
-     ✓ throws invalid number (3ms)
-     ✓ wait 500 ms (504ms)
-     ✓ test runs (95ms)
-
-   ...
-   ```
-
-## Update the Action Metadata
-
-The [`action.yml`](action.yml) file defines metadata about your action, such as
-input(s) and output(s). For details about this file, see
-[Metadata syntax for GitHub Actions](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions).
-
-When you copy this repository, update `action.yml` with the name, description,
-inputs, and outputs for your action.
-
-## Update the Action Code
-
-The [`src/`](./src/) directory is the heart of your action! This contains the
-source code that will be run when your action is invoked. You can replace the
-contents of this directory with your own code.
-
-There are a few things to keep in mind when writing your action code:
-
-- Most GitHub Actions toolkit and CI/CD operations are processed asynchronously.
-  In `main.ts`, you will see that the action is run in an `async` function.
-
-  ```javascript
-  import * as core from '@actions/core'
-  //...
-
-  async function run() {
-    try {
-      //...
-    } catch (error) {
-      core.setFailed(error.message)
-    }
-  }
-  ```
-
-  For more information about the GitHub Actions toolkit, see the
-  [documentation](https://github.com/actions/toolkit/blob/master/README.md).
-
-So, what are you waiting for? Go ahead and start customizing your action!
-
-1. Create a new branch
-
-   ```bash
-   git checkout -b releases/v1
-   ```
-
-1. Replace the contents of `src/` with your action code
-1. Add tests to `__tests__/` for your source code
-1. Format, test, and build the action
-
-   ```bash
-   npm run all
-   ```
-
-   > This step is important! It will run [`rollup`](https://rollupjs.org/) to
-   > build the final JavaScript action code with all dependencies included. If
-   > you do not run this step, your action will not work correctly when it is
-   > used in a workflow.
-
-1. (Optional) Test your action locally
-
-   The [`@github/local-action`](https://github.com/github/local-action) utility
-   can be used to test your action locally. It is a simple command-line tool
-   that "stubs" (or simulates) the GitHub Actions Toolkit. This way, you can run
-   your TypeScript action locally without having to commit and push your changes
-   to a repository.
-
-   The `local-action` utility can be run in the following ways:
-
-   - Visual Studio Code Debugger
-
-     Make sure to review and, if needed, update
-     [`.vscode/launch.json`](./.vscode/launch.json)
-
-   - Terminal/Command Prompt
-
-     ```bash
-     # npx @github/local action <action-yaml-path> <entrypoint> <dotenv-file>
-     npx @github/local-action . src/main.ts .env
-     ```
-
-   You can provide a `.env` file to the `local-action` CLI to set environment
-   variables used by the GitHub Actions Toolkit. For example, setting inputs and
-   event payload data used by your action. For more information, see the example
-   file, [`.env.example`](./.env.example), and the
-   [GitHub Actions Documentation](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
-
-1. Commit your changes
-
-   ```bash
-   git add .
-   git commit -m "My first action is ready!"
-   ```
-
-1. Push them to your repository
-
-   ```bash
-   git push -u origin releases/v1
-   ```
-
-1. Create a pull request and get feedback on your action
-1. Merge the pull request into the `main` branch
-
-Your action is now published! :rocket:
-
-For information about versioning your action, see
-[Versioning](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-in the GitHub Actions toolkit.
-
-## Validate the Action
-
-You can now validate the action by referencing it in a workflow file. For
-example, [`ci.yml`](./.github/workflows/ci.yml) demonstrates how to reference an
-action in the same repository.
-
-```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v4
-
-  - name: Test Local Action
-    id: test-action
-    uses: ./
-    with:
-      milliseconds: 1000
-
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
-```
-
-For example workflow runs, check out the
-[Actions tab](https://github.com/actions/typescript-action/actions)! :rocket:
+---
 
 ## Usage
 
-After testing, you can create version tag(s) that developers can use to
-reference different stable versions of your action. For more information, see
-[Versioning](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-in the GitHub Actions toolkit.
+To use this action in your workflow, include it in your `.github/workflows` YAML
+file. Combine it with `setup-dotnet` to build, restore, and manage your .NET
+projects seamlessly.
 
-To include the action in a workflow in another repository, you can use the
-`uses` syntax with the `@` symbol to reference a specific branch, tag, or commit
-hash.
+### Example Workflow
 
-```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v4
+```yml
+name: Build, Test, and Release
 
-  - name: Test Local Action
-    id: test-action
-    uses: actions/typescript-action@v1 # Commit with the `v1` tag
-    with:
-      milliseconds: 1000
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
+jobs:
+  build-test-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Dependencies
+        run: dotnet restore
+
+      - name: Run Dotnet All-in-One Action
+        uses: ./ # Use the local action or replace with the repository path
+        with:
+          run_migrations: true
+          migrations_folder: ./src/Migrations
+          rollbackMigrationsOnTestFailed: true
+          test_folder: ./tests/MyTestProject
+          test_output_folder: TestResults
+          test_format: trx
+          run_versioning: true
+          csproj_name: '*.csproj'
+          use_commit_message: true
+          docker_push_status: success
+          push_with_version: true
+          push_with_latest: true
+          run_release_and_changelog: true
+
+      - name: Publish Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: TestResults
 ```
 
-## Publishing a New Release
+---
 
-This project includes a helper script, [`script/release`](./script/release)
-designed to streamline the process of tagging and pushing new releases for
-GitHub Actions.
+## Inputs
 
-GitHub Actions allows users to select a specific version of the action to use,
-based on release tags. This script simplifies this process by performing the
-following steps:
+Below is a detailed list of all inputs supported by this action, grouped by
+functionality.
 
-1. **Retrieving the latest release tag:** The script starts by fetching the most
-   recent SemVer release tag of the current branch, by looking at the local data
-   available in your repository.
-1. **Prompting for a new release tag:** The user is then prompted to enter a new
-   release tag. To assist with this, the script displays the tag retrieved in
-   the previous step, and validates the format of the inputted tag (vX.X.X). The
-   user is also reminded to update the version field in package.json.
-1. **Tagging the new release:** The script then tags a new release and syncs the
-   separate major tag (e.g. v1, v2) with the new release tag (e.g. v1.0.0,
-   v2.1.2). When the user is creating a new major release, the script
-   auto-detects this and creates a `releases/v#` branch for the previous major
-   version.
-1. **Pushing changes to remote:** Finally, the script pushes the necessary
-   commits, tags and branches to the remote repository. From here, you will need
-   to create a new release in GitHub so users can easily reference the new tags
-   in their workflows.
+### General
 
-## Dependency License Management
+| Input Name         | Description                                                               | Required | Default Value |
+| ------------------ | ------------------------------------------------------------------------- | -------- | ------------- |
+| `show_full_output` | Whether to capture the full output of executed commands (`true`/`false`). | No       | `false`       |
+| `home_directory`   | The home directory for the action.                                        | No       | `/home/node`  |
 
-This template includes a GitHub Actions workflow,
-[`licensed.yml`](./.github/workflows/licensed.yml), that uses
-[Licensed](https://github.com/licensee/licensed) to check for dependencies with
-missing or non-compliant licenses. This workflow is initially disabled. To
-enable the workflow, follow the below steps.
+---
 
-1. Open [`licensed.yml`](./.github/workflows/licensed.yml)
-1. Uncomment the following lines:
+### Migrations
 
-   ```yaml
-   # pull_request:
-   #   branches:
-   #     - main
-   # push:
-   #   branches:
-   #     - main
-   ```
+| Input Name                           | Description                                                            | Required | Default Value     |
+| ------------------------------------ | ---------------------------------------------------------------------- | -------- | ----------------- |
+| `run_migrations`                     | Run EF Core migrations (`true`/`false`).                               | No       | `true`            |
+| `migrations_folder`                  | Path to the folder containing EF Core migrations.                      | No       | `./Migrations`    |
+| `env_name`                           | Environment name for ASP.NET Core (e.g., `Development`, `Production`). | No       | `Test`            |
+| `dotnet_root`                        | Path to the .NET root directory.                                       | No       | `/usr/bin/dotnet` |
+| `use_global_dotnet_ef`               | Use globally installed `dotnet-ef` instead of a local installation.    | No       | `false`           |
+| `rollback_migrations_on_test_failed` | Rollback migrations if tests fail (`true`/`false`).                    | No       | `false`           |
 
-1. Save and commit the changes
+#### How to Use
 
-Once complete, this workflow will run any time a pull request is created or
-changes pushed directly to `main`. If the workflow detects any dependencies with
-missing or non-compliant licenses, it will fail the workflow and provide details
-on the issue(s) found.
-
-### Updating Licenses
-
-Whenever you install or update dependencies, you can use the Licensed CLI to
-update the licenses database. To install Licensed, see the project's
-[Readme](https://github.com/licensee/licensed?tab=readme-ov-file#installation).
-
-To update the cached licenses, run the following command:
-
-```bash
-licensed cache
+```yml
+with:
+  run_migrations: true
+  migrations_folder: ./src/Migrations
+  env_name: Production
+  rollback_migrations_on_test_failed: true
 ```
 
-To check the status of cached licenses, run the following command:
+---
 
-```bash
-licensed status
+### Testing
+
+| Input Name               | Description                                            | Required | Default Value  |
+| ------------------------ | ------------------------------------------------------ | -------- | -------------- |
+| `run_tests`              | Run tests (`true`/`false`).                            | No       | `true`         |
+| `run_tests_migrations`   | Run tests on migrations (`true`/`false`).              | No       | `true`         |
+| `test_migrations_folder` | Path to the folder containing test migrations.         | No       | `./Migrations` |
+| `test_folder`            | Path to the folder containing test projects.           | Yes      | N/A            |
+| `test_output_folder`     | Path to the folder where test results will be stored.  | No       | `TestResults`  |
+| `test_format`            | Format for test results (e.g., `trx`, `html`, `json`). | No       | `html`         |
+
+#### How to Use
+
+```yml
+with:
+  run_tests: true
+  test_folder: ./tests/MyTestProject
+  test_output_folder: TestResults
+  test_format: trx
 ```
+
+---
+
+### Versioning
+
+| Input Name              | Description                                                     | Required | Default Value                             |
+| ----------------------- | --------------------------------------------------------------- | -------- | ----------------------------------------- |
+| `run_versioning`        | Run versioning step (`true`/`false`).                           | No       | `true`                                    |
+| `csproj_depth`          | Maximum depth for locating the `.csproj` file.                  | No       | `1`                                       |
+| `csproj_name`           | Name pattern for the `.csproj` file (e.g., `*.csproj`).         | No       | `*.csproj`                                |
+| `use_commit_message`    | Use the commit message to extract the version (`true`/`false`). | No       | `true`                                    |
+| `commit_user`           | The Git commit username.                                        | No       | `github-actions`                          |
+| `commit_email`          | The Git commit email.                                           | No       | `github-actions@users.noreply.github.com` |
+| `commit_message_prefix` | Prefix for the commit message.                                  | No       | `chore: bump version to `                 |
+
+#### How to Use
+
+```yml
+with:
+  run_versioning: true
+  csproj_name: '*.csproj'
+  use_commit_message: true
+  commit_user: github-actions
+  commit_email: github-actions@users.noreply.github.com
+```
+
+---
+
+### Docker
+
+| Input Name             | Description                                                                   | Required | Default Value |
+| ---------------------- | ----------------------------------------------------------------------------- | -------- | ------------- |
+| `run_push_to_registry` | Push images to the registry (`true`/`false`).                                 | No       | `true`        |
+| `docker_compose_files` | Comma-separated list of Docker Compose files to build images from.            | No       | N/A           |
+| `images`               | Comma-separated list of image repositories (used with Docker Compose builds). | No       | N/A           |
+| `dockerfiles`          | Comma-separated list of Dockerfile paths (for Dockerfile builds).             | No       | N/A           |
+| `dockerfile_images`    | Comma-separated list of image names corresponding to each Dockerfile.         | No       | N/A           |
+| `dockerfile_contexts`  | Comma-separated list of build contexts for each Dockerfile.                   | No       | `.`           |
+| `registry_type`        | Type of container registry (e.g., `ghcr`, `acr`, `dockerhub`).                | No       | `GHCR`        |
+| `push_with_version`    | Push images tagged with the version (`true`/`false`).                         | No       | `true`        |
+| `push_with_latest`     | Push images tagged as `latest` (`true`/`false`).                              | No       | `true`        |
+
+#### How to Use
+
+```yml
+with:
+  run_push_to_registry: true
+  dockerfiles: ./Dockerfile
+  dockerfile_images: my-app
+  push_with_version: true
+  push_with_latest: true
+```
+
+---
+
+### Release and Changelog
+
+| Input Name                  | Description                                                          | Required | Default Value            |
+| --------------------------- | -------------------------------------------------------------------- | -------- | ------------------------ |
+| `run_release_and_changelog` | Run release and changelog step (`true`/`false`).                     | No       | `true`                   |
+| `major_keywords`            | Comma-separated list of keywords to detect major changes.            | No       | `breaking, overhaul`     |
+| `minor_keywords`            | Comma-separated list of keywords to detect minor changes.            | No       | `feature, enhancement`   |
+| `patch_keywords`            | Comma-separated list of keywords to detect patch or bug fix changes. | No       | `bug-fix, hotfix, patch` |
+| `hotfix_keywords`           | Comma-separated list of keywords to detect hotfix changes.           | No       | `urgent, hotfix`         |
+| `added_keywords`            | Comma-separated list of keywords to detect additions.                | No       | `added, new`             |
+| `dev_keywords`              | Comma-separated list of keywords to detect development changes.      | No       | `dev, experiment`        |
+
+#### How to Use
+
+```yml
+with:
+  run_release_and_changelog: true
+  major_keywords: breaking
+  minor_keywords: feature
+  patch_keywords: bug-fix
+```
+
+---
+
+## Outputs
+
+| Output Name          | Description                                         |
+| -------------------- | --------------------------------------------------- |
+| `lastMigration`      | The last applied database migration.                |
+| `startTime`          | The time when the workflow started.                 |
+| `endTime`            | The time when the workflow finished.                |
+| `version`            | Extracted version from `.csproj` or commit message. |
+| `current_version`    | The current version before the bump.                |
+| `new_version`        | The new version after the bump.                     |
+| `bump_type`          | The type of version bump (major, minor, patch).     |
+| `docker_push_status` | Status of Docker image push (success/failure).      |
+| `changelog`          | Generated changelog for the release.                |
+| `release_status`     | Status of the release creation (success/failure).   |
+
+---
+
+## How It Works
+
+### 1. Migrations
+
+- If `run_migrations` is `true`, the action applies pending EF Core migrations
+  from the specified `migrations_folder`.
+- If tests fail and `rollbackMigrationsOnTestFailed` is enabled, the action
+  rolls back the applied migrations to maintain database consistency.
+
+#### Example
+
+```yml
+with:
+  run_migrations: true
+  migrations_folder: ./src/Migrations
+  rollbackMigrationsOnTestFailed: true
+```
+
+### 2. Testing
+
+- Runs tests in the specified `test_folder`.
+- Saves test results in the `test_output_folder` in the specified `test_format`
+  (e.g., `trx`, `html`, `json`).
+- Uploads test results as artifacts for later inspection.
+
+#### Example
+
+```yml
+with:
+  test_folder: ./tests/MyTestProject
+  test_output_folder: TestResults
+  test_format: trx
+```
+
+### 3. Versioning
+
+- Extracts the version from `.csproj` files or commit messages.
+- Bumps the version based on commit keywords (e.g., `breaking`, `feature`,
+  `fix`).
+
+#### Example
+
+```yml
+with:
+  run_versioning: true
+  csproj_name: '*.csproj'
+  use_commit_message: true
+```
+
+### 4. Docker
+
+- Builds Docker images and tags them with the extracted version and `latest`.
+- Pushes the images to the specified container registry.
+
+#### Example
+
+```yml
+with:
+  docker_push_status: success
+  push_with_version: true
+  push_with_latest: true
+```
+
+### 5. Release Management
+
+- Generates a changelog based on commit messages.
+- Creates a GitHub release with the changelog and version information.
+
+#### Example
+
+```yml
+with:
+  run_release_and_changelog: true
+```
+
+---
+
+## Requirements
+
+- **.NET SDK**: Ensure the .NET SDK is installed on the runner.
+- **EF Core Tools**: If using migrations, ensure `dotnet-ef` is installed.
+
+---
+
+## Notes
+
+- Ensure paths like `test_folder` and `migrations_folder` are correctly set
+  relative to the repository root.
+- Use the `rollbackMigrationsOnTestFailed` input to ensure database consistency
+  in case of test failures.
+- For Docker and release management, ensure the appropriate permissions and
+  secrets are configured in your repository.

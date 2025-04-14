@@ -1,32 +1,68 @@
 import * as core from '@actions/core';
-import * as exec from '@actions/exec';
 import * as artifact from '@actions/artifact';
 import * as path from 'path';
 import * as fs from 'fs';
+import { runCommand } from './command.js';
+import { rollbackMigrations } from './migrations.js';
+const ARTIFACT_NAME = 'test-results';
+const ARTIFACT_RETENTION_DAYS = 7;
 /**
- * Runs tests in the specified test folder with the given configuration and uploads test artifacts.
- * The artifact is always uploaded, regardless of whether the tests pass or fail.
+ * Utility function to handle errors and log them appropriately.
+ * @param {unknown} error - The error to handle.
+ * @param {string} message - Custom error message to log.
+ */
+function logError(error, message) {
+    if (error instanceof Error) {
+        core.error(`${message}: ${error.message}`);
+    }
+    else {
+        core.error(`${message}: Unknown error occurred.`);
+    }
+}
+/**
+ * Executes .NET tests in a specified folder with a given configuration and uploads the test results as artifacts.
+ * The function ensures that test artifacts are uploaded regardless of whether the tests pass or fail.
  *
- * @param getExecOutput - If true, capture the execution output instead of streaming it.
- * @param envName - The name of the environment to set for the test execution (e.g., 'Development', 'Production').
- * @param testFolder - The folder containing the test project.
- * @param testOutputFolder - The folder where test result files will be stored.
- * @param testFormat - Format for test results (e.g., trx, html, json). If provided, test results will be logged to a file.
+ * @param {boolean} getExecOutput - A flag indicating whether to capture the execution output instead of streaming it.
+ * @param {string} envName - The environment name to set for the test execution (e.g., 'Development', 'Production').
+ * @param {string} testFolder - The folder containing the test project to execute.
+ * @param {string} testOutputFolder - The folder where test result files will be stored.
+ * @param {string} testFormat - The format for test results (e.g., 'trx', 'html', 'json'). If provided, test results will be logged to a file.
  *
- * @returns A Promise that resolves when test execution and artifact upload complete.
+ * @returns {Promise<void>} A Promise that resolves when the test execution and artifact upload process is complete.
+ *
+ * @throws {Error} Throws an error if the test execution fails or if artifact upload encounters an issue.
  *
  * @example
- * ```ts
- * await runTests(
- *   true,                   // Capture output mode
- *   'Development',          // Environment name
- *   './tests/MyTestProject',// Test folder
- *   './output',             // Test output folder
- *   'trx'                   // Test result format (e.g., trx, html, json)
- * )
+ * ```typescript
+ * import { tests } from './utils/test.js';
+ *
+ * (async () => {
+ *   try {
+ *     await tests(
+ *       true,                   // Capture output mode
+ *       'Development',          // Environment name
+ *       './tests/MyTestProject',// Test folder
+ *       './output',             // Test output folder
+ *       'trx'                   // Test result format (e.g., trx, html, json)
+ *     );
+ *   } catch (error) {
+ *     console.error(`Error running tests: ${error.message}`);
+ *     process.exit(1);
+ *   }
+ * })();
  * ```
+ *
+ * @remarks
+ * - The `DOTNET_ENVIRONMENT` environment variable is set to the value of `envName` during the test execution.
+ * - If `testFormat` is provided, the test results are logged to a file in the specified format and stored in the `testOutputFolder`.
+ * - The function ensures that the test output directory exists before running the tests.
+ * - Test artifacts are uploaded using the `@actions/artifact` package, and the artifact retention period is set to 7 days.
+ * - If an error occurs during test execution, it is captured and rethrown after the artifact upload process to ensure the action fails appropriately.
+ * - The `runCommand` function is used to execute the `dotnet test` command with the specified arguments.
+ * - This function is asynchronous and should be awaited to ensure proper error handling and artifact upload.
  */
-export async function runTests(getExecOutput, envName, testFolder, testOutputFolder, testFormat) {
+export async function tests(getExecOutput, envName, testFolder, testOutputFolder, testFormat) {
     core.info(`Setting environment to ${envName} for test execution...`);
     // Set the DOTNET_ENVIRONMENT variable for the test run
     process.env.DOTNET_ENVIRONMENT = envName;
@@ -47,54 +83,36 @@ export async function runTests(getExecOutput, envName, testFolder, testOutputFol
     }
     let testExecError = undefined;
     try {
-        // Run the tests using the specified method to capture or stream output
+        // Run the tests using the centralized runCommand function
+        const result = await runCommand('dotnet', args, {}, getExecOutput);
         if (getExecOutput) {
-            const result = await exec.getExecOutput('dotnet', args);
-            core.info(result.stdout);
-            if (result.exitCode !== 0) {
-                throw new Error(`Test execution failed with exit code ${result.exitCode}`);
-            }
-        }
-        else {
-            const exitCode = await exec.exec('dotnet', args);
-            if (exitCode !== 0) {
-                throw new Error(`Test execution failed with exit code ${exitCode}`);
-            }
+            core.info(result);
         }
         core.info('Tests completed successfully.');
     }
     catch (error) {
         // Capture the test error but do not rethrow immediately, to allow artifact upload
-        if (error instanceof Error) {
-            testExecError = error;
-            core.error(`Test execution encountered an error: ${error.message}`);
-        }
-        else {
-            testExecError = new Error('Test execution failed due to an unknown error.');
-            core.error('Test execution failed due to an unknown error.');
-        }
+        testExecError =
+            error instanceof Error
+                ? error
+                : new Error('Unknown test execution error.');
+        logError(testExecError, 'Test execution encountered an error');
     }
     finally {
         // Always attempt to upload the test artifacts if a result file was generated.
-        if (resultFilePath) {
-            core.info(`Looking for test result file at ${resultFilePath}...`);
+        if (resultFilePath && fs.existsSync(resultFilePath)) {
+            core.info(`Uploading test result file from ${resultFilePath}...`);
             const artifactClient = new artifact.DefaultArtifactClient();
             try {
-                const { id, size } = await artifactClient.uploadArtifact('test-results', // Artifact name
-                [resultFilePath], // List of files to upload
-                resultFolder, // Folder containing the result file
-                { retentionDays: 7 } // Set retention days for the artifact
-                );
+                const { id, size } = await artifactClient.uploadArtifact(ARTIFACT_NAME, [resultFilePath], resultFolder, { retentionDays: ARTIFACT_RETENTION_DAYS });
                 core.info(`Created artifact with id: ${id} (bytes: ${size})`);
             }
             catch (uploadError) {
-                if (uploadError instanceof Error) {
-                    core.error(`Failed to upload test results: ${uploadError.message}`);
-                }
-                else {
-                    core.error('Failed to upload test results due to an unknown error.');
-                }
+                logError(uploadError, 'Failed to upload test results');
             }
+        }
+        else {
+            core.warning('No test result file found to upload.');
         }
     }
     // If there was an error during test execution, throw it now to mark the action as failed.
@@ -102,18 +120,31 @@ export async function runTests(getExecOutput, envName, testFolder, testOutputFol
         throw testExecError;
     }
 }
-// Example usage:
-// (async () => {
-//   try {
-//     await runTests(
-//       true,                   // getExecOutput
-//       'Development',          // envName
-//       './tests/MyTestProject',// testFolder
-//       './output',             // testOutputFolder
-//       'trx'                   // testFormat
-//     )
-//   } catch (error) {
-//     core.error(`Error running tests: ${error}`)
-//     process.exit(1)
-//   }
-// })()
+// Updated `inputs` parameter to use the `TestInputs` interface
+export async function runAndHandleTests(inputs, baselineMigration) {
+    try {
+        await tests(true, // Capture output
+        inputs.envName, inputs.testFolder, inputs.testOutputFolder, inputs.testFormat);
+    }
+    catch (testError) {
+        core.error('Tests failed.');
+        if (inputs.onFailedRollbackMigrations &&
+            baselineMigration &&
+            baselineMigration !== '0') {
+            core.info(`Rolling back migrations to baseline: ${baselineMigration} due to test failure...`);
+            await rollbackMigrations(inputs.showFullOutput, inputs.envName, '', // Removed `inputs.home` as it is not defined in the new inputs
+            inputs.migrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf, baselineMigration);
+        }
+        else {
+            core.info('Rollback skipped as no valid baseline migration was available.');
+        }
+        throw testError;
+    }
+}
+export function handleError(error) {
+    core.error('An error occurred during execution.');
+    if (error instanceof Error) {
+        core.error(`Error: ${error.message}`);
+        core.setFailed(error.message);
+    }
+}

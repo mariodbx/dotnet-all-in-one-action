@@ -40,3 +40,35 @@ export async function runCommand(
     return ''
   }
 }
+// import * as exec from '@actions/exec'
+
+// export interface ExecModule {
+//   exec: typeof exec.exec
+//   getExecOutput: typeof exec.getExecOutput
+// }
+
+// /**
+//  * Executes a shell command using GitHub Actions' exec module.
+//  *
+//  * @param {string} command - The command to execute.
+//  * @param {string[]} [args=[]] - An array of arguments to pass to the command.
+//  * @param {exec.ExecOptions} [options={}] - Optional execution options.
+//  * @param {boolean} [showFullOutput=false] - A flag indicating whether to return the full output.
+//  * @param {ExecModule} [execModule=exec] - The exec module to use for execution.
+//  * @returns {Promise<string>} A promise that resolves to the trimmed stdout if `showFullOutput` is true, otherwise an empty string.
+//  */
+// export async function runCommand(
+//   command: string,
+//   args: string[] = [],
+//   options: exec.ExecOptions = {},
+//   showFullOutput: boolean = false,
+//   execModule: ExecModule = exec
+// ): Promise<string> {
+//   if (showFullOutput) {
+//     const result = await execModule.getExecOutput(command, args, options)
+//     return result.stdout.trim()
+//   } else {
+//     await execModule.exec(command, args, options)
+//     return ''
+//   }
+// }

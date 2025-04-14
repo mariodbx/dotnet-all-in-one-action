@@ -1,11 +1,19 @@
 import * as core from '@actions/core';
-import * as exec from '@actions/exec';
+import { runCommand } from './command.js';
 /**
  * Returns a fully qualified image name based on the registry type.
  *
- * @param image - The base image name (e.g., "sample-project.mvc").
- * @param registryType - The container registry type (e.g., "ghcr", "acr", "dockerhub").
- * @returns The fully qualified image name.
+ * @param {string} image - The base image name (e.g., "sample-project.mvc").
+ * @param {string} registryType - The container registry type (e.g., "ghcr", "acr", "dockerhub").
+ * @returns {string} The fully qualified image name.
+ * @throws {Error} Throws an error if the registry type is unsupported.
+ * @example
+ * const imageName: string = qualifyImageName('my-app', 'ghcr');
+ * console.log(imageName); // "ghcr.io/<owner>/my-app"
+ * @remarks
+ * - For `ghcr`, the repository owner is derived from the `GITHUB_REPOSITORY` environment variable.
+ * - For `acr`, the `ACR_SERVER` environment variable must be set.
+ * - For `dockerhub`, the username is prepended if the image name does not include a slash.
  */
 export function qualifyImageName(image, registryType) {
     switch (registryType.toLowerCase()) {
@@ -45,9 +53,18 @@ export function qualifyImageName(image, registryType) {
 /**
  * Performs a Docker login based on the registry type.
  *
- * @param registryType - The container registry type (e.g., ghcr, acr, dockerhub).
+ * @param {string} registryType - The container registry type (e.g., "ghcr", "acr", "dockerhub").
+ * @param {boolean} showFullOutput - Whether to return the full output of the command.
+ * @returns {Promise<string>} The full output of the command if `showFullOutput` is true, otherwise undefined.
+ * @throws {Error} Throws an error if the registry type is unsupported or credentials are missing.
+ * @example
+ * const output: string = await dockerLogin('ghcr', true);
+ * console.log(output);
+ * @remarks
+ * - Ensure the appropriate environment variables for credentials are set before calling this function.
+ * - The `docker login` command is executed with the provided credentials.
  */
-export async function dockerLogin(registryType) {
+export async function dockerLogin(registryType, showFullOutput) {
     const credentials = {
         ghcr: {
             username: (process.env.GHCR_USERNAME || '').trim(),
@@ -71,85 +88,99 @@ export async function dockerLogin(registryType) {
     if (!registry.username || !registry.token) {
         throw new Error(`${registryType.toUpperCase()} credentials are missing.`);
     }
-    // Log into the docker registry.
     const server = registry.server;
     core.info(`Logging into ${server}...`);
-    await exec.exec('docker', ['login', server || '', '-u', registry.username, '--password-stdin'], {
-        input: Buffer.from(registry.token)
-    });
-    core.info(`Logged into ${server} as ${registry.username}`);
+    return await runCommand('docker', ['login', server || '', '-u', registry.username, '--password-stdin'], { input: Buffer.from(registry.token) }, showFullOutput);
 }
 /**
  * Builds and pushes images using Docker Compose.
  *
- * @param dockerComposeFile - The docker-compose file to use.
- * @param version - The version to use for tagging.
- * @param images - An array of image names as declared in docker-compose.
- * @param pushWithVersion - Whether to push images tagged with the version.
- * @param pushWithLatest - Whether to push images tagged as latest.
- * @param registryType - The container registry type.
+ * @param {string} dockerComposeFile - The docker-compose file to use.
+ * @param {string} version - The version to use for tagging.
+ * @param {string[]} images - An array of image names as declared in docker-compose.
+ * @param {boolean} pushWithVersion - Whether to push images tagged with the version.
+ * @param {boolean} pushWithLatest - Whether to push images tagged as latest.
+ * @param {string} registryType - The container registry type.
+ * @param {boolean} showFullOutput - Whether to return the full output of the command.
+ * @returns {Promise<string | void>} The full output of the command if `showFullOutput` is true, otherwise undefined.
+ * @throws {Error} Throws an error if the build or push commands fail.
+ * @example
+ * const output: string | void = await buildAndPushCompose(
+ *   'docker-compose.yml',
+ *   '1.0.0',
+ *   ['app'],
+ *   true,
+ *   true,
+ *   'ghcr',
+ *   true
+ * );
+ * @remarks
+ * - This function builds and optionally pushes images using Docker Compose.
+ * - Ensure the `docker-compose` CLI is installed and available in the PATH.
  */
-export async function buildAndPushCompose(dockerComposeFile, version, images, pushWithVersion, pushWithLatest, registryType) {
+export async function buildAndPushCompose(dockerComposeFile, version, images, pushWithVersion, pushWithLatest, registryType, showFullOutput) {
     core.info(`Building using Docker Compose file: ${dockerComposeFile}`);
-    await exec.exec('docker-compose', ['-f', dockerComposeFile, 'build']);
-    // Push with version tag if enabled.
+    await runCommand('docker-compose', ['-f', dockerComposeFile, 'build'], {}, showFullOutput);
     if (pushWithVersion) {
         core.info(`Pushing images (version tag "${version}")...`);
         for (const image of images) {
             const qualifiedImage = qualifyImageName(image, registryType);
             const imageWithVersion = `${qualifiedImage}:${version}`;
-            await exec.exec('docker', ['push', imageWithVersion]);
+            await runCommand('docker', ['push', imageWithVersion], {}, showFullOutput);
         }
     }
-    // If latest is enabled, tag and push.
     if (pushWithLatest) {
         for (const image of images) {
             const qualifiedImage = qualifyImageName(image, registryType);
             const imageWithVersion = `${qualifiedImage}:${version}`;
             const imageLatest = `${qualifiedImage}:latest`;
             core.info(`Tagging ${imageWithVersion} as ${imageLatest}`);
-            await exec.exec('docker', ['tag', imageWithVersion, imageLatest]);
-            core.info(`Pushing ${imageLatest}...`);
-            await exec.exec('docker', ['push', imageLatest]);
+            await runCommand('docker', ['tag', imageWithVersion, imageLatest], {}, showFullOutput);
+            await runCommand('docker', ['push', imageLatest], {}, showFullOutput);
         }
     }
 }
 /**
  * Builds and pushes an image using a Dockerfile.
  *
- * @param dockerfile - The path to the Dockerfile.
- * @param buildContext - The build context for the Docker build.
- * @param version - The version tag.
- * @param image - The image name (repository) to use.
- * @param registryType - The container registry type.
- * @param pushWithVersion - Whether to push images tagged with the version.
- * @param pushWithLatest - Whether to push images tagged as latest.
+ * @param {string} dockerfile - The path to the Dockerfile.
+ * @param {string} buildContext - The build context for the Docker build.
+ * @param {string} version - The version tag.
+ * @param {string} image - The image name (repository) to use.
+ * @param {string} registryType - The container registry type.
+ * @param {boolean} pushWithVersion - Whether to push images tagged with the version.
+ * @param {boolean} pushWithLatest - Whether to push images tagged as latest.
+ * @returns {Promise<void>} Resolves when the build and push operations are complete.
+ * @throws {Error} Throws an error if the build or push commands fail.
+ * @example
+ * await buildAndPushDockerfile(
+ *   'Dockerfile',
+ *   '.',
+ *   '1.0.0',
+ *   'my-app',
+ *   'ghcr',
+ *   true,
+ *   true
+ * );
+ * @remarks
+ * - This function builds and optionally pushes a Docker image using a Dockerfile.
+ * - Ensure the `docker` CLI is installed and available in the PATH.
  */
 export async function buildAndPushDockerfile(dockerfile, buildContext, version, image, registryType, pushWithVersion, pushWithLatest) {
-    // Qualify the image name for the registry.
     const qualifiedImage = qualifyImageName(image, registryType);
-    // If pushWithVersion is set, build with version tag.
     if (pushWithVersion) {
         const imageWithVersion = `${qualifiedImage}:${version}`;
         core.info(`Building image ${imageWithVersion} from Dockerfile: ${dockerfile}`);
-        await exec.exec('docker', [
-            'build',
-            '-f',
-            dockerfile,
-            '-t',
-            imageWithVersion,
-            buildContext
-        ]);
+        await runCommand('docker', ['build', '-f', dockerfile, '-t', imageWithVersion, buildContext], {}, false);
         core.info(`Pushing ${imageWithVersion}...`);
-        await exec.exec('docker', ['push', imageWithVersion]);
+        await runCommand('docker', ['push', imageWithVersion], {}, false);
     }
-    // If pushWithLatest is set, tag the built image as latest and push.
     if (pushWithLatest) {
         const imageWithVersion = `${qualifiedImage}:${version}`;
         const imageLatest = `${qualifiedImage}:latest`;
         core.info(`Tagging ${imageWithVersion} as ${imageLatest}`);
-        await exec.exec('docker', ['tag', imageWithVersion, imageLatest]);
+        await runCommand('docker', ['tag', imageWithVersion, imageLatest], {}, false);
         core.info(`Pushing ${imageLatest}...`);
-        await exec.exec('docker', ['push', imageLatest]);
+        await runCommand('docker', ['push', imageLatest], {}, false);
     }
 }

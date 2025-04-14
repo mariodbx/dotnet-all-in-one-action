@@ -26,7 +26,27 @@
  * @property pushWithVersion - Whether to push images tagged with the version.
  * @property pushWithLatest - Whether to push images tagged as latest.
  * @property runReleaseAndChangelog - Whether to run the release and changelog step.
- * @property changelogToken - GitHub token for generating changelog and creating releases.
+ * @property commitUser - Username for commits.
+ * @property commitEmail - Email for commits.
+ * @property commitMessagePrefix - Prefix for commit messages.
+ * @property majorKeywords - Keywords for major version bumps.
+ * @property minorKeywords - Keywords for minor version bumps.
+ * @property patchKeywords - Keywords for patch version bumps.
+ * @property hotfixKeywords - Keywords for hotfix version bumps.
+ * @property addedKeywords - Keywords for added features.
+ * @property devKeywords - Keywords for development or experimental features.
+ * @property homeDirectory - Home directory for the action.
+ * @property rollbackMigrationsOnTestFailed - Whether to rollback migrations if tests fail.
+ * @property runTestsMigrations - Whether to run tests migrations.
+ * @property testMigrationsFolder - Path to the test migrations folder.
+ * @property currentVersion - Current version of the application.
+ * @property newVersion - New version of the application.
+ * @property bumpType - Type of version bump.
+ * @property skipRelease - Whether to skip the release step.
+ * @property dockerPushStatus - Status of the Docker push.
+ * @property changelog - Changelog content.
+ * @property releaseStatus - Status of the release.
+ * @property skip - Whether to skip the action.
  */
 export interface ActionInputs {
   showFullOutput: boolean
@@ -54,7 +74,27 @@ export interface ActionInputs {
   pushWithVersion: boolean
   pushWithLatest: boolean
   runReleaseAndChangelog: boolean
-  changelogToken: string
+  commitUser: string
+  commitEmail: string
+  commitMessagePrefix: string
+  majorKeywords: string
+  minorKeywords: string
+  patchKeywords: string
+  hotfixKeywords: string
+  addedKeywords: string
+  devKeywords: string
+  homeDirectory: string
+  rollbackMigrationsOnTestFailed: boolean
+  runTestsMigrations: boolean
+  testMigrationsFolder: string
+  currentVersion: string
+  newVersion: string
+  bumpType: string
+  skipRelease: boolean
+  dockerPushStatus: string
+  changelog: string
+  releaseStatus: string
+  skip: boolean
 }
 import * as core from '@actions/core'
 
@@ -154,6 +194,38 @@ export function getInputs(): ActionInputs {
       'run_release_and_changelog',
       true
     ),
-    changelogToken: getInputOrDefault('changelog_token', '')
+    commitUser: getInputOrDefault('commit_user', 'github-actions'),
+    commitEmail: getInputOrDefault(
+      'commit_email',
+      'github-actions@users.noreply.github.com'
+    ),
+    commitMessagePrefix: getInputOrDefault(
+      'commit_message_prefix',
+      'chore: bump version to '
+    ),
+    majorKeywords: getInputOrDefault('major_keywords', 'breaking, overhaul'),
+    minorKeywords: getInputOrDefault('minor_keywords', 'feature, enhancement'),
+    patchKeywords: getInputOrDefault(
+      'patch_keywords',
+      'bug-fix, hotfix, patch'
+    ),
+    hotfixKeywords: getInputOrDefault('hotfix_keywords', 'urgent, hotfix'),
+    addedKeywords: getInputOrDefault('added_keywords', 'added, new'),
+    devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment'),
+    homeDirectory: getInputOrDefault('home_directory', '/home/node'),
+    rollbackMigrationsOnTestFailed: getInputOrDefaultBoolean(
+      'rollback_migrations_on_test_failed',
+      false
+    ),
+    runTestsMigrations: getInputOrDefaultBoolean('run_tests_migrations', true),
+    testMigrationsFolder: getInputOrDefault('test_migrations_folder', ''),
+    currentVersion: getInputOrDefault('current_version', ''),
+    newVersion: getInputOrDefault('new_version', ''),
+    bumpType: getInputOrDefault('bump_type', ''),
+    skipRelease: getInputOrDefaultBoolean('skip_release', false),
+    dockerPushStatus: getInputOrDefault('docker_push_status', ''),
+    changelog: getInputOrDefault('changelog', ''),
+    releaseStatus: getInputOrDefault('release_status', ''),
+    skip: getInputOrDefaultBoolean('skip', false)
   }
 }

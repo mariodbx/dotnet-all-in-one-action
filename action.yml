@@ -9,33 +9,37 @@ branding:
   color: purple
 
 inputs:
-  show_full_putput:
+  show_full_output:
     description: 'Get the output of the executed command? (true/false)'
     required: false
     default: 'false'
+  home_directory:
+    description: 'Home directory for the action'
+    required: false
+    default: '/home/node'
   # Migrations
   run_migrations:
     description: 'Run migrations? (true/false)'
     required: false
     default: 'true'
   migrations_folder:
-    description: 'Path to the migrations folder.'
+    description: 'Path to the migrations folder (default: testFolder)'
     required: false
     default: ''
   env_name:
-    description: 'Environment name for migrations.'
+    description: 'Environment name for ASP.NET Core'
     required: false
-    default: ''
+    default: 'Test'
   dotnet_root:
-    description: 'Path to the .NET root directory.'
+    description: 'Path to the .NET root directory'
     required: false
-    default: ''
+    default: '/usr/bin/dotnet'
   use_global_dotnet_ef:
-    description: 'Use global dotnet-ef CLI? (true/false)'
+    description: 'Use globally installed dotnet-ef instead of local'
     required: false
     default: 'false'
-  on_failed_rollback_migrations:
-    description: 'Rollback migrations if tests fail? (true/false)'
+  rollback_migrations_on_test_failed:
+    description: 'Rollback migrations if tests fail'
     required: false
     default: 'false'
 
@@ -44,18 +48,26 @@ inputs:
     description: 'Run tests? (true/false)'
     required: false
     default: 'true'
-  test_folder:
-    description: 'Path to the test folder.'
+  run_tests_migrations:
+    description: 'Run tests on migrations? (true/false)'
     required: false
+    default: 'true'
+  test_migrations_folder:
+    description: 'Path to the test migrations folder'
+    required: false
+    default: ''
+  test_folder:
+    description: 'Path to the test project folder'
+    required: true
     default: ''
   test_output_folder:
-    description: 'Path to the test output folder.'
+    description: 'Path to the test results output folder'
     required: false
-    default: ''
+    default: 'TestResults'
   test_format:
-    description: 'Format for test results (e.g., trx, xml).'
+    description: 'Format for test results (e.g., trx, html, json)'
     required: false
-    default: 'trx'
+    default: 'html'
 
   # Versioning
   run_versioning:
@@ -74,6 +86,18 @@ inputs:
     description: 'Use the commit message to extract the version? (true/false)'
     required: false
     default: 'true'
+  commit_user:
+    description: 'The Git commit username'
+    required: false
+    default: 'github-actions'
+  commit_email:
+    description: 'The Git commit email'
+    required: false
+    default: 'github-actions@users.noreply.github.com'
+  commit_message_prefix:
+    description: 'Prefix for the commit message'
+    required: false
+    default: 'chore: bump version to '
 
   # Docker
   run_push_to_registry:
@@ -127,10 +151,32 @@ inputs:
     description: 'Run release and changelog step? (true/false)'
     required: false
     default: 'true'
-  changelog_token:
-    description: 'GitHub token for generating changelog and creating releases.'
+  major_keywords:
+    description: 'Comma-separated list of keywords to detect major changes.'
     required: false
-    default: ''
+    default: 'breaking, overhaul'
+  minor_keywords:
+    description: 'Comma-separated list of keywords to detect minor changes.'
+    required: false
+    default: 'feature, enhancement'
+  patch_keywords:
+    description:
+      'Comma-separated list of keywords to detect patch or bug fix changes.'
+    required: false
+    default: 'bug-fix, hotfix, patch'
+  hotfix_keywords:
+    description: 'Comma-separated list of keywords to detect hotfix changes.'
+    required: false
+    default: 'urgent, hotfix'
+  added_keywords:
+    description: 'Comma-separated list of keywords to detect additions.'
+    required: false
+    default: 'added, new'
+  dev_keywords:
+    description:
+      'Comma-separated list of keywords to detect development changes.'
+    required: false
+    default: 'dev, experiment'
 
 outputs:
   # Migrations
@@ -146,6 +192,14 @@ outputs:
   # Versioning
   version:
     description: 'Extracted version from .csproj or commit message.'
+  current_version:
+    description: 'The current version before the bump.'
+  new_version:
+    description: 'The new version after the bump.'
+  bump_type:
+    description: 'The type of version bump (major, minor, patch).'
+  skip_release:
+    description: 'Indicates if the release should be skipped.'
 
   # Docker
   docker_push_status:
@@ -156,6 +210,8 @@ outputs:
     description: 'Generated changelog for the release.'
   release_status:
     description: 'Status of the release creation (success/failure).'
+  skip:
+    description: 'Flag indicating whether to skip the release process.'
 
 runs:
   using: node20

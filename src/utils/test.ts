@@ -3,6 +3,23 @@ import * as artifact from '@actions/artifact'
 import * as path from 'path'
 import * as fs from 'fs'
 import { runCommand } from './command.js'
+import { rollbackMigrations } from './migrations.js'
+
+const ARTIFACT_NAME = 'test-results'
+const ARTIFACT_RETENTION_DAYS = 7
+
+/**
+ * Utility function to handle errors and log them appropriately.
+ * @param {unknown} error - The error to handle.
+ * @param {string} message - Custom error message to log.
+ */
+function logError(error: unknown, message: string): void {
+  if (error instanceof Error) {
+    core.error(`${message}: ${error.message}`)
+  } else {
+    core.error(`${message}: Unknown error occurred.`)
+  }
+}
 
 /**
  * Executes .NET tests in a specified folder with a given configuration and uploads the test results as artifacts.
@@ -91,41 +108,96 @@ export async function tests(
     core.info('Tests completed successfully.')
   } catch (error: unknown) {
     // Capture the test error but do not rethrow immediately, to allow artifact upload
-    if (error instanceof Error) {
-      testExecError = error
-      core.error(`Test execution encountered an error: ${error.message}`)
-    } else {
-      testExecError = new Error(
-        'Test execution failed due to an unknown error.'
-      )
-      core.error('Test execution failed due to an unknown error.')
-    }
+    testExecError =
+      error instanceof Error
+        ? error
+        : new Error('Unknown test execution error.')
+    logError(testExecError, 'Test execution encountered an error')
   } finally {
     // Always attempt to upload the test artifacts if a result file was generated.
-    if (resultFilePath) {
-      core.info(`Looking for test result file at ${resultFilePath}...`)
+    if (resultFilePath && fs.existsSync(resultFilePath)) {
+      core.info(`Uploading test result file from ${resultFilePath}...`)
       const artifactClient = new artifact.DefaultArtifactClient()
 
       try {
         const { id, size } = await artifactClient.uploadArtifact(
-          'test-results', // Artifact name
-          [resultFilePath], // List of files to upload
-          resultFolder, // Folder containing the result file
-          { retentionDays: 7 } // Set retention days for the artifact
+          ARTIFACT_NAME,
+          [resultFilePath],
+          resultFolder,
+          { retentionDays: ARTIFACT_RETENTION_DAYS }
         )
         core.info(`Created artifact with id: ${id} (bytes: ${size})`)
       } catch (uploadError: unknown) {
-        if (uploadError instanceof Error) {
-          core.error(`Failed to upload test results: ${uploadError.message}`)
-        } else {
-          core.error('Failed to upload test results due to an unknown error.')
-        }
+        logError(uploadError, 'Failed to upload test results')
       }
+    } else {
+      core.warning('No test result file found to upload.')
     }
   }
 
   // If there was an error during test execution, throw it now to mark the action as failed.
   if (testExecError) {
     throw testExecError
+  }
+}
+
+interface TestInputs {
+  envName: string
+  testFolder: string
+  testOutputFolder: string
+  testFormat: string
+  onFailedRollbackMigrations: boolean
+  showFullOutput: boolean
+  migrationsFolder: string
+  dotnetRoot: string
+  useGlobalDotnetEf: boolean
+}
+
+// Updated `inputs` parameter to use the `TestInputs` interface
+export async function runAndHandleTests(
+  inputs: TestInputs,
+  baselineMigration: string
+): Promise<void> {
+  try {
+    await tests(
+      true, // Capture output
+      inputs.envName,
+      inputs.testFolder,
+      inputs.testOutputFolder,
+      inputs.testFormat
+    )
+  } catch (testError) {
+    core.error('Tests failed.')
+    if (
+      inputs.onFailedRollbackMigrations &&
+      baselineMigration &&
+      baselineMigration !== '0'
+    ) {
+      core.info(
+        `Rolling back migrations to baseline: ${baselineMigration} due to test failure...`
+      )
+      await rollbackMigrations(
+        inputs.showFullOutput,
+        inputs.envName,
+        '', // Removed `inputs.home` as it is not defined in the new inputs
+        inputs.migrationsFolder,
+        inputs.dotnetRoot,
+        inputs.useGlobalDotnetEf,
+        baselineMigration
+      )
+    } else {
+      core.info(
+        'Rollback skipped as no valid baseline migration was available.'
+      )
+    }
+    throw testError
+  }
+}
+
+export function handleError(error: unknown): void {
+  core.error('An error occurred during execution.')
+  if (error instanceof Error) {
+    core.error(`Error: ${error.message}`)
+    core.setFailed(error.message)
   }
 }
