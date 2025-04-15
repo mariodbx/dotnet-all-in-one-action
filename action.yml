@@ -161,13 +161,13 @@ inputs:
     default: 'true'
 
   # Release
-  runRelease:
+  run_release:
     description: 'Run release step? (true/false)'
     required: false
     default: 'false'
 
   # Changelog
-  runChangelog:
+  run_changelog:
     description: 'Run changelog step? (true/false)'
     required: false
     default: 'false'

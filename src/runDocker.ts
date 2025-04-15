@@ -18,10 +18,7 @@ export async function runDocker(): Promise<void> {
   try {
     // Retrieve and parse common inputs.
     const inputs = getInputs()
-    if (!inputs.runPushToRegistry) {
-      core.info('Skipping push to registry as requested.')
-      return
-    }
+
     const changelogToken = process.env.GH_TOKEN || ''
     const repo = process.env.GITHUB_REPOSITORY || ''
 
@@ -29,7 +26,7 @@ export async function runDocker(): Promise<void> {
 
     // Validate that at least one push flag is set if pushToRegistry is true.
     if (
-      !inputs.runPushToRegistry &&
+      inputs.runPushToRegistry &&
       !inputs.pushWithVersion &&
       !inputs.pushWithLatest
     ) {

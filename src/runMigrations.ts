@@ -6,18 +6,8 @@ import {
 } from './utils/migrations.js'
 
 export async function runMigrations(): Promise<void> {
-  core.setOutput('startTime', new Date().toTimeString())
-  core.info(
-    `[START] GitHub Action execution started at ${new Date().toISOString()}`
-  )
-
   try {
     const inputs = getInputs()
-
-    if (!inputs.runMigrations) {
-      core.info('Skipping migrations as requested.')
-      return
-    }
 
     const baselineMigration = await getLastNonPendingMigration(
       inputs.showFullOutput,
@@ -52,10 +42,5 @@ export async function runMigrations(): Promise<void> {
       core.error(`Error: ${error.message}`)
       core.setFailed(error.message)
     }
-  } finally {
-    core.setOutput('endTime', new Date().toTimeString())
-    core.info(
-      `[END] GitHub Action execution ended at ${new Date().toISOString()}`
-    )
   }
 }

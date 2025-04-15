@@ -14,11 +14,6 @@ export async function runVersioning(): Promise<void> {
   try {
     const inputs = getInputs()
 
-    if (!inputs.runVersioning) {
-      core.info('Skipping versioning as per input.')
-      return
-    }
-
     core.info(
       `Configuration: csproj_depth=${inputs.csprojDepth}, csproj_name=${inputs.csprojName}, commit_user=${inputs.commitUser}, commit_email=${inputs.commitEmail}`
     )

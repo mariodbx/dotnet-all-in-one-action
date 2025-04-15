@@ -10,54 +10,49 @@ export async function runTests() {
     try {
         const inputs = getInputs(); // Ensure inputs are defined before use.
         // Run tests if not skipped.
-        if (inputs.runTests) {
-            let baselineMigration = '';
-            let newMigration = '';
-            let resultFilePath = '';
-            let resultFolder = '';
-            try {
-                // If migrations are not skipped, get the last non-pending migration (baseline) before applying new ones.
-                if (inputs.runTestsMigrations) {
-                    baselineMigration = await getLastNonPendingMigration(inputs.showFullOutput, inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
-                    core.info(`Baseline migration before new migrations: ${baselineMigration}`);
-                    // Process new migrations.
-                    newMigration = await processMigrations(inputs.showFullOutput, inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
-                    core.info(newMigration
-                        ? `New migration applied: ${newMigration}`
-                        : 'No new migrations were applied.');
-                }
-                else {
-                    core.info('Skipping migrations as requested.');
-                }
-                // Run tests and capture result file path and folder
-                await tests(inputs.showFullOutput, inputs.envName, inputs.testMigrationsFolder, inputs.testOutputFolder, inputs.testFormat, inputs.useGlobalDotnetEf // Pass the flag to use global or local dotnet-ef
-                );
-                resultFolder = inputs.testOutputFolder;
-                resultFilePath = path.join(resultFolder, `TestResults.${inputs.testFormat}`);
+        let baselineMigration = '';
+        let newMigration = '';
+        let resultFilePath = '';
+        let resultFolder = '';
+        try {
+            // If migrations are not skipped, get the last non-pending migration (baseline) before applying new ones.
+            if (inputs.runTestsMigrations) {
+                baselineMigration = await getLastNonPendingMigration(inputs.showFullOutput, inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+                core.info(`Baseline migration before new migrations: ${baselineMigration}`);
+                // Process new migrations.
+                newMigration = await processMigrations(inputs.showFullOutput, inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+                core.info(newMigration
+                    ? `New migration applied: ${newMigration}`
+                    : 'No new migrations were applied.');
             }
-            catch (testError) {
-                core.error('Tests failed.');
-                // Roll back to the baseline migration captured before running processMigrations.
-                if (inputs.rollbackMigrationsOnTestFailed &&
-                    baselineMigration &&
-                    baselineMigration !== '0') {
-                    core.info(`Rolling back migrations to baseline: ${baselineMigration} due to test failure...`);
-                    await rollbackMigrations(inputs.showFullOutput, inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf, baselineMigration);
-                }
-                else {
-                    core.info('Rollback skipped as no valid baseline migration was available.');
-                }
-                throw testError;
+            else {
+                core.info('Skipping migrations as requested.');
             }
-            finally {
-                // Upload test artifact
-                if (inputs.uploadTestsResults && resultFilePath && resultFolder) {
-                    await uploadTestArtifact(resultFilePath, resultFolder);
-                }
-            }
+            // Run tests and capture result file path and folder
+            await tests(inputs.showFullOutput, inputs.envName, inputs.testMigrationsFolder, inputs.testOutputFolder, inputs.testFormat, inputs.useGlobalDotnetEf // Pass the flag to use global or local dotnet-ef
+            );
+            resultFolder = inputs.testOutputFolder;
+            resultFilePath = path.join(resultFolder, `TestResults.${inputs.testFormat}`);
         }
-        else {
-            core.info('Skipping tests as requested.');
+        catch (testError) {
+            core.error('Tests failed.');
+            // Roll back to the baseline migration captured before running processMigrations.
+            if (inputs.rollbackMigrationsOnTestFailed &&
+                baselineMigration &&
+                baselineMigration !== '0') {
+                core.info(`Rolling back migrations to baseline: ${baselineMigration} due to test failure...`);
+                await rollbackMigrations(inputs.showFullOutput, inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf, baselineMigration);
+            }
+            else {
+                core.info('Rollback skipped as no valid baseline migration was available.');
+            }
+            throw testError;
+        }
+        finally {
+            // Upload test artifact
+            if (inputs.uploadTestsResults && resultFilePath && resultFolder) {
+                await uploadTestArtifact(resultFilePath, resultFolder);
+            }
         }
         core.info('GitHub Action completed successfully.');
     }

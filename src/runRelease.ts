@@ -12,11 +12,6 @@ export async function runRelease(): Promise<void> {
   try {
     const inputs = getInputs()
 
-    if (!inputs.runRelease) {
-      core.info('Skipping release as per input.')
-      return
-    }
-
     const token = process.env.GHCR_TOKEN || ''
     const repo = process.env.GITHUB_REPOSITORY || ''
     if (!repo) throw new Error('GITHUB_REPOSITORY is not defined.')

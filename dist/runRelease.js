@@ -7,10 +7,6 @@ import * as fs from 'fs/promises';
 export async function runRelease() {
     try {
         const inputs = getInputs();
-        if (!inputs.runRelease) {
-            core.info('Skipping release as per input.');
-            return;
-        }
         const token = process.env.GHCR_TOKEN || '';
         const repo = process.env.GITHUB_REPOSITORY || '';
         if (!repo)

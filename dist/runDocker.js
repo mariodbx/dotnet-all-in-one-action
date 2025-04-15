@@ -10,16 +10,12 @@ export async function runDocker() {
     try {
         // Retrieve and parse common inputs.
         const inputs = getInputs();
-        if (!inputs.runPushToRegistry) {
-            core.info('Skipping push to registry as requested.');
-            return;
-        }
         const changelogToken = process.env.GH_TOKEN || '';
         const repo = process.env.GITHUB_REPOSITORY || '';
         if (!repo)
             throw new Error('GITHUB_REPOSITORY is not defined.');
         // Validate that at least one push flag is set if pushToRegistry is true.
-        if (!inputs.runPushToRegistry &&
+        if (inputs.runPushToRegistry &&
             !inputs.pushWithVersion &&
             !inputs.pushWithLatest) {
             throw new Error('At least one push flag ("push_with_version" or "push_with_latest") must be true when "push_to_registry" is enabled.');
