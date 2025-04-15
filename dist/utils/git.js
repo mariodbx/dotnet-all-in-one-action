@@ -27,6 +27,10 @@ export async function getLatestCommitMessage(showFullOutput) {
     try {
         const result = await runCommand('git', ['log', '-1', '--pretty=%B'], {}, showFullOutput);
         core.info(`Raw output from git log: "${result}"`);
+        if (result === undefined || result === null) {
+            core.error('Git log command returned undefined or null output.');
+            throw new Error('Failed to retrieve the latest commit message. Output is invalid.');
+        }
         const trimmedResult = result.trim();
         if (!trimmedResult) {
             core.warning('Git log returned empty or whitespace-only output. Ensure the repository has valid commits.');
@@ -35,8 +39,9 @@ export async function getLatestCommitMessage(showFullOutput) {
         return trimmedResult;
     }
     catch (error) {
-        core.error('Error executing git log command.');
-        throw error;
+        const err = error; // Explicitly cast error to Error
+        core.error(`Error executing git log command: ${err.message}`);
+        throw err;
     }
 }
 /**

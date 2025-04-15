@@ -27,15 +27,24 @@ import * as exec from '@actions/exec';
  * - Use this function for executing shell commands in GitHub Actions workflows.
  */
 export async function runCommand(command, args = [], options = {}, showFullOutput = false) {
-    if (showFullOutput) {
-        const result = await exec.getExecOutput(command, args, {
-            ...options,
-            cwd: options.cwd
-        });
-        return result.stdout.trim();
+    try {
+        if (showFullOutput) {
+            const result = await exec.getExecOutput(command, args, {
+                ...options,
+                cwd: options.cwd
+            });
+            if (result.exitCode !== 0) {
+                throw new Error(`Command failed with exit code ${result.exitCode}: ${result.stderr}`);
+            }
+            return result.stdout.trim();
+        }
+        else {
+            await exec.exec(command, args, { ...options, cwd: options.cwd });
+            return '';
+        }
     }
-    else {
-        await exec.exec(command, args, { ...options, cwd: options.cwd });
-        return '';
+    catch (error) {
+        const err = error; // Explicitly cast error to Error
+        throw new Error(`Failed to execute command "${command}": ${err.message}`);
     }
 }

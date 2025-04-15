@@ -33,14 +33,24 @@ export async function runCommand(
   options: exec.ExecOptions = {},
   showFullOutput: boolean = false
 ): Promise<string> {
-  if (showFullOutput) {
-    const result = await exec.getExecOutput(command, args, {
-      ...options,
-      cwd: options.cwd
-    })
-    return result.stdout.trim()
-  } else {
-    await exec.exec(command, args, { ...options, cwd: options.cwd })
-    return ''
+  try {
+    if (showFullOutput) {
+      const result = await exec.getExecOutput(command, args, {
+        ...options,
+        cwd: options.cwd
+      })
+      if (result.exitCode !== 0) {
+        throw new Error(
+          `Command failed with exit code ${result.exitCode}: ${result.stderr}`
+        )
+      }
+      return result.stdout.trim()
+    } else {
+      await exec.exec(command, args, { ...options, cwd: options.cwd })
+      return ''
+    }
+  } catch (error) {
+    const err = error as Error // Explicitly cast error to Error
+    throw new Error(`Failed to execute command "${command}": ${err.message}`)
   }
 }
