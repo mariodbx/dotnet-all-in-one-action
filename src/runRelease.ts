@@ -35,8 +35,7 @@ export async function runRelease(): Promise<void> {
       )
       const csprojPath = await findCsprojFile(
         inputs.csprojDepth,
-        inputs.csprojName,
-        inputs.showFullOutput
+        inputs.csprojName
       )
       core.info(`Found csproj file at: ${csprojPath}`)
       const csprojContent = await fs.readFile(csprojPath, 'utf8')

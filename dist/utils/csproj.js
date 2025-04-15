@@ -5,29 +5,21 @@ import { runCommand } from './command.js';
  *
  * @param {number} csprojDepth - The maximum depth to search for the `.csproj` file.
  * @param {string} csprojName - The name of the `.csproj` file to search for.
- * @param {boolean} showFullOutput - If true, returns the full output of the find command.
- * @param {string} workingDirectory - The current working directory to execute the find command.
  * @returns {Promise<string>} A promise that resolves to the path of the `.csproj` file, or an empty string if not found.
  * @throws {Error} If the `runCommand` function fails to execute the find command.
  * @example
- * const csprojPath: string = await findCsprojFile(2, 'MyProject.csproj', false, '/path/to/dir');
+ * const csprojPath: string = await findCsprojFile(2, 'MyProject.csproj');
  * console.log(csprojPath); // Outputs: ./MyProject.csproj
  * @remarks
  * This function uses the `find` command, which is platform-dependent and may not work on non-Unix systems.
  */
-export async function findCsprojFile(csprojDepth, csprojName, showFullOutput, cwd = process.cwd()) {
+export async function findCsprojFile(csprojDepth, csprojName) {
     const findCmd = `find . -maxdepth ${csprojDepth} -name "${csprojName}" | head -n 1`;
-    try {
-        const result = (await runCommand('bash', ['-c', findCmd], { cwd }, showFullOutput)).trim();
-        console.debug(`findCsprojFile result: "${result}"`);
-        if (!result) {
-            throw new Error(`No .csproj file found with name "${csprojName}"`);
-        }
-        return result;
+    const result = await runCommand('bash', ['-c', findCmd], {}, true);
+    if (!result) {
+        throw new Error(`No .csproj file found with name "${csprojName}"`);
     }
-    catch (err) {
-        throw new Error(`Failed to find .csproj file: ${err instanceof Error ? err.message : String(err)}`);
-    }
+    return result;
 }
 /**
  * Reads the content of a `.csproj` file.

@@ -1,9 +1,5 @@
 import * as core from '@actions/core'
 import { runCommand } from './command.js'
-import { exec } from 'child_process'
-import * as util from 'util'
-
-const execPromise = util.promisify(exec)
 
 /**
  * Retrieves the latest commit subject.
@@ -39,21 +35,18 @@ export async function getLatestCommitSubject(
 export async function getLatestCommitMessage(
   showFullOutput: boolean
 ): Promise<string> {
-  try {
-    const { stdout, stderr } = await execPromise('git log -1 --pretty=%B')
-    if (showFullOutput) {
-      console.log('Git log output:', stdout, stderr)
-    }
-    const commitMessage = stdout.trim()
-    if (!commitMessage) {
-      throw new Error(
-        'Failed to retrieve the latest commit message. Output is empty.'
-      )
-    }
-    return commitMessage
-  } catch (error) {
-    throw new Error(`Error retrieving the latest commit message: ${error}`)
+  const result = await runCommand(
+    'git',
+    ['log', '-1', '--pretty=%B'],
+    {},
+    showFullOutput
+  )
+  if (!result) {
+    throw new Error(
+      'Failed to retrieve the latest commit message. Output is empty.'
+    )
   }
+  return result
 }
 
 /**

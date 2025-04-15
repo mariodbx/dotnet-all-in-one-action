@@ -52,8 +52,7 @@ export async function runDocker(): Promise<void> {
     } else {
       const csprojPath = await findCsprojFile(
         inputs.csprojDepth,
-        inputs.csprojName,
-        inputs.showFullOutput
+        inputs.csprojName
       )
       if (!csprojPath || csprojPath.trim() === '') {
         throw new Error(

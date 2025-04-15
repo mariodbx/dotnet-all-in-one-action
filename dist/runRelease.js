@@ -24,7 +24,7 @@ export async function runRelease() {
         }
         else {
             core.info(`Searching for csproj file with pattern "${inputs.csprojName}" at max depth ${inputs.csprojDepth}`);
-            const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName, inputs.showFullOutput);
+            const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName);
             core.info(`Found csproj file at: ${csprojPath}`);
             const csprojContent = await fs.readFile(csprojPath, 'utf8');
             version = extractVersionFromCsproj(csprojContent);

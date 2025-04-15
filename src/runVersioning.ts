@@ -21,12 +21,8 @@ export async function runVersioning(): Promise<void> {
 
     // Get the latest commit message.
     try {
-      const rawCommitMessage = await getLatestCommitMessage(
-        inputs.showFullOutput
-      )
-      const commitMessage = rawCommitMessage.trim()
-      core.info(`Raw commit message: "${rawCommitMessage}"`)
-      core.info(`Trimmed commit message: "${commitMessage}"`)
+      const commitMessage = await getLatestCommitMessage(inputs.showFullOutput)
+      core.info(`Latest commit message: "${commitMessage}"`)
 
       // Extract bump type using a more robust search.
       const regexMatch = commitMessage.match(/(patch|minor|major)/i)
@@ -55,12 +51,8 @@ export async function runVersioning(): Promise<void> {
     // Locate the csproj file.
     const csprojPath = await findCsprojFile(
       inputs.csprojDepth,
-      inputs.csprojName,
-      inputs.showFullOutput
+      inputs.csprojName
     )
-    if (!csprojPath) {
-      throw new Error(`No csproj file found with name "${inputs.csprojName}"`)
-    }
     core.info(`Found csproj file: ${csprojPath}`)
 
     // Read and parse the csproj file.

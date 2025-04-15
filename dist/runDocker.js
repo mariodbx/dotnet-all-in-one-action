@@ -33,7 +33,7 @@ export async function runDocker() {
             }
         }
         else {
-            const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName, inputs.showFullOutput);
+            const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName);
             if (!csprojPath || csprojPath.trim() === '') {
                 throw new Error(`No .csproj file found with name "${inputs.csprojName}".`);
             }
