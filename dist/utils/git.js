@@ -24,11 +24,19 @@ export async function getLatestCommitSubject(showFullOutput) {
  * @throws {Error} If the command fails or the output is empty.
  */
 export async function getLatestCommitMessage(showFullOutput) {
-    const result = await runCommand('git', ['log', '-1', '--pretty=%B'], {}, showFullOutput);
-    if (!result) {
-        throw new Error('Failed to retrieve the latest commit message. Output is empty.');
+    try {
+        const result = await runCommand('git', ['log', '-1', '--pretty=%B'], {}, showFullOutput);
+        const trimmedResult = result.trim();
+        if (!trimmedResult) {
+            core.warning('Git log returned empty or whitespace-only output. Ensure the repository has valid commits.');
+            throw new Error('Failed to retrieve the latest commit message. Output is empty or invalid.');
+        }
+        return trimmedResult;
     }
-    return result;
+    catch (error) {
+        core.error('Error executing git log command.');
+        throw error;
+    }
 }
 /**
  * Extracts version from a commit message in the format "bump version to x.x.x.x".

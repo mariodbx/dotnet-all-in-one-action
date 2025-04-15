@@ -35,18 +35,27 @@ export async function getLatestCommitSubject(
 export async function getLatestCommitMessage(
   showFullOutput: boolean
 ): Promise<string> {
-  const result = await runCommand(
-    'git',
-    ['log', '-1', '--pretty=%B'],
-    {},
-    showFullOutput
-  )
-  if (!result) {
-    throw new Error(
-      'Failed to retrieve the latest commit message. Output is empty.'
+  try {
+    const result = await runCommand(
+      'git',
+      ['log', '-1', '--pretty=%B'],
+      {},
+      showFullOutput
     )
+    const trimmedResult = result.trim()
+    if (!trimmedResult) {
+      core.warning(
+        'Git log returned empty or whitespace-only output. Ensure the repository has valid commits.'
+      )
+      throw new Error(
+        'Failed to retrieve the latest commit message. Output is empty or invalid.'
+      )
+    }
+    return trimmedResult
+  } catch (error) {
+    core.error('Error executing git log command.')
+    throw error
   }
-  return result
 }
 
 /**
