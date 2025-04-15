@@ -33,10 +33,6 @@ export async function runDocker(): Promise<void> {
 
     if (!repo) throw new Error('GITHUB_REPOSITORY is not defined.')
 
-    core.info(
-      `Parameters: csproj_depth=${csprojDepth}, csproj_name=${csprojName}, use_commit_message=${useCommitMessage}, push_with_version=${pushWithVersion}, push_with_latest=${pushWithLatest}, push_to_registry=${pushToRegistry}, registry=${registryType}`
-    )
-
     // Validate that at least one push flag is set if pushToRegistry is true.
     if (inputs.runPushToRegistry && !pushWithVersion && !pushWithLatest) {
       throw new Error(

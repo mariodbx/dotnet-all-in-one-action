@@ -24,7 +24,6 @@ export async function runDocker() {
         const repo = process.env.GITHUB_REPOSITORY || '';
         if (!repo)
             throw new Error('GITHUB_REPOSITORY is not defined.');
-        core.info(`Parameters: csproj_depth=${csprojDepth}, csproj_name=${csprojName}, use_commit_message=${useCommitMessage}, push_with_version=${pushWithVersion}, push_with_latest=${pushWithLatest}, push_to_registry=${pushToRegistry}, registry=${registryType}`);
         // Validate that at least one push flag is set if pushToRegistry is true.
         if (inputs.runPushToRegistry && !pushWithVersion && !pushWithLatest) {
             throw new Error('At least one push flag ("push_with_version" or "push_with_latest") must be true when "push_to_registry" is enabled.');
