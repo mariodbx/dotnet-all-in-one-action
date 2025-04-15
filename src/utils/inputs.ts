@@ -34,6 +34,8 @@
  * @property registryType - Type of container registry.
  * @property pushWithVersion - Whether to push images tagged with the version.
  * @property pushWithLatest - Whether to push images tagged as latest.
+ * @property runRelease - Whether to run the release step.
+ * @property runChangelog - Whether to run the changelog step.
  * @property runReleaseAndChangelog - Whether to run the release and changelog step.
  * @property majorKeywords - Keywords for major version bumps.
  * @property minorKeywords - Keywords for minor version bumps.
@@ -85,6 +87,12 @@ export interface ActionInputs {
   registryType: string
   pushWithVersion: boolean
   pushWithLatest: boolean
+
+  // Release
+  runRelease: boolean
+
+  // Changelog
+  runChangelog: boolean
 
   // Release and Changelog
   runReleaseAndChangelog: boolean
@@ -217,6 +225,12 @@ export function getInputs(): ActionInputs {
     registryType: getInputOrDefault('registry_type', 'GHCR'),
     pushWithVersion: getInputOrDefaultBoolean('push_with_version', true),
     pushWithLatest: getInputOrDefaultBoolean('push_with_latest', true),
+
+    // Release
+    runRelease: getInputOrDefaultBoolean('run_release', true),
+
+    // Changelog
+    runChangelog: getInputOrDefaultBoolean('run_changelog', true),
 
     // Release and Changelog
     runReleaseAndChangelog: getInputOrDefaultBoolean(

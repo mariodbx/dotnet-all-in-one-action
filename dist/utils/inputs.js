@@ -97,6 +97,10 @@ export function getInputs() {
         registryType: getInputOrDefault('registry_type', 'GHCR'),
         pushWithVersion: getInputOrDefaultBoolean('push_with_version', true),
         pushWithLatest: getInputOrDefaultBoolean('push_with_latest', true),
+        // Release
+        runRelease: getInputOrDefaultBoolean('run_release', true),
+        // Changelog
+        runChangelog: getInputOrDefaultBoolean('run_changelog', true),
         // Release and Changelog
         runReleaseAndChangelog: getInputOrDefaultBoolean('run_release_and_changelog', true),
         majorKeywords: getInputOrDefault('major_keywords', 'breaking, overhaul'),

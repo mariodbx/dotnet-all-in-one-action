@@ -29,7 +29,7 @@ export async function runTests(): Promise<void> {
         if (inputs.runTestsMigrations) {
           baselineMigration = await getLastNonPendingMigration(
             inputs.showFullOutput,
-            inputs.envName,
+            inputs.testsEnvName,
             inputs.homeDirectory,
             inputs.migrationsFolder,
             inputs.dotnetRoot,
@@ -42,7 +42,7 @@ export async function runTests(): Promise<void> {
           // Process new migrations.
           newMigration = await processMigrations(
             inputs.showFullOutput,
-            inputs.envName,
+            inputs.testsEnvName,
             inputs.homeDirectory,
             inputs.migrationsFolder,
             inputs.dotnetRoot,
@@ -84,7 +84,7 @@ export async function runTests(): Promise<void> {
           )
           await rollbackMigrations(
             inputs.showFullOutput,
-            inputs.envName,
+            inputs.testsEnvName,
             inputs.homeDirectory,
             inputs.testMigrationsFolder,
             inputs.dotnetRoot,

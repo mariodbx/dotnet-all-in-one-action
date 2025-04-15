@@ -9,7 +9,8 @@ import { runMigrations } from './runMigrations.js';
 import { runTests } from './runTests.js';
 import { runVersioning } from './runVersioning.js';
 import { runDocker } from './runDocker.js';
-import { runReleaseChangelog } from './runReleaseChangelog.js';
+import { runRelease } from './runRelease.js';
+import { runChangelog } from './runChangelog.js';
 /* istanbul ignore next */
 export async function run() {
     const inputs = getInputs();
@@ -145,18 +146,25 @@ export async function run() {
     core.info(`Docker step outputs:
   - Docker Push Status: ${outputs.dockerPushStatus}
   `);
-    console.log('Running release changelog...');
-    core.info(`Release and Changelog step inputs:
-
-  - Run Release And Changelog: ${inputs.runReleaseAndChangelog}
-  - Commit User: ${inputs.commitUser}
-  - Commit Email: ${inputs.commitEmail}
-  - Commit Message Prefix: ${inputs.commitMessagePrefix}
-  `);
-    await runReleaseChangelog();
-    core.info(`Release and Changelog step outputs:
-  - Changelog: ${outputs.changelog}
-  - Release Status: ${outputs.releaseStatus}
-  `);
+    if (inputs.runRelease) {
+        console.log('Running release...');
+        core.info(`Release step inputs:
+    - Run Release: ${inputs.runRelease}
+    `);
+        await runRelease();
+        core.info(`Release step outputs:
+    - Release Status: ${outputs.releaseStatus}
+    `);
+    }
+    if (inputs.runChangelog) {
+        console.log('Running changelog...');
+        core.info(`Changelog step inputs:
+    - Run Changelog: ${inputs.runChangelog}
+    `);
+        await runChangelog();
+        core.info(`Changelog step outputs:
+    - Changelog: ${outputs.changelog}
+    `);
+    }
     console.log('Action completed successfully.');
 }

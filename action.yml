@@ -160,9 +160,15 @@ inputs:
     required: false
     default: 'true'
 
-  # Release and Changelog
-  run_release_and_changelog:
-    description: 'Run release and changelog step? (true/false)'
+  # Release
+  runRelease:
+    description: 'Run release step? (true/false)'
+    required: false
+    default: 'true'
+
+  # Changelog
+  runChangelog:
+    description: 'Run changelog step? (true/false)'
     required: false
     default: 'true'
   major_keywords:
@@ -225,13 +231,15 @@ outputs:
   docker_push_status:
     description: 'Status of Docker image push (success/failure).'
 
-  # Release and Changelog
-  changelog:
-    description: 'Generated changelog for the release.'
+  # Release
   release_status:
     description: 'Status of the release creation (success/failure).'
+
+  # Changelog
+  changelog:
+    description: 'Generated changelog for the release.'
   skip:
-    description: 'Flag indicating whether to skip the release process.'
+    description: 'Flag indicating whether to skip the changelog process.'
 
 runs:
   using: node20

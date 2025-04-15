@@ -117,3 +117,63 @@ export function extractVersionFromCsproj(content: string): string {
   if (!match) throw new Error('No version found in the .csproj file.')
   return match[1].trim()
 }
+
+/**
+ * Extracts the version suffix from the content of a `.csproj` file.
+ *
+ * @param {string} csprojContent - The content of the `.csproj` file as a string.
+ * @returns {string} The version suffix string extracted from the `.csproj` file.
+ * @throws {Error} If no version suffix is found in the `.csproj` file.
+ * @example
+ * const suffix: string = extractVersionSuffix('<VersionSuffix>beta</VersionSuffix>');
+ * console.log(suffix); // Outputs: beta
+ * @remarks
+ * The function assumes the version suffix is defined in a `<VersionSuffix>` tag. Ensure the `.csproj` file follows this convention.
+ */
+export function extractVersionSuffix(csprojContent: string): string {
+  const suffixRegex = /<VersionSuffix>([^<]+)<\/VersionSuffix>/
+  const match = csprojContent.match(suffixRegex)
+  if (!match) {
+    throw new Error('No version suffix found in csproj file.')
+  }
+  return match[1].trim()
+}
+
+/**
+ * Updates the version suffix in the content of a `.csproj` file.
+ *
+ * @param {string} csprojContent - The content of the `.csproj` file as a string.
+ * @param {string} newSuffix - The new version suffix to set in the `.csproj` file.
+ * @returns {string} The updated content of the `.csproj` file with the new version suffix.
+ * @example
+ * const updatedContent: string = updateVersionSuffixContent('<VersionSuffix>beta</VersionSuffix>', 'rc');
+ * console.log(updatedContent); // Outputs: <VersionSuffix>rc</VersionSuffix>
+ * @remarks
+ * This function replaces the first occurrence of the `<VersionSuffix>` tag. Ensure the content is well-formed XML.
+ */
+export function updateVersionSuffixContent(
+  csprojContent: string,
+  newSuffix: string
+): string {
+  const suffixRegex = /<VersionSuffix>([^<]+)<\/VersionSuffix>/
+  return csprojContent.replace(
+    suffixRegex,
+    `<VersionSuffix>${newSuffix}</VersionSuffix>`
+  )
+}
+
+/**
+ * Removes the version suffix from the content of a `.csproj` file.
+ *
+ * @param {string} csprojContent - The content of the `.csproj` file as a string.
+ * @returns {string} The updated content of the `.csproj` file without the version suffix.
+ * @example
+ * const updatedContent: string = removeVersionSuffix('<VersionSuffix>beta</VersionSuffix>');
+ * console.log(updatedContent); // Outputs: (removes the <VersionSuffix> tag)
+ * @remarks
+ * This function removes the `<VersionSuffix>` tag entirely. Ensure the content is well-formed XML.
+ */
+export function removeVersionSuffix(csprojContent: string): string {
+  const suffixRegex = /<VersionSuffix>[^<]+<\/VersionSuffix>\s*/
+  return csprojContent.replace(suffixRegex, '')
+}
