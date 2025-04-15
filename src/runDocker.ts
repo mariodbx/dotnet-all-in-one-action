@@ -50,10 +50,12 @@ export async function runDocker(): Promise<void> {
         return
       }
     } else {
+      // Locate the csproj file.
       const csprojPath = await findCsprojFile(
         inputs.csprojDepth,
         inputs.csprojName,
-        inputs.showFullOutput
+        inputs.showFullOutput,
+        process.cwd()
       )
       if (!csprojPath) {
         throw new Error(
