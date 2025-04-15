@@ -27,7 +27,6 @@ export async function runDocker(): Promise<void> {
     const useCommitMessage = inputs.useCommitMessage
     const pushWithVersion = core.getBooleanInput('push_with_version')
     const pushWithLatest = core.getBooleanInput('push_with_latest')
-    const pushToRegistry = core.getBooleanInput('push_to_registry')
     const registryType = core.getInput('registry_type') || 'ghcr'
     const changelogToken = process.env.GH_TOKEN || ''
     const repo = process.env.GITHUB_REPOSITORY || ''
@@ -39,7 +38,7 @@ export async function runDocker(): Promise<void> {
     )
 
     // Validate that at least one push flag is set if pushToRegistry is true.
-    if (pushToRegistry && !pushWithVersion && !pushWithLatest) {
+    if (inputs.runPushToRegistry && !pushWithVersion && !pushWithLatest) {
       throw new Error(
         'At least one push flag ("push_with_version" or "push_with_latest") must be true when "push_to_registry" is enabled.'
       )
@@ -97,7 +96,7 @@ export async function runDocker(): Promise<void> {
     await createRelease(repo, version, changelog, changelogToken)
 
     // Log into Docker registry if pushToRegistry is true.
-    if (pushToRegistry) {
+    if (inputs.runPushToRegistry) {
       await dockerLogin(registryType, inputs.showFullOutput)
 
       // Process Docker Compose builds if provided.
