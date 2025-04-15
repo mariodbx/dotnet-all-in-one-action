@@ -39,7 +39,7 @@ inputs:
   migrations_env_name:
     description: 'Environment name for ASP.NET Core'
     required: false
-    default: 'Test'
+    default: 'Development'
   on_failed_rollback_migrations:
     description: 'Rollback migrations if tests fail? (true/false)'
     required: false
@@ -50,6 +50,10 @@ inputs:
     description: 'Run tests? (true/false)'
     required: false
     default: 'true'
+  tests_env_name:
+    description: 'Environment name for ASP.NET Core'
+    required: false
+    default: 'Test'
   run_tests_migrations:
     description: 'Run tests on migrations? (true/false)'
     required: false
@@ -198,6 +202,12 @@ outputs:
     description: 'Time when the workflow started.'
   endTime:
     description: 'Time when the workflow finished.'
+  test_results_uploaded:
+    description: 'Indicates if the test results were successfully uploaded.'
+  test_output_folder:
+    description: 'Path to the test results output folder.'
+  upload_tests_results:
+    description: 'Indicates if the test results were successfully uploaded.'
 
   # Versioning
   version:

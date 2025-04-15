@@ -10,6 +10,7 @@
  * @property envName - Environment name for migrations.
  * @property onFailedRollbackMigrations - Whether to rollback migrations if tests fail.
  * @property runTests - Whether to run tests.
+ * @property testsEnvName - Environment name for tests.
  * @property runTestsMigrations - Whether to run tests migrations.
  * @property testMigrationsFolder - Path to the test migrations folder.
  * @property testFolder - Path to the test folder.
@@ -40,14 +41,6 @@
  * @property hotfixKeywords - Keywords for hotfix version bumps.
  * @property addedKeywords - Keywords for added features.
  * @property devKeywords - Keywords for development or experimental features.
- * @property skipRelease - Whether to skip the release step.
- * @property changelog - Changelog content.
- * @property releaseStatus - Status of the release.
- * @property skip - Whether to skip the action.
- * @property currentVersion - Current version of the application.
- * @property newVersion - New version of the application.
- * @property bumpType - Type of version bump.
- * @property dockerPushStatus - Status of the Docker push.
  */
 export interface ActionInputs {
   // General
@@ -64,11 +57,12 @@ export interface ActionInputs {
 
   // Tests
   runTests: boolean
+  testsEnvName: string
   runTestsMigrations: boolean
   testMigrationsFolder: string
   testFolder: string
-  testOutputFolder: string
   uploadTestsResults: boolean
+  testOutputFolder: string
   testFormat: string
   rollbackMigrationsOnTestFailed: boolean
 
@@ -100,12 +94,6 @@ export interface ActionInputs {
   hotfixKeywords: string
   addedKeywords: string
   devKeywords: string
-
-  // Outputs
-  currentVersion: string
-  newVersion: string
-  bumpType: string
-  dockerPushStatus: string
 }
 
 import * as core from '@actions/core'
@@ -184,7 +172,7 @@ export function getInputs(): ActionInputs {
     // Migrations
     runMigrations: getInputOrDefaultBoolean('run_migrations', true),
     migrationsFolder: getInputOrDefault('migrations_folder', ''),
-    envName: getInputOrDefault('migrations_env_name', 'Test'),
+    envName: getInputOrDefault('migrations_env_name', 'Development'),
     onFailedRollbackMigrations: getInputOrDefaultBoolean(
       'on_failed_rollback_migrations',
       false
@@ -192,11 +180,12 @@ export function getInputs(): ActionInputs {
 
     // Tests
     runTests: getInputOrDefaultBoolean('run_tests', true),
+    testsEnvName: getInputOrDefault('tests_env_name', 'Test'),
     runTestsMigrations: getInputOrDefaultBoolean('run_tests_migrations', true),
     testMigrationsFolder: getInputOrDefault('test_migrations_folder', ''),
     testFolder: getInputOrDefault('test_folder', ''),
-    testOutputFolder: getInputOrDefault('test_output_folder', 'TestResults'),
     uploadTestsResults: getInputOrDefaultBoolean('upload_tests_results', false),
+    testOutputFolder: getInputOrDefault('test_output_folder', 'TestResults'),
     testFormat: getInputOrDefault('test_format', 'html'),
     rollbackMigrationsOnTestFailed: getInputOrDefaultBoolean(
       'rollback_migrations_on_test_failed',
@@ -242,12 +231,6 @@ export function getInputs(): ActionInputs {
     ),
     hotfixKeywords: getInputOrDefault('hotfix_keywords', 'urgent, hotfix'),
     addedKeywords: getInputOrDefault('added_keywords', 'added, new'),
-    devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment'),
-
-    // Outputs
-    currentVersion: getInputOrDefault('current_version', ''),
-    newVersion: getInputOrDefault('new_version', ''),
-    bumpType: getInputOrDefault('bump_type', ''),
-    dockerPushStatus: getInputOrDefault('docker_push_status', '')
+    devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment')
   }
 }
