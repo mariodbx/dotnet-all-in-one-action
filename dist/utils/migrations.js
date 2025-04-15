@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import { runCommand } from './command.js';
-import { installDotnetEfLocally } from './dotnetEfInstaller.js';
+import { installDotnetEfLocally } from './dotnet.js';
 /**
  * Executes EF Core migrations.
  *

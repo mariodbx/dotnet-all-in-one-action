@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import { getLatestCommitSubject, extractVersionFromCommit } from './utils/git.js';
 import { findCsprojFile, extractVersionFromCsproj } from './utils/csproj.js';
-import { generateChangelog } from './utils/release-changelog.js';
+import { generateChangelog } from './utils/changelog.js';
 import { releaseExists, createRelease } from './utils/release.js';
 import { getInputs } from './utils/inputs.js';
 import * as fs from 'fs/promises';

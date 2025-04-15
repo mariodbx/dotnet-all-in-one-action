@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import { getInputs } from './utils/inputs.js';
 import { processMigrations, getLastNonPendingMigration, rollbackMigrations } from './utils/migrations.js';
 import { tests } from './utils/test.js';
-import { uploadTestArtifact } from './utils/artifactUploader.js';
+import { uploadTestArtifact } from './utils/artifact.js';
 import * as path from 'path';
 export async function runTests() {
     core.setOutput('startTime', new Date().toTimeString());
@@ -42,7 +42,7 @@ export async function runTests() {
                     baselineMigration &&
                     baselineMigration !== '0') {
                     core.info(`Rolling back migrations to baseline: ${baselineMigration} due to test failure...`);
-                    await rollbackMigrations(inputs.showFullOutput, inputs.envName, inputs.homeDirectory, inputs.migrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf, baselineMigration);
+                    await rollbackMigrations(inputs.showFullOutput, inputs.envName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf, baselineMigration);
                 }
                 else {
                     core.info('Rollback skipped as no valid baseline migration was available.');
@@ -51,7 +51,7 @@ export async function runTests() {
             }
             finally {
                 // Upload test artifact
-                if (resultFilePath && resultFolder) {
+                if (inputs.uploadTestsResults && resultFilePath && resultFolder) {
                     await uploadTestArtifact(resultFilePath, resultFolder);
                 }
             }

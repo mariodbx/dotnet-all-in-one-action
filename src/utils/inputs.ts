@@ -2,20 +2,28 @@
  * Interface for GitHub Action inputs.
  *
  * @property showFullOutput - Whether to get the full output of the executed command.
+ * @property homeDirectory - Home directory for the action.
+ * @property dotnetRoot - Path to the .NET root directory.
+ * @property useGlobalDotnetEf - Whether to use the global dotnet-ef CLI.
  * @property runMigrations - Whether to run migrations.
  * @property migrationsFolder - Path to the migrations folder.
  * @property envName - Environment name for migrations.
- * @property dotnetRoot - Path to the .NET root directory.
- * @property useGlobalDotnetEf - Whether to use the global dotnet-ef CLI.
  * @property onFailedRollbackMigrations - Whether to rollback migrations if tests fail.
  * @property runTests - Whether to run tests.
+ * @property runTestsMigrations - Whether to run tests migrations.
+ * @property testMigrationsFolder - Path to the test migrations folder.
  * @property testFolder - Path to the test folder.
  * @property testOutputFolder - Path to the test output folder.
+ * @property uploadTestsResults - Whether to upload tests results.
  * @property testFormat - Format for test results.
+ * @property rollbackMigrationsOnTestFailed - Whether to rollback migrations if tests fail.
  * @property runVersioning - Whether to run the versioning step.
  * @property csprojDepth - Maximum depth for locating the .csproj file.
  * @property csprojName - Name pattern for the .csproj file.
  * @property useCommitMessage - Whether to use the commit message to extract the version.
+ * @property commitUser - Username for commits.
+ * @property commitEmail - Email for commits.
+ * @property commitMessagePrefix - Prefix for commit messages.
  * @property runPushToRegistry - Whether to push images to the registry.
  * @property dockerComposeFiles - Comma-separated list of Docker Compose files.
  * @property images - Comma-separated list of image repositories.
@@ -26,44 +34,54 @@
  * @property pushWithVersion - Whether to push images tagged with the version.
  * @property pushWithLatest - Whether to push images tagged as latest.
  * @property runReleaseAndChangelog - Whether to run the release and changelog step.
- * @property commitUser - Username for commits.
- * @property commitEmail - Email for commits.
- * @property commitMessagePrefix - Prefix for commit messages.
  * @property majorKeywords - Keywords for major version bumps.
  * @property minorKeywords - Keywords for minor version bumps.
  * @property patchKeywords - Keywords for patch version bumps.
  * @property hotfixKeywords - Keywords for hotfix version bumps.
  * @property addedKeywords - Keywords for added features.
  * @property devKeywords - Keywords for development or experimental features.
- * @property homeDirectory - Home directory for the action.
- * @property rollbackMigrationsOnTestFailed - Whether to rollback migrations if tests fail.
- * @property runTestsMigrations - Whether to run tests migrations.
- * @property testMigrationsFolder - Path to the test migrations folder.
- * @property currentVersion - Current version of the application.
- * @property newVersion - New version of the application.
- * @property bumpType - Type of version bump.
  * @property skipRelease - Whether to skip the release step.
- * @property dockerPushStatus - Status of the Docker push.
  * @property changelog - Changelog content.
  * @property releaseStatus - Status of the release.
  * @property skip - Whether to skip the action.
+ * @property currentVersion - Current version of the application.
+ * @property newVersion - New version of the application.
+ * @property bumpType - Type of version bump.
+ * @property dockerPushStatus - Status of the Docker push.
  */
 export interface ActionInputs {
+  // General
   showFullOutput: boolean
+  homeDirectory: string
+  dotnetRoot: string
+  useGlobalDotnetEf: boolean
+
+  // Migrations
   runMigrations: boolean
   migrationsFolder: string
   envName: string
-  dotnetRoot: string
-  useGlobalDotnetEf: boolean
   onFailedRollbackMigrations: boolean
+
+  // Tests
   runTests: boolean
+  runTestsMigrations: boolean
+  testMigrationsFolder: string
   testFolder: string
   testOutputFolder: string
+  uploadTestsResults: boolean
   testFormat: string
+  rollbackMigrationsOnTestFailed: boolean
+
+  // Versioning
   runVersioning: boolean
   csprojDepth: number
   csprojName: string
   useCommitMessage: boolean
+  commitUser: string
+  commitEmail: string
+  commitMessagePrefix: string
+
+  // Docker
   runPushToRegistry: boolean
   dockerComposeFiles: string
   images: string
@@ -73,29 +91,23 @@ export interface ActionInputs {
   registryType: string
   pushWithVersion: boolean
   pushWithLatest: boolean
+
+  // Release and Changelog
   runReleaseAndChangelog: boolean
-  commitUser: string
-  commitEmail: string
-  commitMessagePrefix: string
   majorKeywords: string
   minorKeywords: string
   patchKeywords: string
   hotfixKeywords: string
   addedKeywords: string
   devKeywords: string
-  homeDirectory: string
-  rollbackMigrationsOnTestFailed: boolean
-  runTestsMigrations: boolean
-  testMigrationsFolder: string
+
+  // Outputs
   currentVersion: string
   newVersion: string
   bumpType: string
-  skipRelease: boolean
   dockerPushStatus: string
-  changelog: string
-  releaseStatus: string
-  skip: boolean
 }
+
 import * as core from '@actions/core'
 
 /**
@@ -163,49 +175,39 @@ export function getInputOrDefaultBoolean(
  */
 export function getInputs(): ActionInputs {
   return {
-    showFullOutput: getInputOrDefaultBoolean('show_full_output', true),
-    runMigrations: getInputOrDefaultBoolean('run_migrations', true),
-    migrationsFolder: getInputOrDefault(
-      'migrations_folder',
-      './sample-project/sample-project.MVC'
-    ),
-    envName: getInputOrDefault('env_name', 'Test'),
-    dotnetRoot: getInputOrDefault('dotnet_root', ''),
+    // General
+    showFullOutput: getInputOrDefaultBoolean('show_full_output', false),
+    homeDirectory: getInputOrDefault('home_directory', '/home/node'),
+    dotnetRoot: getInputOrDefault('dotnet_root', '/usr/bin/dotnet'),
     useGlobalDotnetEf: getInputOrDefaultBoolean('use_global_dotnet_ef', false),
+
+    // Migrations
+    runMigrations: getInputOrDefaultBoolean('run_migrations', true),
+    migrationsFolder: getInputOrDefault('migrations_folder', ''),
+    envName: getInputOrDefault('migrations_env_name', 'Test'),
     onFailedRollbackMigrations: getInputOrDefaultBoolean(
       'on_failed_rollback_migrations',
       false
     ),
+
+    // Tests
     runTests: getInputOrDefaultBoolean('run_tests', true),
-    testFolder: getInputOrDefault(
-      'test_folder',
-      './sample-project/sample-project.Tests'
-    ),
+    runTestsMigrations: getInputOrDefaultBoolean('run_tests_migrations', true),
+    testMigrationsFolder: getInputOrDefault('test_migrations_folder', ''),
+    testFolder: getInputOrDefault('test_folder', ''),
     testOutputFolder: getInputOrDefault('test_output_folder', 'TestResults'),
-    testFormat: getInputOrDefault('test_format', 'trx'),
+    uploadTestsResults: getInputOrDefaultBoolean('upload_tests_results', false),
+    testFormat: getInputOrDefault('test_format', 'html'),
+    rollbackMigrationsOnTestFailed: getInputOrDefaultBoolean(
+      'rollback_migrations_on_test_failed',
+      false
+    ),
+
+    // Versioning
     runVersioning: getInputOrDefaultBoolean('run_versioning', true),
-    csprojDepth: parseInt(getInputOrDefault('csproj_depth', '3'), 10),
-    csprojName: getInputOrDefault('csproj_name', 'sample-project.MVC.csproj'),
+    csprojDepth: parseInt(getInputOrDefault('csproj_depth', '1'), 10),
+    csprojName: getInputOrDefault('csproj_name', '*.csproj'),
     useCommitMessage: getInputOrDefaultBoolean('use_commit_message', false),
-    runPushToRegistry: getInputOrDefaultBoolean('run_push_to_registry', true),
-    dockerComposeFiles: getInputOrDefault('docker_compose_files', ''),
-    images: getInputOrDefault('images', ''),
-    dockerfiles: getInputOrDefault(
-      'dockerfiles',
-      './sample-project/sample-project.MVC/Dockerfile'
-    ),
-    dockerfileImages: getInputOrDefault(
-      'dockerfile_images',
-      'sample-project.mvc'
-    ),
-    dockerfileContexts: getInputOrDefault('dockerfile_contexts', '.'),
-    registryType: getInputOrDefault('registry_type', 'GHCR'),
-    pushWithVersion: getInputOrDefaultBoolean('push_with_version', true),
-    pushWithLatest: getInputOrDefaultBoolean('push_with_latest', true),
-    runReleaseAndChangelog: getInputOrDefaultBoolean(
-      'run_release_and_changelog',
-      true
-    ),
     commitUser: getInputOrDefault('commit_user', 'github-actions'),
     commitEmail: getInputOrDefault(
       'commit_email',
@@ -214,6 +216,23 @@ export function getInputs(): ActionInputs {
     commitMessagePrefix: getInputOrDefault(
       'commit_message_prefix',
       'New Version: bump version to '
+    ),
+
+    // Docker
+    runPushToRegistry: getInputOrDefaultBoolean('run_push_to_registry', false),
+    dockerComposeFiles: getInputOrDefault('docker_compose_files', ''),
+    images: getInputOrDefault('images', ''),
+    dockerfiles: getInputOrDefault('dockerfiles', ''),
+    dockerfileImages: getInputOrDefault('dockerfile_images', ''),
+    dockerfileContexts: getInputOrDefault('dockerfile_contexts', '.'),
+    registryType: getInputOrDefault('registry_type', 'GHCR'),
+    pushWithVersion: getInputOrDefaultBoolean('push_with_version', true),
+    pushWithLatest: getInputOrDefaultBoolean('push_with_latest', true),
+
+    // Release and Changelog
+    runReleaseAndChangelog: getInputOrDefaultBoolean(
+      'run_release_and_changelog',
+      true
     ),
     majorKeywords: getInputOrDefault('major_keywords', 'breaking, overhaul'),
     minorKeywords: getInputOrDefault('minor_keywords', 'feature, enhancement'),
@@ -224,20 +243,11 @@ export function getInputs(): ActionInputs {
     hotfixKeywords: getInputOrDefault('hotfix_keywords', 'urgent, hotfix'),
     addedKeywords: getInputOrDefault('added_keywords', 'added, new'),
     devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment'),
-    homeDirectory: getInputOrDefault('home_directory', '/home/node'),
-    rollbackMigrationsOnTestFailed: getInputOrDefaultBoolean(
-      'rollback_migrations_on_test_failed',
-      false
-    ),
-    runTestsMigrations: getInputOrDefaultBoolean('run_tests_migrations', true),
-    testMigrationsFolder: getInputOrDefault('test_migrations_folder', 'sa'),
+
+    // Outputs
     currentVersion: getInputOrDefault('current_version', ''),
     newVersion: getInputOrDefault('new_version', ''),
     bumpType: getInputOrDefault('bump_type', ''),
-    skipRelease: getInputOrDefaultBoolean('skip_release', false),
-    dockerPushStatus: getInputOrDefault('docker_push_status', ''),
-    changelog: getInputOrDefault('changelog', ''),
-    releaseStatus: getInputOrDefault('release_status', ''),
-    skip: getInputOrDefaultBoolean('skip', false)
+    dockerPushStatus: getInputOrDefault('docker_push_status', '')
   }
 }

@@ -9,6 +9,7 @@ branding:
   color: purple
 
 inputs:
+  # General
   show_full_output:
     description: 'Get the output of the executed command? (true/false)'
     required: false
@@ -17,6 +18,15 @@ inputs:
     description: 'Home directory for the action'
     required: false
     default: '/home/node'
+  use_global_dotnet_ef:
+    description: 'Use globally installed dotnet-ef instead of local'
+    required: false
+    default: 'false'
+  dotnet_root:
+    description: 'Path to the .NET root directory'
+    required: false
+    default: '/usr/bin/dotnet'
+
   # Migrations
   run_migrations:
     description: 'Run migrations? (true/false)'
@@ -26,16 +36,12 @@ inputs:
     description: 'Path to the migrations folder (default: testFolder)'
     required: false
     default: ''
-  env_name:
+  migrations_env_name:
     description: 'Environment name for ASP.NET Core'
     required: false
     default: 'Test'
-  dotnet_root:
-    description: 'Path to the .NET root directory'
-    required: false
-    default: '/usr/bin/dotnet'
-  use_global_dotnet_ef:
-    description: 'Use globally installed dotnet-ef instead of local'
+  on_failed_rollback_migrations:
+    description: 'Rollback migrations if tests fail? (true/false)'
     required: false
     default: 'false'
 
@@ -52,14 +58,14 @@ inputs:
     description: 'Path to the test migrations folder'
     required: false
     default: ''
-  test_env_name:
-    description: 'Environment name for ASP.NET Core'
-    required: false
-    default: 'Test'
   test_folder:
     description: 'Path to the test project folder'
     required: true
     default: ''
+  upload_tests_results:
+    description: 'Upload test results? (true/false)'
+    required: false
+    default: 'false'
   test_output_folder:
     description: 'Path to the test results output folder'
     required: false
@@ -72,6 +78,7 @@ inputs:
     description: 'Rollback migrations if tests fail'
     required: false
     default: 'false'
+
   # Versioning
   run_versioning:
     description: 'Run versioning step? (true/false)'
@@ -88,7 +95,7 @@ inputs:
   use_commit_message:
     description: 'Use the commit message to extract the version? (true/false)'
     required: false
-    default: 'true'
+    default: 'false'
   commit_user:
     description: 'The Git commit username'
     required: false
@@ -100,13 +107,13 @@ inputs:
   commit_message_prefix:
     description: 'Prefix for the commit message'
     required: false
-    default: 'chore: bump version to '
+    default: 'New Version: bump version to '
 
   # Docker
   run_push_to_registry:
     description: 'Push images to the registry? (true/false)'
     required: false
-    default: 'true'
+    default: 'false'
   docker_compose_files:
     description:
       'Comma-separated list of Docker Compose files to build images from

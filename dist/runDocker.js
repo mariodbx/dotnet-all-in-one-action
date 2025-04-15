@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as fs from 'fs/promises';
 import { findCsprojFile, extractVersionFromCsproj } from './utils/csproj.js';
 import { getLatestCommitSubject, extractVersionFromCommit } from './utils/git.js';
-import { generateChangelog } from './utils/release-changelog.js';
+import { generateChangelog } from './utils/changelog.js';
 import { releaseExists, createRelease } from './utils/release.js';
 import { dockerLogin, buildAndPushCompose, buildAndPushDockerfile } from './utils/docker.js';
 import { getInputs } from './utils/inputs.js';

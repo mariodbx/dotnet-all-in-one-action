@@ -86,7 +86,7 @@ export async function runTests(): Promise<void> {
             inputs.showFullOutput,
             inputs.envName,
             inputs.homeDirectory,
-            inputs.migrationsFolder,
+            inputs.testMigrationsFolder,
             inputs.dotnetRoot,
             inputs.useGlobalDotnetEf,
             baselineMigration
@@ -99,7 +99,7 @@ export async function runTests(): Promise<void> {
         throw testError
       } finally {
         // Upload test artifact
-        if (resultFilePath && resultFolder) {
+        if (inputs.uploadTestsResults && resultFilePath && resultFolder) {
           await uploadTestArtifact(resultFilePath, resultFolder)
         }
       }

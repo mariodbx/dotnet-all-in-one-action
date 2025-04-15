@@ -15,34 +15,62 @@ export async function run() {
     // Log a summary of all loaded inputs.
     core.info(`Loaded inputs:
 
+  // General
   - Show Full Output: ${inputs.showFullOutput}
-  - Run Migrations: ${inputs.runMigrations}
-  - Migrations Folder: ${inputs.migrationsFolder}
-  - Environment Name: ${inputs.envName}
+  - Home Directory: ${inputs.homeDirectory}
   - Dotnet Root: ${inputs.dotnetRoot}
   - Use Global dotnet-ef: ${inputs.useGlobalDotnetEf}
 
+  // Migrations
+  - Run Migrations: ${inputs.runMigrations}
+  - Migrations Folder: ${inputs.migrationsFolder}
+  - Environment Name: ${inputs.envName}
+  - On Failed Rollback Migrations: ${inputs.onFailedRollbackMigrations}
+
+  // Tests
   - Run Tests: ${inputs.runTests}
+  - Run Tests Migrations: ${inputs.runTestsMigrations}
+  - Test Migrations Folder: ${inputs.testMigrationsFolder}
   - Test Folder: ${inputs.testFolder}
   - Test Output Folder: ${inputs.testOutputFolder}
+  - Upload Tests Results: ${inputs.uploadTestsResults}
   - Test Format: ${inputs.testFormat}
   - Rollback Migrations On Test Failed: ${inputs.rollbackMigrationsOnTestFailed}
 
+  // Versioning
   - Run Versioning: ${inputs.runVersioning}
-  - Current Version: ${inputs.currentVersion}
-  - New Version: ${inputs.newVersion}
-  - Bump Type: ${inputs.bumpType}
+  - CSProj Depth: ${inputs.csprojDepth}
+  - CSProj Name: ${inputs.csprojName}
+  - Use Commit Message: ${inputs.useCommitMessage}
+  - Commit User: ${inputs.commitUser}
+  - Commit Email: ${inputs.commitEmail}
+  - Commit Message Prefix: ${inputs.commitMessagePrefix}
 
+  // Docker
   - Run Push To Registry: ${inputs.runPushToRegistry}
+  - Docker Compose Files: ${inputs.dockerComposeFiles}
+  - Images: ${inputs.images}
   - Dockerfiles: ${inputs.dockerfiles}
   - Dockerfile Images: ${inputs.dockerfileImages}
   - Dockerfile Contexts: ${inputs.dockerfileContexts}
   - Registry Type: ${inputs.registryType}
+  - Push With Version: ${inputs.pushWithVersion}
+  - Push With Latest: ${inputs.pushWithLatest}
 
+  // Release and Changelog
   - Run Release And Changelog: ${inputs.runReleaseAndChangelog}
-  - Commit User: ${inputs.commitUser}
-  - Commit Email: ${inputs.commitEmail}
-  - Commit Message Prefix: ${inputs.commitMessagePrefix}
+  - Major Keywords: ${inputs.majorKeywords}
+  - Minor Keywords: ${inputs.minorKeywords}
+  - Patch Keywords: ${inputs.patchKeywords}
+  - Hotfix Keywords: ${inputs.hotfixKeywords}
+  - Added Keywords: ${inputs.addedKeywords}
+  - Dev Keywords: ${inputs.devKeywords}
+
+  // Outputs
+  - Current Version: ${inputs.currentVersion}
+  - New Version: ${inputs.newVersion}
+  - Bump Type: ${inputs.bumpType}
+  - Docker Push Status: ${inputs.dockerPushStatus}
   `);
     console.log('Running migrations...');
     await runMigrations();

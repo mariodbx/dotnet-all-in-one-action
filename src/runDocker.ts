@@ -5,7 +5,7 @@ import {
   getLatestCommitSubject,
   extractVersionFromCommit
 } from './utils/git.js'
-import { generateChangelog } from './utils/release-changelog.js'
+import { generateChangelog } from './utils/changelog.js'
 import { releaseExists, createRelease } from './utils/release.js'
 import {
   dockerLogin,
