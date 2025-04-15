@@ -19,15 +19,16 @@ export async function runVersioning(): Promise<void> {
     )
 
     // Get the latest commit message.
-    const commitMessage = await getLatestCommitMessage(false)
-    core.info(`Latest commit message: "${commitMessage}"`)
+    const rawCommitMessage = await getLatestCommitMessage(false)
+    const commitMessage = rawCommitMessage.trim()
+    core.info(`Raw commit message: "${rawCommitMessage}"`)
+    core.info(`Trimmed commit message: "${commitMessage}"`)
 
-    // Determine bump type by taking the first 5 alphanumeric characters in lowercase.
-    const bumpType = commitMessage
-      .substring(0, 5)
-      .replace(/[^A-Za-z]/g, '')
-      .toLowerCase()
+    // Extract bump type using a more robust search.
+    const regexMatch = commitMessage.match(/(patch|minor|major)/i)
+    const bumpType = regexMatch ? regexMatch[1].toLowerCase() : ''
     core.info(`Extracted bump type: "${bumpType}"`)
+
     if (!['patch', 'minor', 'major'].includes(bumpType)) {
       core.info(
         'Commit message does not indicate a version bump. Skipping release.'
