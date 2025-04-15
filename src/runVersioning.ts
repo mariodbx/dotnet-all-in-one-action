@@ -13,41 +13,34 @@ import { parseVersion, bumpVersion } from './utils/versioning.js'
 export async function runVersioning(): Promise<void> {
   try {
     const inputs = getInputs()
-    let bumpType = '' // Declare bumpType in a broader scope.
 
     core.info(
       `Configuration: csproj_depth=${inputs.csprojDepth}, csproj_name=${inputs.csprojName}, commit_user=${inputs.commitUser}, commit_email=${inputs.commitEmail}`
     )
 
     // Get the latest commit message.
-    try {
-      const commitMessage = await getLatestCommitMessage()
-      core.info(`Latest commit message: "${commitMessage}"`)
+    const commitMessage = await getLatestCommitMessage()
+    core.info(`Latest commit message: "${commitMessage}"`)
 
-      // Determine bump type by taking the first 5 alphanumeric characters in lowercase.
-      bumpType = commitMessage
-        .substring(0, 5)
-        .replace(/[^A-Za-z]/g, '')
-        .toLowerCase()
-      core.info(`Extracted bump type: "${bumpType}"`)
+    // Determine bump type by taking the first 5 alphanumeric characters in lowercase.
+    const bumpType = commitMessage
+      .substring(0, 5)
+      .replace(/[^A-Za-z]/g, '')
+      .toLowerCase()
+    core.info(`Extracted bump type: "${bumpType}"`)
+    if (!['patch', 'minor', 'major'].includes(bumpType)) {
+      core.info(
+        'Commit message does not indicate a version bump. Skipping release.'
+      )
+      core.setOutput('skip_release', 'true')
+      return
+    }
+    core.setOutput('skip_release', 'false')
+    core.setOutput('bump_type', bumpType)
 
-      // Extract bump type using a more robust search.
-      const regexMatch = commitMessage.match(/(patch|minor|major)/i)
-      bumpType = regexMatch ? regexMatch[1].toLowerCase() : ''
-      core.info(`Extracted bump type: "${bumpType}"`)
-
-      if (!['patch', 'minor', 'major'].includes(bumpType)) {
-        core.info(
-          'Commit message does not indicate a version bump. Skipping release.'
-        )
-        core.setOutput('skip_release', 'true')
-        return
-      }
-      core.setOutput('skip_release', 'false')
-      core.setOutput('bump_type', bumpType)
-    } catch (error) {
-      core.setFailed(`Error processing commit message: ${error}`)
-      throw error
+    // Validate csproj depth.
+    if (isNaN(inputs.csprojDepth) || inputs.csprojDepth < 1) {
+      throw new Error('csproj_depth must be a positive integer')
     }
 
     // Locate the csproj file.

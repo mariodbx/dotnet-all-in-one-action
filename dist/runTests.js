@@ -9,6 +9,7 @@ export async function runTests() {
     core.info(`[START] GitHub Action execution started at ${new Date().toISOString()}`);
     try {
         const inputs = getInputs(); // Ensure inputs are defined before use.
+        core.debug(`Inputs received: ${JSON.stringify(inputs)}`); // Debug log for inputs
         // Run tests if not skipped.
         let baselineMigration = '';
         let newMigration = '';
@@ -17,6 +18,7 @@ export async function runTests() {
         try {
             // If migrations are not skipped, get the last non-pending migration (baseline) before applying new ones.
             if (inputs.runTestsMigrations) {
+                core.debug('Running migrations...');
                 baselineMigration = await getLastNonPendingMigration(inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
                 core.info(`Baseline migration before new migrations: ${baselineMigration}`);
                 // Process new migrations.
@@ -29,10 +31,13 @@ export async function runTests() {
                 core.info('Skipping migrations as requested.');
             }
             // Run tests and capture result file path and folder
+            core.debug('Starting tests...');
             await tests(inputs.envName, inputs.testMigrationsFolder, inputs.testOutputFolder, inputs.testFormat, inputs.useGlobalDotnetEf // Pass the flag to use global or local dotnet-ef
             );
+            core.info('Tests executed successfully.');
             resultFolder = inputs.testOutputFolder;
             resultFilePath = path.join(resultFolder, `TestResults.${inputs.testFormat}`);
+            core.debug(`Test results file path: ${resultFilePath}`);
         }
         catch (testError) {
             core.error('Tests failed.');
@@ -51,6 +56,7 @@ export async function runTests() {
         finally {
             // Upload test artifact
             if (inputs.uploadTestsResults && resultFilePath && resultFolder) {
+                core.debug('Uploading test artifact...');
                 await uploadTestArtifact(resultFilePath, resultFolder);
             }
         }

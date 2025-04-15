@@ -17,14 +17,10 @@ export async function run() {
   if (inputs.runMigrations) {
     console.log('Running migrations...')
     await runMigrations()
-  } else {
-    console.log('Skipping migrations as requested.')
   }
   if (inputs.runTests) {
     console.log('Running tests...')
     await runTests()
-  } else {
-    console.log('Skipping tests as requested.')
   }
   if (inputs.runVersioning) {
     console.log('Running versioning...')
@@ -33,20 +29,14 @@ export async function run() {
   if (inputs.runPushToRegistry) {
     console.log('Running Push to Registry...')
     await runDocker()
-  } else {
-    console.log('Skipping Push to Registry as requested.')
   }
   if (inputs.runRelease) {
     console.log('Running release...')
     await runRelease()
-  } else {
-    console.log('Skipping release as requested.')
   }
   if (inputs.runChangelog) {
     console.log('Running changelog...')
     await runChangelog()
-  } else {
-    console.log('Skipping changelog as requested.')
   }
 
   console.log('Action completed successfully.')

@@ -10,13 +10,10 @@ import { uploadTestArtifact } from './utils/artifact.js'
 import * as path from 'path'
 
 export async function runTests(): Promise<void> {
-  core.setOutput('startTime', new Date().toTimeString())
-  core.info(
-    `[START] GitHub Action execution started at ${new Date().toISOString()}`
-  )
-
   try {
     const inputs = getInputs() // Ensure inputs are defined before use.
+    core.debug(`Inputs received: ${JSON.stringify(inputs)}`) // Debug log for inputs
+
     // Run tests if not skipped.
     let baselineMigration = ''
     let newMigration = ''
@@ -26,6 +23,7 @@ export async function runTests(): Promise<void> {
     try {
       // If migrations are not skipped, get the last non-pending migration (baseline) before applying new ones.
       if (inputs.runTestsMigrations) {
+        core.debug('Running migrations...')
         baselineMigration = await getLastNonPendingMigration(
           inputs.testsEnvName,
           inputs.homeDirectory,
@@ -55,6 +53,7 @@ export async function runTests(): Promise<void> {
       }
 
       // Run tests and capture result file path and folder
+      core.debug('Starting tests...')
       await tests(
         inputs.envName,
         inputs.testMigrationsFolder,
@@ -62,11 +61,13 @@ export async function runTests(): Promise<void> {
         inputs.testFormat,
         inputs.useGlobalDotnetEf // Pass the flag to use global or local dotnet-ef
       )
+      core.info('Tests executed successfully.')
       resultFolder = inputs.testOutputFolder
       resultFilePath = path.join(
         resultFolder,
         `TestResults.${inputs.testFormat}`
       )
+      core.debug(`Test results file path: ${resultFilePath}`)
     } catch (testError) {
       core.error('Tests failed.')
       // Roll back to the baseline migration captured before running processMigrations.
@@ -95,21 +96,17 @@ export async function runTests(): Promise<void> {
     } finally {
       // Upload test artifact
       if (inputs.uploadTestsResults && resultFilePath && resultFolder) {
+        core.debug('Uploading test artifact...')
         await uploadTestArtifact(resultFilePath, resultFolder)
       }
     }
 
-    core.info('GitHub Action completed successfully.')
+    core.info('Rollback completed successfully.')
   } catch (error) {
     core.error('An error occurred during execution.')
     if (error instanceof Error) {
       core.error(`Error: ${error.message}`)
       core.setFailed(error.message)
     }
-  } finally {
-    core.setOutput('endTime', new Date().toTimeString())
-    core.info(
-      `[END] GitHub Action execution ended at ${new Date().toISOString()}`
-    )
   }
 }

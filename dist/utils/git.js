@@ -1,4 +1,3 @@
-import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 /**
  * Retrieves the latest commit subject.
@@ -30,20 +29,12 @@ export async function getLatestCommitSubject() {
  * @throws {Error} If the command fails or the output is empty.
  */
 export async function getLatestCommitMessage() {
-    try {
-        const result = await exec.getExecOutput('git', ['log', '-1', '--pretty=%B']);
-        core.info(`Raw output from git log: "${result.stdout}"`);
-        if (result.exitCode !== 0 || !result.stdout.trim()) {
-            core.error('Git log command returned invalid output.');
-            throw new Error('Failed to retrieve the latest commit message. Output is empty or invalid.');
-        }
-        return result.stdout.trim();
-    }
-    catch (error) {
-        const err = error; // Explicitly cast error to Error
-        core.error(`Error executing git log command: ${err.message}`);
-        throw err;
-    }
+    const { stdout } = await exec.getExecOutput('git', [
+        'log',
+        '-1',
+        '--pretty=%B'
+    ]);
+    return stdout.trim();
 }
 /**
  * Extracts version from a commit message in the format "bump version to x.x.x.x".
@@ -88,21 +79,10 @@ export function extractVersionFromCommit(commitMessage) {
  * Ensure that the repository is initialized, and the user has push permissions.
  */
 export async function updateGit(newVersion, csprojPath, commitUser, commitEmail, commitMessagePrefix) {
-    await exec.getExecOutput('git', ['config', 'user.name', commitUser]);
-    await exec.getExecOutput('git', ['config', 'user.email', commitEmail]);
-    await exec.getExecOutput('git', ['add', csprojPath]);
+    await exec.exec('git', ['config', 'user.name', commitUser]);
+    await exec.exec('git', ['config', 'user.email', commitEmail]);
+    await exec.exec('git', ['add', csprojPath]);
     const commitMessageFinal = `${commitMessagePrefix}${newVersion}`;
-    const commitResult = await exec.getExecOutput('git', [
-        'commit',
-        '-m',
-        commitMessageFinal
-    ]);
-    if (commitResult.exitCode !== 0) {
-        throw new Error(`Failed to commit changes: ${commitResult.stderr}`);
-    }
-    const pushResult = await exec.getExecOutput('git', ['push']);
-    if (pushResult.exitCode !== 0) {
-        throw new Error(`Failed to push changes: ${pushResult.stderr}`);
-    }
-    core.info(`Committed and pushed version update: "${commitMessageFinal}"`);
+    await exec.exec('git', ['commit', '-m', commitMessageFinal]);
+    await exec.exec('git', ['push']);
 }
