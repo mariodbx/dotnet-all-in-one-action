@@ -17,7 +17,7 @@ import { runCommand } from './command.js';
  */
 export async function findCsprojFile(csprojDepth, csprojName, showFullOutput, cwd = process.cwd()) {
     const findCmd = `find . -maxdepth ${csprojDepth} -name "${csprojName}" | head -n 1`;
-    return await runCommand('bash', ['-c', findCmd], { cwd }, showFullOutput);
+    return (await runCommand('bash', ['-c', findCmd], { cwd }, showFullOutput)).trim();
 }
 /**
  * Reads the content of a `.csproj` file.

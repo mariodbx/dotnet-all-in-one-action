@@ -23,7 +23,9 @@ export async function findCsprojFile(
   cwd: string = process.cwd()
 ): Promise<string> {
   const findCmd = `find . -maxdepth ${csprojDepth} -name "${csprojName}" | head -n 1`
-  return await runCommand('bash', ['-c', findCmd], { cwd }, showFullOutput)
+  return (
+    await runCommand('bash', ['-c', findCmd], { cwd }, showFullOutput)
+  ).trim()
 }
 
 /**

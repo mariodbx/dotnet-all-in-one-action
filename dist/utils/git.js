@@ -1,5 +1,8 @@
 import * as core from '@actions/core';
 import { runCommand } from './command.js';
+import { exec } from 'child_process';
+import * as util from 'util';
+const execPromise = util.promisify(exec);
 /**
  * Retrieves the latest commit subject.
  *
@@ -17,20 +20,27 @@ export async function getLatestCommitSubject(showFullOutput) {
     return await runCommand('git', ['log', '-1', '--pretty=format:%s'], {}, showFullOutput);
 }
 /**
- * Retrieves the latest commit message.
+ * Retrieves the latest commit message from the Git repository.
  *
- * @param {boolean} showFullOutput - If true, returns the full output of the command; otherwise, returns only the exit code.
- * @returns {Promise<string>} The latest commit message as a string.
- * @throws {Error} If the Git command fails.
- * @example
- * const message: string = await getLatestCommitMessage(false);
- * console.log(message);
- * @remarks
- * This function retrieves the full commit message of the latest commit.
- * Ensure that the repository is initialized and contains at least one commit.
+ * @param {boolean} showFullOutput - If true, logs the full output of the command.
+ * @returns {Promise<string>} The latest commit message.
+ * @throws {Error} If the command fails or the output is empty.
  */
 export async function getLatestCommitMessage(showFullOutput) {
-    return await runCommand('git', ['log', '-1', '--pretty=%B'], {}, showFullOutput);
+    try {
+        const { stdout, stderr } = await execPromise('git log -1 --pretty=%B');
+        if (showFullOutput) {
+            console.log('Git log output:', stdout, stderr);
+        }
+        const commitMessage = stdout.trim();
+        if (!commitMessage) {
+            throw new Error('Failed to retrieve the latest commit message. Output is empty.');
+        }
+        return commitMessage;
+    }
+    catch (error) {
+        throw new Error(`Error retrieving the latest commit message: ${error}`);
+    }
 }
 /**
  * Extracts version from a commit message in the format "bump version to x.x.x.x".

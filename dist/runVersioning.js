@@ -6,23 +6,30 @@ import { parseVersion, bumpVersion } from './utils/versioning.js';
 export async function runVersioning() {
     try {
         const inputs = getInputs();
+        let bumpType = ''; // Declare bumpType in a broader scope.
         core.info(`Configuration: csproj_depth=${inputs.csprojDepth}, csproj_name=${inputs.csprojName}, commit_user=${inputs.commitUser}, commit_email=${inputs.commitEmail}`);
         // Get the latest commit message.
-        const rawCommitMessage = await getLatestCommitMessage(false);
-        const commitMessage = rawCommitMessage.trim();
-        core.info(`Raw commit message: "${rawCommitMessage}"`);
-        core.info(`Trimmed commit message: "${commitMessage}"`);
-        // Extract bump type using a more robust search.
-        const regexMatch = commitMessage.match(/(patch|minor|major)/i);
-        const bumpType = regexMatch ? regexMatch[1].toLowerCase() : '';
-        core.info(`Extracted bump type: "${bumpType}"`);
-        if (!['patch', 'minor', 'major'].includes(bumpType)) {
-            core.info('Commit message does not indicate a version bump. Skipping release.');
-            core.setOutput('skip_release', 'true');
-            return;
+        try {
+            const rawCommitMessage = await getLatestCommitMessage(inputs.showFullOutput);
+            const commitMessage = rawCommitMessage.trim();
+            core.info(`Raw commit message: "${rawCommitMessage}"`);
+            core.info(`Trimmed commit message: "${commitMessage}"`);
+            // Extract bump type using a more robust search.
+            const regexMatch = commitMessage.match(/(patch|minor|major)/i);
+            bumpType = regexMatch ? regexMatch[1].toLowerCase() : '';
+            core.info(`Extracted bump type: "${bumpType}"`);
+            if (!['patch', 'minor', 'major'].includes(bumpType)) {
+                core.info('Commit message does not indicate a version bump. Skipping release.');
+                core.setOutput('skip_release', 'true');
+                return;
+            }
+            core.setOutput('skip_release', 'false');
+            core.setOutput('bump_type', bumpType);
         }
-        core.setOutput('skip_release', 'false');
-        core.setOutput('bump_type', bumpType);
+        catch (error) {
+            core.setFailed(`Error processing commit message: ${error}`);
+            throw error;
+        }
         // Validate csproj depth.
         if (isNaN(inputs.csprojDepth) || inputs.csprojDepth < 1) {
             throw new Error('csproj_depth must be a positive integer');

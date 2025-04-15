@@ -33,13 +33,12 @@ export async function runDocker() {
             }
         }
         else {
-            // Locate the csproj file.
-            const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName, inputs.showFullOutput, process.cwd());
-            if (!csprojPath) {
+            const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName, inputs.showFullOutput);
+            if (!csprojPath || csprojPath.trim() === '') {
                 throw new Error(`No .csproj file found with name "${inputs.csprojName}".`);
             }
-            core.info(`Found .csproj file: ${csprojPath}`);
-            const csprojContent = await fs.readFile(csprojPath, 'utf8');
+            core.info(`Found .csproj file: ${csprojPath.trim()}`);
+            const csprojContent = await fs.readFile(csprojPath.trim(), 'utf8');
             version = extractVersionFromCsproj(csprojContent);
             if (!version) {
                 core.info('No version found in the .csproj file. Skipping release.');
