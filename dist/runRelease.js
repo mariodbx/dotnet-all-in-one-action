@@ -13,7 +13,7 @@ export async function runRelease() {
             throw new Error('GITHUB_REPOSITORY is not defined.');
         let version = null;
         if (inputs.useCommitMessage) {
-            const commitSubject = await getLatestCommitSubject(inputs.showFullOutput);
+            const commitSubject = await getLatestCommitSubject();
             core.info(`Latest commit subject: "${commitSubject}"`);
             version = extractVersionFromCommit(commitSubject);
             if (!version) {

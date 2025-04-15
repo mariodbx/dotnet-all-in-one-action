@@ -1,11 +1,10 @@
 import * as core from '@actions/core'
-import { runCommand } from './command.js'
+import * as exec from '@actions/exec'
 import { installDotnetEfLocally } from './dotnet.js'
 
 /**
  * Executes EF Core migrations.
  *
- * @param {boolean} getExecOutput - If true, captures the output using runCommand; otherwise, streams output.
  * @param {string} envName - The ASP.NET Core environment name (e.g., 'Development', 'Production').
  * @param {string} home - The home directory path to set for the environment.
  * @param {string} migrationsFolder - The folder containing the EF Core migrations.
@@ -20,7 +19,6 @@ import { installDotnetEfLocally } from './dotnet.js'
  * @example
  * ```typescript
  * const lastMigration = await processMigrations(
- *   true,
  *   'Development',
  *   '/home/user',
  *   './migrations',
@@ -31,7 +29,6 @@ import { installDotnetEfLocally } from './dotnet.js'
  * ```
  */
 export async function processMigrations(
-  getExecOutput: boolean,
   envName: string,
   home: string,
   migrationsFolder: string,
@@ -55,16 +52,12 @@ export async function processMigrations(
 
   const migrationOptions = { cwd: migrationsFolder, env: baseEnv }
   const efCmd = useGlobalDotnetEf ? 'dotnet-ef' : dotnetRoot
-  let efArgs = useGlobalDotnetEf
+  const efArgs = useGlobalDotnetEf
     ? ['migrations', 'list']
     : ['tool', 'run', 'dotnet-ef', 'migrations', 'list']
 
-  migrationOutput = await runCommand(
-    efCmd,
-    efArgs,
-    migrationOptions,
-    getExecOutput
-  )
+  const { stdout } = await exec.getExecOutput(efCmd, efArgs, migrationOptions)
+  migrationOutput = stdout
   core.info(migrationOutput)
 
   const pendingMigrations = migrationOutput
@@ -77,11 +70,11 @@ export async function processMigrations(
     lastMigration = pendingMigrations[pendingMigrations.length - 1].trim()
     core.info(`Applying last pending migration: ${lastMigration}`)
 
-    efArgs = useGlobalDotnetEf
+    const updateArgs = useGlobalDotnetEf
       ? ['database', 'update']
       : ['tool', 'run', 'dotnet-ef', 'database', 'update']
 
-    await runCommand(efCmd, efArgs, migrationOptions, getExecOutput)
+    await exec.exec(efCmd, updateArgs, migrationOptions)
     core.info('Migrations applied successfully.')
   } else {
     core.info('No pending migrations detected.')
@@ -93,7 +86,6 @@ export async function processMigrations(
 /**
  * Gets the last applied migration in the database.
  *
- * @param {boolean} getExecOutput - If true, captures command output using runCommand; otherwise, streams output.
  * @param {string} envName - The ASP.NET Core environment name.
  * @param {string} home - Home directory to set for environment variables.
  * @param {string} migrationsFolder - The folder that contains the migration files.
@@ -107,7 +99,6 @@ export async function processMigrations(
  * @example
  * ```typescript
  * const lastApplied = await getCurrentAppliedMigration(
- *   true,
  *   'Production',
  *   '/home/user',
  *   './migrations',
@@ -118,7 +109,6 @@ export async function processMigrations(
  * ```
  */
 export async function getCurrentAppliedMigration(
-  getExecOutput: boolean,
   envName: string,
   home: string,
   migrationsFolder: string,
@@ -142,11 +132,10 @@ export async function getCurrentAppliedMigration(
     ? ['migrations', 'list']
     : ['tool', 'run', 'dotnet-ef', 'migrations', 'list']
 
-  const migrationOutput = await runCommand(
+  const { stdout: migrationOutput } = await exec.getExecOutput(
     efCmd,
     efArgs,
-    migrationOptions,
-    getExecOutput
+    migrationOptions
   )
   core.info(`Full migration output:\n${migrationOutput}`)
 
@@ -164,7 +153,6 @@ export async function getCurrentAppliedMigration(
 /**
  * Gets the last non-pending migration.
  *
- * @param {boolean} getExecOutput - If true, uses runCommand to capture output; otherwise, streams output.
  * @param {string} envName - The ASP.NET Core environment name.
  * @param {string} home - Home directory for the environment variables.
  * @param {string} migrationsFolder - Folder where migrations are stored.
@@ -178,7 +166,6 @@ export async function getCurrentAppliedMigration(
  * @example
  * ```typescript
  * const lastNonPending = await getLastNonPendingMigration(
- *   false,
  *   'Test',
  *   '/home/user',
  *   './migrations',
@@ -189,7 +176,6 @@ export async function getCurrentAppliedMigration(
  * ```
  */
 export async function getLastNonPendingMigration(
-  getExecOutput: boolean,
   envName: string,
   home: string,
   migrationsFolder: string,
@@ -213,11 +199,10 @@ export async function getLastNonPendingMigration(
     ? ['migrations', 'list']
     : ['tool', 'run', 'dotnet-ef', 'migrations', 'list']
 
-  const migrationOutput = await runCommand(
+  const { stdout: migrationOutput } = await exec.getExecOutput(
     efCmd,
     efArgs,
-    migrationOptions,
-    getExecOutput
+    migrationOptions
   )
   core.info(`Full migration output:\n${migrationOutput}`)
 
@@ -234,7 +219,6 @@ export async function getLastNonPendingMigration(
 /**
  * Rolls back EF Core database migrations.
  *
- * @param {boolean} getExecOutput - If true, uses runCommand to capture the stdout and stderr of the rollback command.
  * @param {string} envName - The ASP.NET Core environment name to use.
  * @param {string} home - The home directory path to set as `HOME` in the execution environment.
  * @param {string} migrationsFolder - The working directory where the migrations should be run.
@@ -249,7 +233,6 @@ export async function getLastNonPendingMigration(
  * @example
  * ```typescript
  * await rollbackMigrations(
- *   true,
  *   'Development',
  *   '/home/user',
  *   './migrations',
@@ -261,7 +244,6 @@ export async function getLastNonPendingMigration(
  * ```
  */
 export async function rollbackMigrations(
-  getExecOutput: boolean,
   envName: string,
   home: string,
   migrationsFolder: string,
@@ -288,11 +270,10 @@ export async function rollbackMigrations(
 
   const execOptions = { cwd: migrationsFolder, env: baseEnv }
 
-  await runCommand(
+  await exec.exec(
     useGlobalDotnetEf ? 'dotnet-ef' : dotnetRoot,
     rollbackArgs,
-    execOptions,
-    getExecOutput
+    execOptions
   )
 
   core.info('Rollback completed successfully.')

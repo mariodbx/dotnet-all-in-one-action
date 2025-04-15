@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { runCommand } from './command.js';
+import * as exec from '@actions/exec';
 /**
  * Returns a fully qualified image name based on the registry type.
  *
@@ -90,7 +90,12 @@ export async function dockerLogin(registryType, showFullOutput) {
     }
     const server = registry.server;
     core.info(`Logging into ${server}...`);
-    return await runCommand('docker', ['login', server || '', '-u', registry.username, '--password-stdin'], { input: Buffer.from(registry.token) }, showFullOutput);
+    const options = {
+        input: Buffer.from(registry.token),
+        silent: !showFullOutput
+    };
+    await exec.exec('docker', ['login', server || '', '-u', registry.username, '--password-stdin'], options);
+    return showFullOutput ? `Logged into ${server}` : '';
 }
 /**
  * Builds and pushes images using Docker Compose.
@@ -118,15 +123,15 @@ export async function dockerLogin(registryType, showFullOutput) {
  * - This function builds and optionally pushes images using Docker Compose.
  * - Ensure the `docker-compose` CLI is installed and available in the PATH.
  */
-export async function buildAndPushCompose(dockerComposeFile, version, images, pushWithVersion, pushWithLatest, registryType, showFullOutput) {
+export async function buildAndPushCompose(dockerComposeFile, version, images, pushWithVersion, pushWithLatest, registryType) {
     core.info(`Building using Docker Compose file: ${dockerComposeFile}`);
-    await runCommand('docker-compose', ['-f', dockerComposeFile, 'build'], {}, showFullOutput);
+    await exec.exec('docker-compose', ['-f', dockerComposeFile, 'build'], {});
     if (pushWithVersion) {
         core.info(`Pushing images (version tag "${version}")...`);
         for (const image of images) {
             const qualifiedImage = qualifyImageName(image, registryType);
             const imageWithVersion = `${qualifiedImage}:${version}`;
-            await runCommand('docker', ['push', imageWithVersion], {}, showFullOutput);
+            await exec.exec('docker', ['push', imageWithVersion], {});
         }
     }
     if (pushWithLatest) {
@@ -135,8 +140,8 @@ export async function buildAndPushCompose(dockerComposeFile, version, images, pu
             const imageWithVersion = `${qualifiedImage}:${version}`;
             const imageLatest = `${qualifiedImage}:latest`;
             core.info(`Tagging ${imageWithVersion} as ${imageLatest}`);
-            await runCommand('docker', ['tag', imageWithVersion, imageLatest], {}, showFullOutput);
-            await runCommand('docker', ['push', imageLatest], {}, showFullOutput);
+            await exec.exec('docker', ['tag', imageWithVersion, imageLatest], {});
+            await exec.exec('docker', ['push', imageLatest], {});
         }
     }
 }
@@ -171,16 +176,18 @@ export async function buildAndPushDockerfile(dockerfile, buildContext, version, 
     if (pushWithVersion) {
         const imageWithVersion = `${qualifiedImage}:${version}`;
         core.info(`Building image ${imageWithVersion} from Dockerfile: ${dockerfile}`);
-        await runCommand('docker', ['build', '-f', dockerfile, '-t', imageWithVersion, buildContext], {}, false);
+        await exec.exec('docker', ['build', '-f', dockerfile, '-t', imageWithVersion, buildContext], { silent: false });
         core.info(`Pushing ${imageWithVersion}...`);
-        await runCommand('docker', ['push', imageWithVersion], {}, false);
+        await exec.exec('docker', ['push', imageWithVersion], { silent: false });
     }
     if (pushWithLatest) {
         const imageWithVersion = `${qualifiedImage}:${version}`;
         const imageLatest = `${qualifiedImage}:latest`;
         core.info(`Tagging ${imageWithVersion} as ${imageLatest}`);
-        await runCommand('docker', ['tag', imageWithVersion, imageLatest], {}, false);
+        await exec.exec('docker', ['tag', imageWithVersion, imageLatest], {
+            silent: false
+        });
         core.info(`Pushing ${imageLatest}...`);
-        await runCommand('docker', ['push', imageLatest], {}, false);
+        await exec.exec('docker', ['push', imageLatest], { silent: false });
     }
 }

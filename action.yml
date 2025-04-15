@@ -10,10 +10,6 @@ branding:
 
 inputs:
   # General
-  show_full_output:
-    description: 'Get the output of the executed command? (true/false)'
-    required: false
-    default: 'false'
   home_directory:
     description: 'Home directory for the action'
     required: false

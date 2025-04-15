@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { runCommand } from './command.js';
+import * as exec from '@actions/exec';
 import { getInputOrDefault } from './inputs.js';
 import * as fs from 'fs/promises';
 /**
@@ -82,14 +82,31 @@ export function categorize(commits, pattern) {
 export async function generateChangelog() {
     let lastTag = '';
     try {
-        lastTag = await runCommand('git', ['describe', '--tags', '--abbrev=0'], {}, true);
+        const output = await exec.getExecOutput('git', [
+            'describe',
+            '--tags',
+            '--abbrev=0'
+        ]);
+        lastTag = output.stdout.trim();
         core.info(`Found last tag: ${lastTag}`);
     }
     catch {
         core.info('No tags found, using all commits.');
     }
     const range = lastTag ? `${lastTag}..HEAD` : '';
-    const commits = await runCommand('git', ['log', ...(range ? [range] : []), '--no-merges', '--pretty=format:%h %s'], {}, true);
+    let commits = '';
+    try {
+        const output = await exec.getExecOutput('git', [
+            'log',
+            ...(range ? [range] : []),
+            '--no-merges',
+            '--pretty=format:%h %s'
+        ]);
+        commits = output.stdout.trim();
+    }
+    catch (error) {
+        core.error('Failed to retrieve commits: ' + error);
+    }
     const changelog = [
         [
             '### Major Changes',

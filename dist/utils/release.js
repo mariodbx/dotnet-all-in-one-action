@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import * as fs from 'fs/promises';
-import { runCommand } from './command.js';
+import * as exec from '@actions/exec';
 import { buildKeywordRegex, categorize } from './changelog.js';
 /**
  * Checks if a GitHub release with the specified version exists.
@@ -85,14 +85,24 @@ export async function createRelease(repo, version, changelog, token) {
 export async function generateChangelog() {
     let lastTag = '';
     try {
-        lastTag = await runCommand('git', ['describe', '--tags', '--abbrev=0'], {}, true);
+        const { stdout } = await exec.getExecOutput('git', [
+            'describe',
+            '--tags',
+            '--abbrev=0'
+        ]);
+        lastTag = stdout.trim();
         core.info(`Found last tag: ${lastTag}`);
     }
     catch {
         core.info('No tags found, using all commits.');
     }
     const range = lastTag ? `${lastTag}..HEAD` : '';
-    const commits = await runCommand('git', ['log', ...(range ? [range] : []), '--no-merges', '--pretty=format:%h %s'], {}, true);
+    const { stdout: commits } = await exec.getExecOutput('git', [
+        'log',
+        ...(range ? [range] : []),
+        '--no-merges',
+        '--pretty=format:%h %s'
+    ]);
     const changelog = [
         [
             '### Major Changes',

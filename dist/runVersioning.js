@@ -10,7 +10,7 @@ export async function runVersioning() {
         core.info(`Configuration: csproj_depth=${inputs.csprojDepth}, csproj_name=${inputs.csprojName}, commit_user=${inputs.commitUser}, commit_email=${inputs.commitEmail}`);
         // Get the latest commit message.
         try {
-            const commitMessage = await getLatestCommitMessage(inputs.showFullOutput);
+            const commitMessage = await getLatestCommitMessage();
             core.info(`Latest commit message: "${commitMessage}"`);
             // Determine bump type by taking the first 5 alphanumeric characters in lowercase.
             bumpType = commitMessage
@@ -34,11 +34,6 @@ export async function runVersioning() {
             core.setFailed(`Error processing commit message: ${error}`);
             throw error;
         }
-        // Validate csproj depth.
-        // const csprojDepth = parseInt(inputs.csprojDepth, 10)
-        // if (isNaN(csprojDepth) || csprojDepth < 1) {
-        //   throw new Error('csproj_depth must be a positive integer')
-        // }
         // Locate the csproj file.
         const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName);
         if (!csprojPath) {
@@ -59,7 +54,7 @@ export async function runVersioning() {
         await updateCsprojFile(csprojPath, newCsprojContent);
         core.info(`csproj file updated with new version.`);
         // Update Git with the version bump.
-        await updateGit(newVersion, csprojPath, inputs.commitUser, inputs.commitEmail, inputs.commitMessagePrefix, inputs.showFullOutput);
+        await updateGit(newVersion, csprojPath, inputs.commitUser, inputs.commitEmail, inputs.commitMessagePrefix);
         core.info(`Version bump process completed successfully.`);
     }
     catch (error) {

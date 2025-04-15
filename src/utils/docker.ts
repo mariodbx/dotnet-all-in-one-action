@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { runCommand } from './command.js'
+import * as exec from '@actions/exec'
 
 /**
  * Returns a fully qualified image name based on the registry type.
@@ -102,12 +102,17 @@ export async function dockerLogin(
   const server = registry.server
   core.info(`Logging into ${server}...`)
 
-  return await runCommand(
+  const options = {
+    input: Buffer.from(registry.token),
+    silent: !showFullOutput
+  }
+
+  await exec.exec(
     'docker',
     ['login', server || '', '-u', registry.username, '--password-stdin'],
-    { input: Buffer.from(registry.token) },
-    showFullOutput
+    options
   )
+  return showFullOutput ? `Logged into ${server}` : ''
 }
 
 /**
@@ -142,23 +147,17 @@ export async function buildAndPushCompose(
   images: string[],
   pushWithVersion: boolean,
   pushWithLatest: boolean,
-  registryType: string,
-  showFullOutput: boolean
+  registryType: string
 ): Promise<string | void> {
   core.info(`Building using Docker Compose file: ${dockerComposeFile}`)
-  await runCommand(
-    'docker-compose',
-    ['-f', dockerComposeFile, 'build'],
-    {},
-    showFullOutput
-  )
+  await exec.exec('docker-compose', ['-f', dockerComposeFile, 'build'], {})
 
   if (pushWithVersion) {
     core.info(`Pushing images (version tag "${version}")...`)
     for (const image of images) {
       const qualifiedImage = qualifyImageName(image, registryType)
       const imageWithVersion = `${qualifiedImage}:${version}`
-      await runCommand('docker', ['push', imageWithVersion], {}, showFullOutput)
+      await exec.exec('docker', ['push', imageWithVersion], {})
     }
   }
 
@@ -168,13 +167,8 @@ export async function buildAndPushCompose(
       const imageWithVersion = `${qualifiedImage}:${version}`
       const imageLatest = `${qualifiedImage}:latest`
       core.info(`Tagging ${imageWithVersion} as ${imageLatest}`)
-      await runCommand(
-        'docker',
-        ['tag', imageWithVersion, imageLatest],
-        {},
-        showFullOutput
-      )
-      await runCommand('docker', ['push', imageLatest], {}, showFullOutput)
+      await exec.exec('docker', ['tag', imageWithVersion, imageLatest], {})
+      await exec.exec('docker', ['push', imageLatest], {})
     }
   }
 }
@@ -221,27 +215,23 @@ export async function buildAndPushDockerfile(
     core.info(
       `Building image ${imageWithVersion} from Dockerfile: ${dockerfile}`
     )
-    await runCommand(
+    await exec.exec(
       'docker',
       ['build', '-f', dockerfile, '-t', imageWithVersion, buildContext],
-      {},
-      false
+      { silent: false }
     )
     core.info(`Pushing ${imageWithVersion}...`)
-    await runCommand('docker', ['push', imageWithVersion], {}, false)
+    await exec.exec('docker', ['push', imageWithVersion], { silent: false })
   }
 
   if (pushWithLatest) {
     const imageWithVersion = `${qualifiedImage}:${version}`
     const imageLatest = `${qualifiedImage}:latest`
     core.info(`Tagging ${imageWithVersion} as ${imageLatest}`)
-    await runCommand(
-      'docker',
-      ['tag', imageWithVersion, imageLatest],
-      {},
-      false
-    )
+    await exec.exec('docker', ['tag', imageWithVersion, imageLatest], {
+      silent: false
+    })
     core.info(`Pushing ${imageLatest}...`)
-    await runCommand('docker', ['push', imageLatest], {}, false)
+    await exec.exec('docker', ['push', imageLatest], { silent: false })
   }
 }

@@ -10,7 +10,6 @@ export async function runMigrations(): Promise<void> {
     const inputs = getInputs()
 
     const baselineMigration = await getLastNonPendingMigration(
-      inputs.showFullOutput,
       inputs.envName,
       inputs.homeDirectory,
       inputs.migrationsFolder,
@@ -22,7 +21,6 @@ export async function runMigrations(): Promise<void> {
     )
 
     const newMigration = await processMigrations(
-      inputs.showFullOutput,
       inputs.envName,
       inputs.homeDirectory,
       inputs.migrationsFolder,

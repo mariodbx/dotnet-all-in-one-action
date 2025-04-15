@@ -1,10 +1,9 @@
 import * as core from '@actions/core';
-import { runCommand } from './command.js';
+import * as exec from '@actions/exec';
 import { installDotnetEfLocally } from './dotnet.js';
 /**
  * Executes EF Core migrations.
  *
- * @param {boolean} getExecOutput - If true, captures the output using runCommand; otherwise, streams output.
  * @param {string} envName - The ASP.NET Core environment name (e.g., 'Development', 'Production').
  * @param {string} home - The home directory path to set for the environment.
  * @param {string} migrationsFolder - The folder containing the EF Core migrations.
@@ -19,7 +18,6 @@ import { installDotnetEfLocally } from './dotnet.js';
  * @example
  * ```typescript
  * const lastMigration = await processMigrations(
- *   true,
  *   'Development',
  *   '/home/user',
  *   './migrations',
@@ -29,7 +27,7 @@ import { installDotnetEfLocally } from './dotnet.js';
  * console.log(`Last applied migration: ${lastMigration}`);
  * ```
  */
-export async function processMigrations(getExecOutput, envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
+export async function processMigrations(envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
     let migrationOutput = '';
     if (!useGlobalDotnetEf) {
         core.info('Ensuring local dotnet-ef tool is installed...');
@@ -43,10 +41,11 @@ export async function processMigrations(getExecOutput, envName, home, migrations
     core.info(`Using environment: '${baseEnv.ASPNETCORE_ENVIRONMENT}'`);
     const migrationOptions = { cwd: migrationsFolder, env: baseEnv };
     const efCmd = useGlobalDotnetEf ? 'dotnet-ef' : dotnetRoot;
-    let efArgs = useGlobalDotnetEf
+    const efArgs = useGlobalDotnetEf
         ? ['migrations', 'list']
         : ['tool', 'run', 'dotnet-ef', 'migrations', 'list'];
-    migrationOutput = await runCommand(efCmd, efArgs, migrationOptions, getExecOutput);
+    const { stdout } = await exec.getExecOutput(efCmd, efArgs, migrationOptions);
+    migrationOutput = stdout;
     core.info(migrationOutput);
     const pendingMigrations = migrationOutput
         .split('\n')
@@ -55,10 +54,10 @@ export async function processMigrations(getExecOutput, envName, home, migrations
     if (pendingMigrations.length > 0) {
         lastMigration = pendingMigrations[pendingMigrations.length - 1].trim();
         core.info(`Applying last pending migration: ${lastMigration}`);
-        efArgs = useGlobalDotnetEf
+        const updateArgs = useGlobalDotnetEf
             ? ['database', 'update']
             : ['tool', 'run', 'dotnet-ef', 'database', 'update'];
-        await runCommand(efCmd, efArgs, migrationOptions, getExecOutput);
+        await exec.exec(efCmd, updateArgs, migrationOptions);
         core.info('Migrations applied successfully.');
     }
     else {
@@ -69,7 +68,6 @@ export async function processMigrations(getExecOutput, envName, home, migrations
 /**
  * Gets the last applied migration in the database.
  *
- * @param {boolean} getExecOutput - If true, captures command output using runCommand; otherwise, streams output.
  * @param {string} envName - The ASP.NET Core environment name.
  * @param {string} home - Home directory to set for environment variables.
  * @param {string} migrationsFolder - The folder that contains the migration files.
@@ -83,7 +81,6 @@ export async function processMigrations(getExecOutput, envName, home, migrations
  * @example
  * ```typescript
  * const lastApplied = await getCurrentAppliedMigration(
- *   true,
  *   'Production',
  *   '/home/user',
  *   './migrations',
@@ -93,7 +90,7 @@ export async function processMigrations(getExecOutput, envName, home, migrations
  * console.log(`Last applied migration: ${lastApplied}`);
  * ```
  */
-export async function getCurrentAppliedMigration(getExecOutput, envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
+export async function getCurrentAppliedMigration(envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
     if (!useGlobalDotnetEf) {
         core.info('Ensuring local dotnet-ef tool is installed...');
         await installDotnetEfLocally();
@@ -108,7 +105,7 @@ export async function getCurrentAppliedMigration(getExecOutput, envName, home, m
     const efArgs = useGlobalDotnetEf
         ? ['migrations', 'list']
         : ['tool', 'run', 'dotnet-ef', 'migrations', 'list'];
-    const migrationOutput = await runCommand(efCmd, efArgs, migrationOptions, getExecOutput);
+    const { stdout: migrationOutput } = await exec.getExecOutput(efCmd, efArgs, migrationOptions);
     core.info(`Full migration output:\n${migrationOutput}`);
     const appliedMigrations = migrationOutput
         .split('\n')
@@ -121,7 +118,6 @@ export async function getCurrentAppliedMigration(getExecOutput, envName, home, m
 /**
  * Gets the last non-pending migration.
  *
- * @param {boolean} getExecOutput - If true, uses runCommand to capture output; otherwise, streams output.
  * @param {string} envName - The ASP.NET Core environment name.
  * @param {string} home - Home directory for the environment variables.
  * @param {string} migrationsFolder - Folder where migrations are stored.
@@ -135,7 +131,6 @@ export async function getCurrentAppliedMigration(getExecOutput, envName, home, m
  * @example
  * ```typescript
  * const lastNonPending = await getLastNonPendingMigration(
- *   false,
  *   'Test',
  *   '/home/user',
  *   './migrations',
@@ -145,7 +140,7 @@ export async function getCurrentAppliedMigration(getExecOutput, envName, home, m
  * console.log(`Last non-pending migration: ${lastNonPending}`);
  * ```
  */
-export async function getLastNonPendingMigration(getExecOutput, envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
+export async function getLastNonPendingMigration(envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
     if (!useGlobalDotnetEf) {
         core.info('Ensuring local dotnet-ef tool is installed...');
         await installDotnetEfLocally();
@@ -160,7 +155,7 @@ export async function getLastNonPendingMigration(getExecOutput, envName, home, m
     const efArgs = useGlobalDotnetEf
         ? ['migrations', 'list']
         : ['tool', 'run', 'dotnet-ef', 'migrations', 'list'];
-    const migrationOutput = await runCommand(efCmd, efArgs, migrationOptions, getExecOutput);
+    const { stdout: migrationOutput } = await exec.getExecOutput(efCmd, efArgs, migrationOptions);
     core.info(`Full migration output:\n${migrationOutput}`);
     const nonPendingMigrations = migrationOutput
         .split('\n')
@@ -172,7 +167,6 @@ export async function getLastNonPendingMigration(getExecOutput, envName, home, m
 /**
  * Rolls back EF Core database migrations.
  *
- * @param {boolean} getExecOutput - If true, uses runCommand to capture the stdout and stderr of the rollback command.
  * @param {string} envName - The ASP.NET Core environment name to use.
  * @param {string} home - The home directory path to set as `HOME` in the execution environment.
  * @param {string} migrationsFolder - The working directory where the migrations should be run.
@@ -187,7 +181,6 @@ export async function getLastNonPendingMigration(getExecOutput, envName, home, m
  * @example
  * ```typescript
  * await rollbackMigrations(
- *   true,
  *   'Development',
  *   '/home/user',
  *   './migrations',
@@ -198,7 +191,7 @@ export async function getLastNonPendingMigration(getExecOutput, envName, home, m
  * console.log('Rollback completed.');
  * ```
  */
-export async function rollbackMigrations(getExecOutput, envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf, targetMigration) {
+export async function rollbackMigrations(envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf, targetMigration) {
     if (!useGlobalDotnetEf) {
         core.info('Ensuring local dotnet-ef tool is installed...');
         await installDotnetEfLocally();
@@ -213,6 +206,6 @@ export async function rollbackMigrations(getExecOutput, envName, home, migration
         ? ['database', 'update', targetMigration]
         : ['tool', 'run', 'dotnet-ef', 'database', 'update', targetMigration];
     const execOptions = { cwd: migrationsFolder, env: baseEnv };
-    await runCommand(useGlobalDotnetEf ? 'dotnet-ef' : dotnetRoot, rollbackArgs, execOptions, getExecOutput);
+    await exec.exec(useGlobalDotnetEf ? 'dotnet-ef' : dotnetRoot, rollbackArgs, execOptions);
     core.info('Rollback completed successfully.');
 }

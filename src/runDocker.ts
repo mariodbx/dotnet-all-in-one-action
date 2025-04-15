@@ -1,5 +1,6 @@
 import * as core from '@actions/core'
 import * as fs from 'fs/promises'
+import * as exec from '@actions/exec'
 import { findCsprojFile, extractVersionFromCsproj } from './utils/csproj.js'
 import {
   getLatestCommitSubject,
@@ -7,11 +8,7 @@ import {
 } from './utils/git.js'
 import { generateChangelog } from './utils/changelog.js'
 import { releaseExists, createRelease } from './utils/release.js'
-import {
-  dockerLogin,
-  buildAndPushCompose,
-  buildAndPushDockerfile
-} from './utils/docker.js'
+import { buildAndPushCompose, buildAndPushDockerfile } from './utils/docker.js'
 import { getInputs } from './utils/inputs.js'
 
 export async function runDocker(): Promise<void> {
@@ -23,6 +20,14 @@ export async function runDocker(): Promise<void> {
     const repo = process.env.GITHUB_REPOSITORY || ''
 
     if (!repo) throw new Error('GITHUB_REPOSITORY is not defined.')
+
+    // Retrieve registry credentials from inputs or environment variables.
+    const registryUsername = process.env.REGISTRY_USERNAME || ''
+    const registryToken = process.env.REGISTRY_TOKEN || ''
+
+    if (!registryUsername || !registryToken) {
+      throw new Error('Registry credentials (username and token) are required.')
+    }
 
     // Validate that at least one push flag is set if pushToRegistry is true.
     if (
@@ -39,7 +44,7 @@ export async function runDocker(): Promise<void> {
 
     // Determine version based on commit message or .csproj file.
     if (inputs.useCommitMessage) {
-      const commitSubject = await getLatestCommitSubject(inputs.showFullOutput)
+      const commitSubject = await getLatestCommitSubject()
       core.info(`Latest commit subject: "${commitSubject}"`)
       version = extractVersionFromCommit(commitSubject)
       if (!version) {
@@ -89,7 +94,19 @@ export async function runDocker(): Promise<void> {
 
     // Log into Docker registry if pushToRegistry is true.
     if (inputs.runPushToRegistry) {
-      await dockerLogin(inputs.registryType, inputs.showFullOutput)
+      await exec.exec(
+        'docker',
+        [
+          'login',
+          inputs.registryType,
+          '-u',
+          registryUsername,
+          '--password-stdin'
+        ],
+        {
+          input: Buffer.from(registryToken)
+        }
+      )
 
       // Process Docker Compose builds if provided.
       const dockerComposeFilesInput = core.getInput('docker_compose_files')
@@ -117,8 +134,7 @@ export async function runDocker(): Promise<void> {
             composeImages,
             inputs.pushWithVersion,
             inputs.pushWithLatest,
-            inputs.registryType,
-            inputs.showFullOutput
+            inputs.registryType
           )
         }
       }

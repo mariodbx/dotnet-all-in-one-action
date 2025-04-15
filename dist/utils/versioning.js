@@ -1,4 +1,5 @@
 import { readCsprojFile, updateCsprojFile, updateVersionSuffixContent } from './csproj.js';
+import * as exec from '@actions/exec';
 /**
  * Parses a version string into its components: major, minor, patch, and build.
  *
@@ -172,4 +173,34 @@ export async function updateVersionSuffixFromCsproj(csprojPath, newSuffix) {
         ? updateVersionSuffixContent(content, newSuffix)
         : content.replace(/<VersionSuffix>[^<]+<\/VersionSuffix>\s*/, '');
     await updateCsprojFile(csprojPath, updatedContent);
+}
+/**
+ * Retrieves the last Git tag.
+ *
+ * @returns {Promise<string>} The last Git tag.
+ * @throws {Error} Will throw an error if the Git command fails.
+ */
+export async function getLastGitTag() {
+    const { stdout } = await exec.getExecOutput('git', [
+        'describe',
+        '--tags',
+        '--abbrev=0'
+    ]);
+    return stdout.trim();
+}
+/**
+ * Retrieves the commit log between two Git references.
+ *
+ * @param {string | null} range - The range of commits to retrieve (e.g., "HEAD~5..HEAD"). Pass `null` to retrieve all commits.
+ * @returns {Promise<string>} The commit log.
+ * @throws {Error} Will throw an error if the Git command fails.
+ */
+export async function getCommitLog(range) {
+    const { stdout: commits } = await exec.getExecOutput('git', [
+        'log',
+        ...(range ? [range] : []),
+        '--no-merges',
+        '--pretty=format:%h %s'
+    ]);
+    return commits;
 }

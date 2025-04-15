@@ -4,9 +4,9 @@ import { processMigrations, getLastNonPendingMigration } from './utils/migration
 export async function runMigrations() {
     try {
         const inputs = getInputs();
-        const baselineMigration = await getLastNonPendingMigration(inputs.showFullOutput, inputs.envName, inputs.homeDirectory, inputs.migrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+        const baselineMigration = await getLastNonPendingMigration(inputs.envName, inputs.homeDirectory, inputs.migrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
         core.info(`Baseline migration before new migrations: ${baselineMigration || 'None'}`);
-        const newMigration = await processMigrations(inputs.showFullOutput, inputs.envName, inputs.homeDirectory, inputs.migrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+        const newMigration = await processMigrations(inputs.envName, inputs.homeDirectory, inputs.migrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
         core.info(newMigration
             ? `New migration applied: ${newMigration}`
             : 'No new migrations were applied.');

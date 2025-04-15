@@ -1,7 +1,6 @@
 /**
  * Interface for GitHub Action inputs.
  *
- * @property showFullOutput - Whether to get the full output of the executed command.
  * @property homeDirectory - Home directory for the action.
  * @property dotnetRoot - Path to the .NET root directory.
  * @property useGlobalDotnetEf - Whether to use the global dotnet-ef CLI.
@@ -45,7 +44,6 @@
  */
 export interface ActionInputs {
   // General
-  showFullOutput: boolean
   homeDirectory: string
   dotnetRoot: string
   useGlobalDotnetEf: boolean
@@ -168,7 +166,6 @@ export function getInputOrDefaultBoolean(
 export function getInputs(): ActionInputs {
   return {
     // General
-    showFullOutput: getInputOrDefaultBoolean('show_full_output', false),
     homeDirectory: getInputOrDefault('home_directory', '/home/node'),
     dotnetRoot: getInputOrDefault('dotnet_root', '/usr/bin/dotnet'),
     useGlobalDotnetEf: getInputOrDefaultBoolean('use_global_dotnet_ef', false),

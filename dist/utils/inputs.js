@@ -60,7 +60,6 @@ export function getInputOrDefaultBoolean(name, defaultValue) {
 export function getInputs() {
     return {
         // General
-        showFullOutput: getInputOrDefaultBoolean('show_full_output', false),
         homeDirectory: getInputOrDefault('home_directory', '/home/node'),
         dotnetRoot: getInputOrDefault('dotnet_root', '/usr/bin/dotnet'),
         useGlobalDotnetEf: getInputOrDefaultBoolean('use_global_dotnet_ef', false),

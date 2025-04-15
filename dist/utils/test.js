@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as artifact from '@actions/artifact';
 import * as path from 'path';
 import * as fs from 'fs';
-import { runCommand } from './command.js';
+import * as exec from '@actions/exec';
 import { installDotnetEfLocally } from './dotnet.js';
 const ARTIFACT_NAME = 'test-results';
 const ARTIFACT_RETENTION_DAYS = 7;
@@ -23,7 +23,6 @@ function logError(error, message) {
  * Executes .NET tests in a specified folder with a given configuration and uploads the test results as artifacts.
  * The function ensures that test artifacts are uploaded regardless of whether the tests pass or fail.
  *
- * @param {boolean} getExecOutput - A flag indicating whether to capture the execution output instead of streaming it.
  * @param {string} envName - The environment name to set for the test execution (e.g., 'Development', 'Production').
  * @param {string} testFolder - The folder containing the test project to execute.
  * @param {string} testOutputFolder - The folder where test result files will be stored.
@@ -41,7 +40,6 @@ function logError(error, message) {
  * (async () => {
  *   try {
  *     await tests(
- *       true,                   // Capture output mode
  *       'Development',          // Environment name
  *       './tests/MyTestProject',// Test folder
  *       './output',             // Test output folder
@@ -61,10 +59,10 @@ function logError(error, message) {
  * - The function ensures that the test output directory exists before running the tests.
  * - Test artifacts are uploaded using the `@actions/artifact` package, and the artifact retention period is set to 7 days.
  * - If an error occurs during test execution, it is captured and rethrown after the artifact upload process to ensure the action fails appropriately.
- * - The `runCommand` function is used to execute the `dotnet test` command with the specified arguments.
+ * - The `exec.getExecOutput` function is used to execute the `dotnet test` command with the specified arguments.
  * - This function is asynchronous and should be awaited to ensure proper error handling and artifact upload.
  */
-export async function tests(getExecOutput, envName, testFolder, testOutputFolder, testFormat, useGlobalDotnetEf) {
+export async function tests(envName, testFolder, testOutputFolder, testFormat, useGlobalDotnetEf) {
     core.info(`Setting environment to ${envName} for test execution...`);
     // Ensure dotnet-ef is available if not using the global version
     if (!useGlobalDotnetEf) {
@@ -88,11 +86,9 @@ export async function tests(getExecOutput, envName, testFolder, testOutputFolder
     }
     let testExecError = undefined;
     try {
-        // Run the tests using the centralized runCommand function
-        const result = await runCommand('dotnet', args, {}, getExecOutput);
-        if (getExecOutput) {
-            core.info(result);
-        }
+        // Run the tests using exec.getExecOutput
+        const { stdout } = await exec.getExecOutput('dotnet', args);
+        core.info(stdout);
         core.info('Tests completed successfully.');
     }
     catch (error) {

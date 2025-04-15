@@ -27,7 +27,6 @@ export async function runTests(): Promise<void> {
       // If migrations are not skipped, get the last non-pending migration (baseline) before applying new ones.
       if (inputs.runTestsMigrations) {
         baselineMigration = await getLastNonPendingMigration(
-          inputs.showFullOutput,
           inputs.testsEnvName,
           inputs.homeDirectory,
           inputs.testMigrationsFolder,
@@ -40,7 +39,6 @@ export async function runTests(): Promise<void> {
 
         // Process new migrations.
         newMigration = await processMigrations(
-          inputs.showFullOutput,
           inputs.testsEnvName,
           inputs.homeDirectory,
           inputs.testMigrationsFolder,
@@ -58,7 +56,6 @@ export async function runTests(): Promise<void> {
 
       // Run tests and capture result file path and folder
       await tests(
-        inputs.showFullOutput,
         inputs.envName,
         inputs.testMigrationsFolder,
         inputs.testOutputFolder,
@@ -82,7 +79,6 @@ export async function runTests(): Promise<void> {
           `Rolling back migrations to baseline: ${baselineMigration} due to test failure...`
         )
         await rollbackMigrations(
-          inputs.showFullOutput,
           inputs.testsEnvName,
           inputs.homeDirectory,
           inputs.testMigrationsFolder,

@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { runCommand } from './command.js'
+import * as exec from '@actions/exec'
 
 /**
  * Installs the dotnet-ef tool locally if it is not already installed.
@@ -20,11 +20,11 @@ export async function installDotnetEfLocally(): Promise<void> {
 
   try {
     // Create or override the tool manifest
-    await runCommand('dotnet', toolManifestArgs, {}, true)
+    await exec.exec('dotnet', toolManifestArgs)
     core.info('Tool manifest created or updated.')
 
     // Install the dotnet-ef tool locally
-    await runCommand('dotnet', installEfArgs, {}, true)
+    await exec.exec('dotnet', installEfArgs)
     core.info('dotnet-ef tool installed locally.')
   } catch (error) {
     core.error('Failed to install dotnet-ef tool locally.')

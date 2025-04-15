@@ -1,64 +1,49 @@
 import * as core from '@actions/core'
-import { runCommand } from './command.js'
+import * as exec from '@actions/exec'
 
 /**
  * Retrieves the latest commit subject.
  *
- * @param {boolean} showFullOutput - If true, returns the full output of the command; otherwise, returns only the exit code.
  * @returns {Promise<string>} The latest commit subject as a string.
  * @throws {Error} If the Git command fails.
  * @example
- * const subject: string = await getLatestCommitSubject(true);
+ * const subject: string = await getLatestCommitSubject();
  * console.log(subject);
  * @remarks
  * This function executes a Git command to retrieve the latest commit subject.
  * Ensure that the repository is initialized and contains at least one commit.
  */
-export async function getLatestCommitSubject(
-  showFullOutput: boolean
-): Promise<string> {
-  return await runCommand(
-    'git',
-    ['log', '-1', '--pretty=format:%s'],
-    {},
-    showFullOutput
-  )
+export async function getLatestCommitSubject(): Promise<string> {
+  const result = await exec.getExecOutput('git', [
+    'log',
+    '-1',
+    '--pretty=format:%s'
+  ])
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `Failed to retrieve the latest commit subject: ${result.stderr}`
+    )
+  }
+  return result.stdout.trim()
 }
 
 /**
  * Retrieves the latest commit message from the Git repository.
  *
- * @param {boolean} showFullOutput - If true, logs the full output of the command.
  * @returns {Promise<string>} The latest commit message.
  * @throws {Error} If the command fails or the output is empty.
  */
-export async function getLatestCommitMessage(
-  showFullOutput: boolean
-): Promise<string> {
+export async function getLatestCommitMessage(): Promise<string> {
   try {
-    const result = await runCommand(
-      'git',
-      ['log', '-1', '--pretty=%B'],
-      {},
-      showFullOutput
-    )
-    core.info(`Raw output from git log: "${result}"`)
-    if (result === undefined || result === null) {
-      core.error('Git log command returned undefined or null output.')
-      throw new Error(
-        'Failed to retrieve the latest commit message. Output is invalid.'
-      )
-    }
-    const trimmedResult = result.trim()
-    if (!trimmedResult) {
-      core.warning(
-        'Git log returned empty or whitespace-only output. Ensure the repository has valid commits.'
-      )
+    const result = await exec.getExecOutput('git', ['log', '-1', '--pretty=%B'])
+    core.info(`Raw output from git log: "${result.stdout}"`)
+    if (result.exitCode !== 0 || !result.stdout.trim()) {
+      core.error('Git log command returned invalid output.')
       throw new Error(
         'Failed to retrieve the latest commit message. Output is empty or invalid.'
       )
     }
-    return trimmedResult
+    return result.stdout.trim()
   } catch (error) {
     const err = error as Error // Explicitly cast error to Error
     core.error(`Error executing git log command: ${err.message}`)
@@ -91,7 +76,6 @@ export function extractVersionFromCommit(commitMessage: string): string | null {
  * @param {string} commitUser - The Git username for the commit.
  * @param {string} commitEmail - The Git email for the commit.
  * @param {string} commitMessagePrefix - The prefix for the commit message.
- * @param {boolean} showFullOutput - If true, shows the full output of Git commands; otherwise, only executes them.
  * @returns {Promise<void>} A promise that resolves when the update is complete.
  * @throws {Error} If any Git command fails.
  * @example
@@ -100,8 +84,7 @@ export function extractVersionFromCommit(commitMessage: string): string | null {
  *   "path/to/project.csproj",
  *   "user",
  *   "email@example.com",
- *   "Bump version to ",
- *   true
+ *   "Bump version to "
  * );
  * @remarks
  * This function performs the following steps:
@@ -116,29 +99,23 @@ export async function updateGit(
   csprojPath: string,
   commitUser: string,
   commitEmail: string,
-  commitMessagePrefix: string,
-  showFullOutput: boolean
+  commitMessagePrefix: string
 ): Promise<void> {
-  await runCommand(
-    'git',
-    ['config', 'user.name', commitUser],
-    {},
-    showFullOutput
-  )
-  await runCommand(
-    'git',
-    ['config', 'user.email', commitEmail],
-    {},
-    showFullOutput
-  )
-  await runCommand('git', ['add', csprojPath], {}, showFullOutput)
+  await exec.getExecOutput('git', ['config', 'user.name', commitUser])
+  await exec.getExecOutput('git', ['config', 'user.email', commitEmail])
+  await exec.getExecOutput('git', ['add', csprojPath])
   const commitMessageFinal = `${commitMessagePrefix}${newVersion}`
-  await runCommand(
-    'git',
-    ['commit', '-m', commitMessageFinal],
-    {},
-    showFullOutput
-  )
-  await runCommand('git', ['push'], {}, showFullOutput)
+  const commitResult = await exec.getExecOutput('git', [
+    'commit',
+    '-m',
+    commitMessageFinal
+  ])
+  if (commitResult.exitCode !== 0) {
+    throw new Error(`Failed to commit changes: ${commitResult.stderr}`)
+  }
+  const pushResult = await exec.getExecOutput('git', ['push'])
+  if (pushResult.exitCode !== 0) {
+    throw new Error(`Failed to push changes: ${pushResult.stderr}`)
+  }
   core.info(`Committed and pushed version update: "${commitMessageFinal}"`)
 }

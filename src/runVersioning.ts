@@ -21,7 +21,7 @@ export async function runVersioning(): Promise<void> {
 
     // Get the latest commit message.
     try {
-      const commitMessage = await getLatestCommitMessage(inputs.showFullOutput)
+      const commitMessage = await getLatestCommitMessage()
       core.info(`Latest commit message: "${commitMessage}"`)
 
       // Determine bump type by taking the first 5 alphanumeric characters in lowercase.
@@ -49,12 +49,6 @@ export async function runVersioning(): Promise<void> {
       core.setFailed(`Error processing commit message: ${error}`)
       throw error
     }
-
-    // Validate csproj depth.
-    // const csprojDepth = parseInt(inputs.csprojDepth, 10)
-    // if (isNaN(csprojDepth) || csprojDepth < 1) {
-    //   throw new Error('csproj_depth must be a positive integer')
-    // }
 
     // Locate the csproj file.
     const csprojPath = await findCsprojFile(
@@ -88,8 +82,7 @@ export async function runVersioning(): Promise<void> {
       csprojPath,
       inputs.commitUser,
       inputs.commitEmail,
-      inputs.commitMessagePrefix,
-      inputs.showFullOutput
+      inputs.commitMessagePrefix
     )
     core.info(`Version bump process completed successfully.`)
   } catch (error: unknown) {

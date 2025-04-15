@@ -19,7 +19,7 @@ export async function runRelease(): Promise<void> {
     let version: string | null = null
 
     if (inputs.useCommitMessage) {
-      const commitSubject = await getLatestCommitSubject(inputs.showFullOutput)
+      const commitSubject = await getLatestCommitSubject()
       core.info(`Latest commit subject: "${commitSubject}"`)
       version = extractVersionFromCommit(commitSubject)
       if (!version) {
