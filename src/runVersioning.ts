@@ -24,6 +24,13 @@ export async function runVersioning(): Promise<void> {
       const commitMessage = await getLatestCommitMessage(inputs.showFullOutput)
       core.info(`Latest commit message: "${commitMessage}"`)
 
+      // Determine bump type by taking the first 5 alphanumeric characters in lowercase.
+      bumpType = commitMessage
+        .substring(0, 5)
+        .replace(/[^A-Za-z]/g, '')
+        .toLowerCase()
+      core.info(`Extracted bump type: "${bumpType}"`)
+
       // Extract bump type using a more robust search.
       const regexMatch = commitMessage.match(/(patch|minor|major)/i)
       bumpType = regexMatch ? regexMatch[1].toLowerCase() : ''
@@ -44,15 +51,19 @@ export async function runVersioning(): Promise<void> {
     }
 
     // Validate csproj depth.
-    if (isNaN(inputs.csprojDepth) || inputs.csprojDepth < 1) {
-      throw new Error('csproj_depth must be a positive integer')
-    }
+    // const csprojDepth = parseInt(inputs.csprojDepth, 10)
+    // if (isNaN(csprojDepth) || csprojDepth < 1) {
+    //   throw new Error('csproj_depth must be a positive integer')
+    // }
 
     // Locate the csproj file.
     const csprojPath = await findCsprojFile(
       inputs.csprojDepth,
       inputs.csprojName
     )
+    if (!csprojPath) {
+      throw new Error(`No csproj file found with name "${inputs.csprojName}"`)
+    }
     core.info(`Found csproj file: ${csprojPath}`)
 
     // Read and parse the csproj file.
