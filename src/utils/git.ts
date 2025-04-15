@@ -42,6 +42,7 @@ export async function getLatestCommitMessage(
       {},
       showFullOutput
     )
+    core.info(`Raw output from git log: "${result}"`)
     const trimmedResult = result.trim()
     if (!trimmedResult) {
       core.warning(

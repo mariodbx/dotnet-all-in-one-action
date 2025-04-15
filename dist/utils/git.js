@@ -26,6 +26,7 @@ export async function getLatestCommitSubject(showFullOutput) {
 export async function getLatestCommitMessage(showFullOutput) {
     try {
         const result = await runCommand('git', ['log', '-1', '--pretty=%B'], {}, showFullOutput);
+        core.info(`Raw output from git log: "${result}"`);
         const trimmedResult = result.trim();
         if (!trimmedResult) {
             core.warning('Git log returned empty or whitespace-only output. Ensure the repository has valid commits.');
