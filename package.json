@@ -23,7 +23,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "a": "npx tsc &&  npm run bundle &&  git commit -a  -m `hehe [no ci]` && git push",
+    "a": "npx tsc && npm run bundle && git commit -a -m \"hehe [no ci]\" && git push",
     "bundle": "npm run format:write && npm run package",
     "ci-test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
     "coverage": "npx make-coverage-badge --output-path ./badges/coverage.svg",

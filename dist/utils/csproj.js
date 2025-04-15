@@ -17,12 +17,17 @@ import { runCommand } from './command.js';
  */
 export async function findCsprojFile(csprojDepth, csprojName, showFullOutput, cwd = process.cwd()) {
     const findCmd = `find . -maxdepth ${csprojDepth} -name "${csprojName}" | head -n 1`;
-    const result = (await runCommand('bash', ['-c', findCmd], { cwd }, showFullOutput)).trim();
-    console.debug(`findCsprojFile result: "${result}"`); // Debug log
-    if (!result) {
-        throw new Error(`No csproj file found with name "${csprojName}"`);
+    try {
+        const result = (await runCommand('bash', ['-c', findCmd], { cwd }, showFullOutput)).trim();
+        console.debug(`findCsprojFile result: "${result}"`);
+        if (!result) {
+            throw new Error(`No .csproj file found with name "${csprojName}"`);
+        }
+        return result;
     }
-    return result;
+    catch (err) {
+        throw new Error(`Failed to find .csproj file: ${err instanceof Error ? err.message : String(err)}`);
+    }
 }
 /**
  * Reads the content of a `.csproj` file.
