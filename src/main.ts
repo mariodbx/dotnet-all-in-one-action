@@ -4,7 +4,6 @@
  */
 import * as core from '@actions/core'
 import { getInputs } from './utils/inputs.js'
-import { getOutputs } from './utils/outputs.js'
 import { runMigrations } from './runMigrations.js'
 import { runTests } from './runTests.js'
 import { runVersioning } from './runVersioning.js'
@@ -15,7 +14,6 @@ import { runChangelog } from './runChangelog.js'
 /* istanbul ignore next */
 export async function run() {
   const inputs = getInputs()
-  const outputs = getOutputs()
 
   // Log a summary of all loaded inputs and outputs.
   core.info(`Loaded inputs:
@@ -71,27 +69,22 @@ export async function run() {
   - Added Keywords: ${inputs.addedKeywords}
   - Dev Keywords: ${inputs.devKeywords}
 
-  // Outputs
-  - Current Version: ${outputs.currentVersion}
-  - New Version: ${outputs.newVersion}
-  - Bump Type: ${outputs.bumpType}
-  - Docker Push Status: ${outputs.dockerPushStatus}
   `)
 
-  core.info(`Loaded outputs:
-  - Last Migration: ${outputs.lastMigration}
-  - Start Time: ${outputs.startTime}
-  - End Time: ${outputs.endTime}
-  - Version: ${outputs.version}
-  - Current Version: ${outputs.currentVersion}
-  - New Version: ${outputs.newVersion}
-  - Bump Type: ${outputs.bumpType}
-  - Skip Release: ${outputs.skipRelease}
-  - Docker Push Status: ${outputs.dockerPushStatus}
-  - Changelog: ${outputs.changelog}
-  - Release Status: ${outputs.releaseStatus}
-  - Skip: ${outputs.skip}
-  `)
+  // core.info(`Loaded outputs:
+  // - Last Migration: ${outputs.lastMigration}
+  // - Start Time: ${outputs.startTime}
+  // - End Time: ${outputs.endTime}
+  // - Version: ${outputs.version}
+  // - Current Version: ${outputs.currentVersion}
+  // - New Version: ${outputs.newVersion}
+  // - Bump Type: ${outputs.bumpType}
+  // - Skip Release: ${outputs.skipRelease}
+  // - Docker Push Status: ${outputs.dockerPushStatus}
+  // - Changelog: ${outputs.changelog}
+  // - Release Status: ${outputs.releaseStatus}
+  // - Skip: ${outputs.skip}
+  // `)
 
   console.log('Running migrations...')
   core.info(`Migrations step inputs:
@@ -103,9 +96,9 @@ export async function run() {
   - Use Global dotnet-ef: ${inputs.useGlobalDotnetEf}
   `)
   await runMigrations()
-  core.info(`Migrations step outputs:
-  - Last Migration: ${outputs.lastMigration}
-  `)
+  // core.info(`Migrations step outputs:
+  // - Last Migration: ${outputs.lastMigration}
+  // `)
 
   console.log('Running tests...')
   core.info(`Tests step inputs:
@@ -117,28 +110,25 @@ export async function run() {
   - Rollback Migrations On Test Failed: ${inputs.rollbackMigrationsOnTestFailed}
   `)
   await runTests()
-  core.info(`Tests step outputs:
-  - Test Results Uploaded: ${outputs.testResultsUploaded}
-  - Test Output Folder: ${outputs.testOutputFolder}
-  - Start Time: ${outputs.startTime}
-  - End Time: ${outputs.endTime}
-  `)
+  // core.info(`Tests step outputs:
+  // - Test Results Uploaded: ${outputs.testResultsUploaded}
+  // - Test Output Folder: ${outputs.testOutputFolder}
+  // - Start Time: ${outputs.startTime}
+  // - End Time: ${outputs.endTime}
+  // `)
 
   console.log('Running versioning...')
   core.info(`Versioning step inputs:
 
   - Run Versioning: ${inputs.runVersioning}
-  - Current Version: ${outputs.currentVersion}
-  - New Version: ${outputs.newVersion}
-  - Bump Type: ${outputs.bumpType}
   `)
   await runVersioning()
-  core.info(`Versioning step outputs:
-  - Version: ${outputs.version}
-  - Current Version: ${outputs.currentVersion}
-  - New Version: ${outputs.newVersion}
-  - Bump Type: ${outputs.bumpType}
-  `)
+  // core.info(`Versioning step outputs:
+  // - Version: ${outputs.version}
+  // - Current Version: ${outputs.currentVersion}
+  // - New Version: ${outputs.newVersion}
+  // - Bump Type: ${outputs.bumpType}
+  // `)
 
   console.log('Running Docker tasks...')
   core.info(`Docker step inputs:
@@ -150,9 +140,9 @@ export async function run() {
   - Registry Type: ${inputs.registryType}
   `)
   await runDocker()
-  core.info(`Docker step outputs:
-  - Docker Push Status: ${outputs.dockerPushStatus}
-  `)
+  // core.info(`Docker step outputs:
+  // - Docker Push Status: ${outputs.dockerPushStatus}
+  // `)
 
   if (inputs.runRelease) {
     console.log('Running release...')
@@ -160,9 +150,9 @@ export async function run() {
     - Run Release: ${inputs.runRelease}
     `)
     await runRelease()
-    core.info(`Release step outputs:
-    - Release Status: ${outputs.releaseStatus}
-    `)
+    // core.info(`Release step outputs:
+    // - Release Status: ${outputs.releaseStatus}
+    // `)
   }
 
   if (inputs.runChangelog) {
@@ -171,9 +161,9 @@ export async function run() {
     - Run Changelog: ${inputs.runChangelog}
     `)
     await runChangelog()
-    core.info(`Changelog step outputs:
-    - Changelog: ${outputs.changelog}
-    `)
+    // core.info(`Changelog step outputs:
+    // - Changelog: ${outputs.changelog}
+    // `)
   }
 
   console.log('Action completed successfully.')
