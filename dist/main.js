@@ -4,6 +4,7 @@
  */
 import * as core from '@actions/core';
 import { getInputs } from './utils/inputs.js';
+import { getOutputs } from './utils/outputs.js';
 import { runMigrations } from './runMigrations.js';
 import { runTests } from './runTests.js';
 import { runVersioning } from './runVersioning.js';
@@ -12,7 +13,8 @@ import { runReleaseChangelog } from './runReleaseChangelog.js';
 /* istanbul ignore next */
 export async function run() {
     const inputs = getInputs();
-    // Log a summary of all loaded inputs.
+    const outputs = getOutputs();
+    // Log a summary of all loaded inputs and outputs.
     core.info(`Loaded inputs:
 
   // General
@@ -67,13 +69,26 @@ export async function run() {
   - Dev Keywords: ${inputs.devKeywords}
 
   // Outputs
-  - Current Version: ${inputs.currentVersion}
-  - New Version: ${inputs.newVersion}
-  - Bump Type: ${inputs.bumpType}
-  - Docker Push Status: ${inputs.dockerPushStatus}
+  - Current Version: ${outputs.currentVersion}
+  - New Version: ${outputs.newVersion}
+  - Bump Type: ${outputs.bumpType}
+  - Docker Push Status: ${outputs.dockerPushStatus}
+  `);
+    core.info(`Loaded outputs:
+  - Last Migration: ${outputs.lastMigration}
+  - Start Time: ${outputs.startTime}
+  - End Time: ${outputs.endTime}
+  - Version: ${outputs.version}
+  - Current Version: ${outputs.currentVersion}
+  - New Version: ${outputs.newVersion}
+  - Bump Type: ${outputs.bumpType}
+  - Skip Release: ${outputs.skipRelease}
+  - Docker Push Status: ${outputs.dockerPushStatus}
+  - Changelog: ${outputs.changelog}
+  - Release Status: ${outputs.releaseStatus}
+  - Skip: ${outputs.skip}
   `);
     console.log('Running migrations...');
-    await runMigrations();
     core.info(`Migrations step inputs:
 
   - Run Migrations: ${inputs.runMigrations}
@@ -82,8 +97,11 @@ export async function run() {
   - Dotnet Root: ${inputs.dotnetRoot}
   - Use Global dotnet-ef: ${inputs.useGlobalDotnetEf}
   `);
+    await runMigrations();
+    core.info(`Migrations step outputs:
+  - Last Migration: ${outputs.lastMigration}
+  `);
     console.log('Running tests...');
-    await runTests();
     core.info(`Tests step inputs:
 
   - Run Tests: ${inputs.runTests}
@@ -92,17 +110,29 @@ export async function run() {
   - Test Format: ${inputs.testFormat}
   - Rollback Migrations On Test Failed: ${inputs.rollbackMigrationsOnTestFailed}
   `);
+    await runTests();
+    core.info(`Tests step outputs:
+  - Test Results Uploaded: ${outputs.testResultsUploaded}
+  - Test Output Folder: ${outputs.testOutputFolder}
+  - Start Time: ${outputs.startTime}
+  - End Time: ${outputs.endTime}
+  `);
     console.log('Running versioning...');
-    await runVersioning();
     core.info(`Versioning step inputs:
 
   - Run Versioning: ${inputs.runVersioning}
-  - Current Version: ${inputs.currentVersion}
-  - New Version: ${inputs.newVersion}
-  - Bump Type: ${inputs.bumpType}
+  - Current Version: ${outputs.currentVersion}
+  - New Version: ${outputs.newVersion}
+  - Bump Type: ${outputs.bumpType}
+  `);
+    await runVersioning();
+    core.info(`Versioning step outputs:
+  - Version: ${outputs.version}
+  - Current Version: ${outputs.currentVersion}
+  - New Version: ${outputs.newVersion}
+  - Bump Type: ${outputs.bumpType}
   `);
     console.log('Running Docker tasks...');
-    await runDocker();
     core.info(`Docker step inputs:
 
   - Run Push To Registry: ${inputs.runPushToRegistry}
@@ -111,14 +141,22 @@ export async function run() {
   - Dockerfile Contexts: ${inputs.dockerfileContexts}
   - Registry Type: ${inputs.registryType}
   `);
+    await runDocker();
+    core.info(`Docker step outputs:
+  - Docker Push Status: ${outputs.dockerPushStatus}
+  `);
     console.log('Running release changelog...');
-    await runReleaseChangelog();
     core.info(`Release and Changelog step inputs:
 
   - Run Release And Changelog: ${inputs.runReleaseAndChangelog}
   - Commit User: ${inputs.commitUser}
   - Commit Email: ${inputs.commitEmail}
   - Commit Message Prefix: ${inputs.commitMessagePrefix}
+  `);
+    await runReleaseChangelog();
+    core.info(`Release and Changelog step outputs:
+  - Changelog: ${outputs.changelog}
+  - Release Status: ${outputs.releaseStatus}
   `);
     console.log('Action completed successfully.');
 }

@@ -67,15 +67,16 @@ export function getInputs() {
         // Migrations
         runMigrations: getInputOrDefaultBoolean('run_migrations', true),
         migrationsFolder: getInputOrDefault('migrations_folder', ''),
-        envName: getInputOrDefault('migrations_env_name', 'Test'),
+        envName: getInputOrDefault('migrations_env_name', 'Development'),
         onFailedRollbackMigrations: getInputOrDefaultBoolean('on_failed_rollback_migrations', false),
         // Tests
         runTests: getInputOrDefaultBoolean('run_tests', true),
+        testsEnvName: getInputOrDefault('tests_env_name', 'Test'),
         runTestsMigrations: getInputOrDefaultBoolean('run_tests_migrations', true),
         testMigrationsFolder: getInputOrDefault('test_migrations_folder', ''),
         testFolder: getInputOrDefault('test_folder', ''),
-        testOutputFolder: getInputOrDefault('test_output_folder', 'TestResults'),
         uploadTestsResults: getInputOrDefaultBoolean('upload_tests_results', false),
+        testOutputFolder: getInputOrDefault('test_output_folder', 'TestResults'),
         testFormat: getInputOrDefault('test_format', 'html'),
         rollbackMigrationsOnTestFailed: getInputOrDefaultBoolean('rollback_migrations_on_test_failed', false),
         // Versioning
@@ -103,11 +104,6 @@ export function getInputs() {
         patchKeywords: getInputOrDefault('patch_keywords', 'bug-fix, hotfix, patch'),
         hotfixKeywords: getInputOrDefault('hotfix_keywords', 'urgent, hotfix'),
         addedKeywords: getInputOrDefault('added_keywords', 'added, new'),
-        devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment'),
-        // Outputs
-        currentVersion: getInputOrDefault('current_version', ''),
-        newVersion: getInputOrDefault('new_version', ''),
-        bumpType: getInputOrDefault('bump_type', ''),
-        dockerPushStatus: getInputOrDefault('docker_push_status', '')
+        devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment')
     };
 }
