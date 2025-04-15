@@ -4,7 +4,7 @@ import { getInputs } from './utils/inputs.js';
 export async function runChangelog() {
     try {
         const inputs = getInputs();
-        if (!inputs.runReleaseAndChangelog) {
+        if (!inputs.runChangelog) {
             core.info('Skipping changelog generation as per input.');
             return;
         }

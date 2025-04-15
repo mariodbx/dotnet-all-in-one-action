@@ -65,12 +65,12 @@ export function getInputs() {
         dotnetRoot: getInputOrDefault('dotnet_root', '/usr/bin/dotnet'),
         useGlobalDotnetEf: getInputOrDefaultBoolean('use_global_dotnet_ef', false),
         // Migrations
-        runMigrations: getInputOrDefaultBoolean('run_migrations', true),
+        runMigrations: getInputOrDefaultBoolean('run_migrations', false),
         migrationsFolder: getInputOrDefault('migrations_folder', ''),
         envName: getInputOrDefault('migrations_env_name', 'Development'),
         onFailedRollbackMigrations: getInputOrDefaultBoolean('on_failed_rollback_migrations', false),
         // Tests
-        runTests: getInputOrDefaultBoolean('run_tests', true),
+        runTests: getInputOrDefaultBoolean('run_tests', false),
         testsEnvName: getInputOrDefault('tests_env_name', 'Test'),
         runTestsMigrations: getInputOrDefaultBoolean('run_tests_migrations', true),
         testMigrationsFolder: getInputOrDefault('test_migrations_folder', ''),
@@ -80,7 +80,7 @@ export function getInputs() {
         testFormat: getInputOrDefault('test_format', 'html'),
         rollbackMigrationsOnTestFailed: getInputOrDefaultBoolean('rollback_migrations_on_test_failed', false),
         // Versioning
-        runVersioning: getInputOrDefaultBoolean('run_versioning', true),
+        runVersioning: getInputOrDefaultBoolean('run_versioning', false),
         csprojDepth: parseInt(getInputOrDefault('csproj_depth', '1'), 10),
         csprojName: getInputOrDefault('csproj_name', '*.csproj'),
         useCommitMessage: getInputOrDefaultBoolean('use_commit_message', false),
@@ -98,11 +98,9 @@ export function getInputs() {
         pushWithVersion: getInputOrDefaultBoolean('push_with_version', true),
         pushWithLatest: getInputOrDefaultBoolean('push_with_latest', true),
         // Release
-        runRelease: getInputOrDefaultBoolean('run_release', true),
+        runRelease: getInputOrDefaultBoolean('run_release', false),
         // Changelog
-        runChangelog: getInputOrDefaultBoolean('run_changelog', true),
-        // Release and Changelog
-        runReleaseAndChangelog: getInputOrDefaultBoolean('run_release_and_changelog', true),
+        runChangelog: getInputOrDefaultBoolean('run_changelog', false),
         majorKeywords: getInputOrDefault('major_keywords', 'breaking, overhaul'),
         minorKeywords: getInputOrDefault('minor_keywords', 'feature, enhancement'),
         patchKeywords: getInputOrDefault('patch_keywords', 'bug-fix, hotfix, patch'),

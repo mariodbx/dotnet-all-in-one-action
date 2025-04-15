@@ -61,7 +61,6 @@ export async function run() {
   - Push With Latest: ${inputs.pushWithLatest}
 
   // Release and Changelog
-  - Run Release And Changelog: ${inputs.runReleaseAndChangelog}
   - Major Keywords: ${inputs.majorKeywords}
   - Minor Keywords: ${inputs.minorKeywords}
   - Patch Keywords: ${inputs.patchKeywords}

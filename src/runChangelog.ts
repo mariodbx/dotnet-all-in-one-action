@@ -6,7 +6,7 @@ export async function runChangelog(): Promise<void> {
   try {
     const inputs = getInputs()
 
-    if (!inputs.runReleaseAndChangelog) {
+    if (!inputs.runChangelog) {
       core.info('Skipping changelog generation as per input.')
       return
     }

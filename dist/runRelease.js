@@ -7,7 +7,7 @@ import * as fs from 'fs/promises';
 export async function runRelease() {
     try {
         const inputs = getInputs();
-        if (!inputs.runReleaseAndChangelog) {
+        if (!inputs.runRelease) {
             core.info('Skipping release as per input.');
             return;
         }

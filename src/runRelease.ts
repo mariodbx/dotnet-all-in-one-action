@@ -12,7 +12,7 @@ export async function runRelease(): Promise<void> {
   try {
     const inputs = getInputs()
 
-    if (!inputs.runReleaseAndChangelog) {
+    if (!inputs.runRelease) {
       core.info('Skipping release as per input.')
       return
     }

@@ -36,7 +36,6 @@
  * @property pushWithLatest - Whether to push images tagged as latest.
  * @property runRelease - Whether to run the release step.
  * @property runChangelog - Whether to run the changelog step.
- * @property runReleaseAndChangelog - Whether to run the release and changelog step.
  * @property majorKeywords - Keywords for major version bumps.
  * @property minorKeywords - Keywords for minor version bumps.
  * @property patchKeywords - Keywords for patch version bumps.
@@ -93,9 +92,6 @@ export interface ActionInputs {
 
   // Changelog
   runChangelog: boolean
-
-  // Release and Changelog
-  runReleaseAndChangelog: boolean
   majorKeywords: string
   minorKeywords: string
   patchKeywords: string
@@ -178,7 +174,7 @@ export function getInputs(): ActionInputs {
     useGlobalDotnetEf: getInputOrDefaultBoolean('use_global_dotnet_ef', false),
 
     // Migrations
-    runMigrations: getInputOrDefaultBoolean('run_migrations', true),
+    runMigrations: getInputOrDefaultBoolean('run_migrations', false),
     migrationsFolder: getInputOrDefault('migrations_folder', ''),
     envName: getInputOrDefault('migrations_env_name', 'Development'),
     onFailedRollbackMigrations: getInputOrDefaultBoolean(
@@ -187,7 +183,7 @@ export function getInputs(): ActionInputs {
     ),
 
     // Tests
-    runTests: getInputOrDefaultBoolean('run_tests', true),
+    runTests: getInputOrDefaultBoolean('run_tests', false),
     testsEnvName: getInputOrDefault('tests_env_name', 'Test'),
     runTestsMigrations: getInputOrDefaultBoolean('run_tests_migrations', true),
     testMigrationsFolder: getInputOrDefault('test_migrations_folder', ''),
@@ -201,7 +197,7 @@ export function getInputs(): ActionInputs {
     ),
 
     // Versioning
-    runVersioning: getInputOrDefaultBoolean('run_versioning', true),
+    runVersioning: getInputOrDefaultBoolean('run_versioning', false),
     csprojDepth: parseInt(getInputOrDefault('csproj_depth', '1'), 10),
     csprojName: getInputOrDefault('csproj_name', '*.csproj'),
     useCommitMessage: getInputOrDefaultBoolean('use_commit_message', false),
@@ -227,16 +223,11 @@ export function getInputs(): ActionInputs {
     pushWithLatest: getInputOrDefaultBoolean('push_with_latest', true),
 
     // Release
-    runRelease: getInputOrDefaultBoolean('run_release', true),
+    runRelease: getInputOrDefaultBoolean('run_release', false),
 
     // Changelog
-    runChangelog: getInputOrDefaultBoolean('run_changelog', true),
+    runChangelog: getInputOrDefaultBoolean('run_changelog', false),
 
-    // Release and Changelog
-    runReleaseAndChangelog: getInputOrDefaultBoolean(
-      'run_release_and_changelog',
-      true
-    ),
     majorKeywords: getInputOrDefault('major_keywords', 'breaking, overhaul'),
     minorKeywords: getInputOrDefault('minor_keywords', 'feature, enhancement'),
     patchKeywords: getInputOrDefault(
