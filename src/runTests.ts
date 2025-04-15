@@ -31,7 +31,7 @@ export async function runTests(): Promise<void> {
             inputs.showFullOutput,
             inputs.testsEnvName,
             inputs.homeDirectory,
-            inputs.migrationsFolder,
+            inputs.testMigrationsFolder,
             inputs.dotnetRoot,
             inputs.useGlobalDotnetEf
           )
@@ -44,7 +44,7 @@ export async function runTests(): Promise<void> {
             inputs.showFullOutput,
             inputs.testsEnvName,
             inputs.homeDirectory,
-            inputs.migrationsFolder,
+            inputs.testMigrationsFolder,
             inputs.dotnetRoot,
             inputs.useGlobalDotnetEf
           )
@@ -61,7 +61,7 @@ export async function runTests(): Promise<void> {
         await tests(
           inputs.showFullOutput,
           inputs.envName,
-          inputs.testFolder,
+          inputs.testMigrationsFolder,
           inputs.testOutputFolder,
           inputs.testFormat,
           inputs.useGlobalDotnetEf // Pass the flag to use global or local dotnet-ef
