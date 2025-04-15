@@ -14,23 +14,19 @@ export async function runDocker() {
             core.info('Skipping push to registry as requested.');
             return;
         }
-        const csprojDepth = inputs.csprojDepth;
-        const csprojName = inputs.csprojName;
-        const useCommitMessage = inputs.useCommitMessage;
-        const pushWithVersion = core.getBooleanInput('push_with_version');
-        const pushWithLatest = core.getBooleanInput('push_with_latest');
-        const registryType = core.getInput('registry_type') || 'ghcr';
         const changelogToken = process.env.GH_TOKEN || '';
         const repo = process.env.GITHUB_REPOSITORY || '';
         if (!repo)
             throw new Error('GITHUB_REPOSITORY is not defined.');
         // Validate that at least one push flag is set if pushToRegistry is true.
-        if (inputs.runPushToRegistry && !pushWithVersion && !pushWithLatest) {
+        if (!inputs.runPushToRegistry &&
+            !inputs.pushWithVersion &&
+            !inputs.pushWithLatest) {
             throw new Error('At least one push flag ("push_with_version" or "push_with_latest") must be true when "push_to_registry" is enabled.');
         }
         let version = null;
         // Determine version based on commit message or .csproj file.
-        if (useCommitMessage) {
+        if (inputs.useCommitMessage) {
             const commitSubject = await getLatestCommitSubject(inputs.showFullOutput);
             core.info(`Latest commit subject: "${commitSubject}"`);
             version = extractVersionFromCommit(commitSubject);
@@ -41,9 +37,9 @@ export async function runDocker() {
             }
         }
         else {
-            const csprojPath = await findCsprojFile(csprojDepth, csprojName, inputs.showFullOutput);
+            const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName, inputs.showFullOutput);
             if (!csprojPath) {
-                throw new Error(`No .csproj file found with name "${csprojName}".`);
+                throw new Error(`No .csproj file found with name "${inputs.csprojName}".`);
             }
             core.info(`Found .csproj file: ${csprojPath}`);
             const csprojContent = await fs.readFile(csprojPath, 'utf8');
@@ -70,7 +66,7 @@ export async function runDocker() {
         await createRelease(repo, version, changelog, changelogToken);
         // Log into Docker registry if pushToRegistry is true.
         if (inputs.runPushToRegistry) {
-            await dockerLogin(registryType, inputs.showFullOutput);
+            await dockerLogin(inputs.registryType, inputs.showFullOutput);
             // Process Docker Compose builds if provided.
             const dockerComposeFilesInput = core.getInput('docker_compose_files');
             const imagesInput = core.getInput('images'); // For docker-compose builds.
@@ -88,7 +84,7 @@ export async function runDocker() {
                     .filter((img) => img);
                 for (const file of dcFiles) {
                     core.info(`Processing Docker Compose file: ${file}`);
-                    await buildAndPushCompose(file, version, composeImages, pushWithVersion, pushWithLatest, registryType, inputs.showFullOutput);
+                    await buildAndPushCompose(file, version, composeImages, inputs.pushWithVersion, inputs.pushWithLatest, inputs.registryType, inputs.showFullOutput);
                 }
             }
             // Process Dockerfile builds if provided.
@@ -123,7 +119,7 @@ export async function runDocker() {
                 }
                 for (let i = 0; i < dockerfiles.length; i++) {
                     core.info(`Processing Dockerfile: ${dockerfiles[i]} with context: ${contexts[i]} and image: ${dockerfileImages[i]}`);
-                    await buildAndPushDockerfile(dockerfiles[i], contexts[i], version, dockerfileImages[i], registryType, pushWithVersion, pushWithLatest);
+                    await buildAndPushDockerfile(dockerfiles[i], contexts[i], version, dockerfileImages[i], inputs.registryType, inputs.pushWithVersion, inputs.pushWithLatest);
                 }
             }
         }
