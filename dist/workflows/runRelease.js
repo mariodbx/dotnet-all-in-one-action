@@ -61,5 +61,3 @@ export async function runRelease() {
         throw error;
     }
 }
-// Immediately run the function if this script is invoked directly.
-runRelease();

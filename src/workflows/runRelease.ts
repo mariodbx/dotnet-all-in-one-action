@@ -76,6 +76,3 @@ export async function runRelease(): Promise<void> {
     throw error
   }
 }
-
-// Immediately run the function if this script is invoked directly.
-runRelease()

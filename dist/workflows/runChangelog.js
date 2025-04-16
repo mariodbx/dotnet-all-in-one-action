@@ -148,5 +148,3 @@ export async function runChangelog() {
         throw error;
     }
 }
-// Immediately run the function if this script is invoked directly.
-runChangelog();
