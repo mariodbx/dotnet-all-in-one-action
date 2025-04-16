@@ -10,6 +10,7 @@ import { zipDirectory, uploadReleaseAssets } from '../utils/uploadAssets.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { getOctokit } from '@actions/github';
+import { publishDotnetProject } from '../utils/dotnet.js';
 /**
  * Retrieves an existing release for the given version.
  */
@@ -106,6 +107,22 @@ export async function runChangelog() {
         else {
             core.info(`Found existing release for version ${version} with ID ${releaseResponse.id || releaseResponse.data.id}.`);
         }
+        core.info('Publishing .NET binaries for Linux...');
+        await publishDotnetProject('Release', './publish/linux', [
+            '--self-contained',
+            '--runtime',
+            'linux-x64'
+        ]);
+        await publishDotnetProject('Release', './publish/windows', [
+            '--self-contained',
+            '--runtime',
+            'win-x64'
+        ]);
+        await publishDotnetProject('Release', './publish/macos', [
+            '--self-contained',
+            '--runtime',
+            'osx-x64'
+        ]);
         // Prepare assets for upload.
         const assets = [];
         // Zip binaries for each supported platform.
