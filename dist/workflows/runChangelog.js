@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import { generateChangelog, createRelease } from '../utils/release.js';
 import { runDockerPush, checkGhcrImageExists } from './runDockerPush.js';
 import { getInputs } from '../utils/inputs.js';
+import { findCsprojFile, readCsprojFile, extractVersion } from '../utils/csproj.js';
 export async function runChangelog() {
     try {
         const inputs = getInputs();
@@ -10,12 +11,21 @@ export async function runChangelog() {
             return;
         }
         let changelog = '';
+        let version = '';
+        if (!version) {
+            core.info('Version is not provided in inputs. Attempting to read from .csproj...');
+            try {
+                const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName);
+                const csprojContent = await readCsprojFile(csprojPath);
+                version = extractVersion(csprojContent);
+                core.info(`Version extracted from .csproj: ${version}`);
+            }
+            catch (error) {
+                throw new Error(`Failed to retrieve version from .csproj: ${error}`);
+            }
+        }
         if (inputs.includeGhcrPackage) {
             core.info('Including GHCR package...');
-            const version = inputs.version || '';
-            if (!version) {
-                throw new Error('Version is not defined.');
-            }
             const repo = process.env.GITHUB_REPOSITORY || '';
             if (!repo) {
                 throw new Error('GITHUB_REPOSITORY is not defined.');
@@ -56,7 +66,6 @@ export async function runChangelog() {
             core.info('Creating release...');
             const token = process.env.GITHUB_TOKEN || '';
             const repo = process.env.GITHUB_REPOSITORY || '';
-            const version = inputs.version || '';
             if (!repo || !version) {
                 throw new Error('GITHUB_REPOSITORY or version is not defined.');
             }
