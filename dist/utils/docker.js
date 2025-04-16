@@ -181,12 +181,9 @@ export async function buildAndPushDockerfile(dockerfile, buildContext, version, 
         await exec.exec('docker', ['push', imageWithVersion], { silent: false });
     }
     if (pushWithLatest) {
-        const imageWithVersion = `${qualifiedImage}:${version}`;
         const imageLatest = `${qualifiedImage}:latest`;
-        core.info(`Tagging ${imageWithVersion} as ${imageLatest}`);
-        await exec.exec('docker', ['tag', imageWithVersion, imageLatest], {
-            silent: false
-        });
+        core.info(`Tagging ${qualifiedImage}:${version} as ${imageLatest}`);
+        await exec.exec('docker', ['tag', `${qualifiedImage}:${version}`, imageLatest], {});
         core.info(`Pushing ${imageLatest}...`);
         await exec.exec('docker', ['push', imageLatest], { silent: false });
     }
