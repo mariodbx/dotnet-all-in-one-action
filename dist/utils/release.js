@@ -59,28 +59,23 @@ export async function releaseExists(repo, version, token) {
  * The function uses the GitHub API and requires a valid token with repository
  * write access.
  */
-export async function createRelease(repo, version, changelog, token) {
-    const url = `https://api.github.com/repos/${repo}/releases`;
-    const payload = {
-        tag_name: `v${version}`,
-        name: `Release v${version}`,
+import { getOctokit } from '@actions/github';
+export async function createRelease(repo, tag, changelog, token) {
+    // Use specific type
+    const [owner, repoName] = repo.split('/');
+    const octokit = getOctokit(token);
+    core.info(`Creating release for tag ${tag}...`);
+    const response = await octokit.rest.repos.createRelease({
+        owner,
+        repo: repoName,
+        tag_name: tag,
+        name: tag,
         body: changelog,
         draft: false,
         prerelease: false
-    };
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            Authorization: `token ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
     });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Failed to create release: ${response.status} ${text}`);
-    }
-    core.info(`Release v${version} created successfully.`);
+    core.info(`Release created with ID ${response.data.id}.`);
+    return response;
 }
 export async function generateChangelog() {
     let lastTag = '';

@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as fs from 'fs/promises'
 import * as exec from '@actions/exec'
 import { buildKeywordRegex, categorize } from './changelog.js'
+import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods' // Import for specific type
 
 /**
  * Checks if a GitHub release with the specified version exists.
@@ -69,36 +70,29 @@ export async function releaseExists(
  * The function uses the GitHub API and requires a valid token with repository
  * write access.
  */
+import { getOctokit } from '@actions/github'
+
 export async function createRelease(
   repo: string,
-  version: string,
+  tag: string,
   changelog: string,
   token: string
-): Promise<void> {
-  const url = `https://api.github.com/repos/${repo}/releases`
-  const payload = {
-    tag_name: `v${version}`,
-    name: `Release v${version}`,
+): Promise<RestEndpointMethodTypes['repos']['createRelease']['response']> {
+  // Use specific type
+  const [owner, repoName] = repo.split('/')
+  const octokit = getOctokit(token)
+  core.info(`Creating release for tag ${tag}...`)
+  const response = await octokit.rest.repos.createRelease({
+    owner,
+    repo: repoName,
+    tag_name: tag,
+    name: tag,
     body: changelog,
     draft: false,
     prerelease: false
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `token ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
   })
-
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`Failed to create release: ${response.status} ${text}`)
-  }
-
-  core.info(`Release v${version} created successfully.`)
+  core.info(`Release created with ID ${response.data.id}.`)
+  return response
 }
 
 export async function generateChangelog(): Promise<string> {
