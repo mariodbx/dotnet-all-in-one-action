@@ -31,3 +31,73 @@ export async function installDotnetEfLocally(): Promise<void> {
     throw new Error(`Error during dotnet-ef installation: ${error}`)
   }
 }
+
+/**
+ * Publishes a .NET project with the specified configuration and additional flags.
+ *
+ * @param {string} configuration - The build configuration (e.g., 'Release', 'Debug').
+ * @param {string} outputDir - The output directory for the published files.
+ * @param {string[]} additionalFlags - Additional flags for the publish command (e.g., '--self-contained', '--runtime linux-x64').
+ * @returns {Promise<void>} A promise that resolves when the publish is complete.
+ * @throws {Error} Throws an error if the publish process fails.
+ *
+ * @example
+ * // Publish a project in Release configuration with self-contained Linux runtime
+ * await publishDotnetProject('Release', './publish/release', ['--self-contained', '--runtime', 'linux-x64']);
+ *
+ * // Publish a project in Debug configuration without additional flags
+ * await publishDotnetProject('Debug', './publish/debug', []);
+ * // Example usage of publishDotnetProject
+;(async () => {
+  try {
+    // Publish for Linux
+    await publishDotnetProject('Release', './publish/linux', [
+      '--self-contained',
+      '--runtime',
+      'linux-x64'
+    ])
+
+    // Publish for Windows
+    await publishDotnetProject('Release', './publish/windows', [
+      '--self-contained',
+      '--runtime',
+      'win-x64'
+    ])
+
+    // Publish for macOS
+    await publishDotnetProject('Release', './publish/macos', [
+      '--self-contained',
+      '--runtime',
+      'osx-x64'
+    ])
+  } catch (error) {
+    core.error(`Example usage failed: ${error}`)
+  }
+})()
+ */
+export async function publishDotnetProject(
+  configuration: string,
+  outputDir: string,
+  additionalFlags: string[] = []
+): Promise<void> {
+  core.info(
+    `Publishing .NET project with configuration: ${configuration} and flags: ${additionalFlags.join(' ')}...`
+  )
+  const publishArgs: string[] = [
+    'publish',
+    '-c',
+    configuration,
+    '-o',
+    outputDir,
+    ...additionalFlags
+  ]
+
+  try {
+    // Execute the dotnet publish command
+    await exec.exec('dotnet', publishArgs)
+    core.info(`.NET project published successfully to ${outputDir}.`)
+  } catch (error) {
+    core.error('Failed to publish .NET project.')
+    throw new Error(`Error during .NET project publish: ${error}`)
+  }
+}

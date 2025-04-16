@@ -159,10 +159,36 @@ inputs:
     description: 'Push images tagged as latest? (true/false)'
     required: false
     default: 'true'
+  # Publish
+
+  run_publish:
+    description: 'Run publish step? (true/false)'
+    required: false
+    default: 'false'
+  publish_linux:
+    description: 'Flag to publish .NET binaries for Linux.'
+    required: false
+    default: 'true'
+  publish_windows:
+    description: 'Flag to publish .NET binaries for Windows.'
+    required: false
+    default: 'true'
+  publish_mac:
+    description: 'Flag to publish .NET binaries for macOS.'
+    required: false
+    default: 'false'
 
   # Release
   run_release:
     description: 'Run release step? (true/false)'
+    required: false
+    default: 'false'
+  include_ghcr_package:
+    description: 'Include GHCR package in the release changelog? (true/false)'
+    required: false
+    default: 'false'
+  include_dotnet_binaries:
+    description: 'Include .NET binaries in the release changelog? (true/false)'
     required: false
     default: 'false'
 

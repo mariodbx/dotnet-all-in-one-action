@@ -79,6 +79,7 @@ export function getInputs() {
         testFormat: getInputOrDefault('test_format', 'html'),
         rollbackMigrationsOnTestFailed: getInputOrDefaultBoolean('rollback_migrations_on_test_failed', false),
         // Versioning
+        version: getInputOrDefault('version', '0.0.0'),
         runVersioning: getInputOrDefaultBoolean('run_versioning', false),
         csprojDepth: parseInt(getInputOrDefault('csproj_depth', '1'), 10),
         csprojName: getInputOrDefault('csproj_name', '*.csproj'),
@@ -107,6 +108,13 @@ export function getInputs() {
         patchKeywords: getInputOrDefault('patch_keywords', 'bug-fix, hotfix, patch'),
         hotfixKeywords: getInputOrDefault('hotfix_keywords', 'urgent, hotfix'),
         addedKeywords: getInputOrDefault('added_keywords', 'added, new'),
-        devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment')
+        devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment'),
+        // Additional
+        includeGhcrPackage: getInputOrDefaultBoolean('include_ghcr_package', false),
+        includeDotnetBinaries: core.getBooleanInput('include_dotnet_binaries'),
+        runPublish: core.getBooleanInput('run_publish'),
+        publishLinux: core.getBooleanInput('publish_linux'),
+        publishWindows: core.getBooleanInput('publish_windows'),
+        publishMac: core.getBooleanInput('publish_mac')
     };
 }

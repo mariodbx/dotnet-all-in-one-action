@@ -10,6 +10,7 @@ import { runRelease } from './workflows/runRelease.js';
 import { runChangelog } from './workflows/runChangelog.js';
 import { runDockerBuild } from './workflows/runDockerBuild.js';
 import { runDockerPush } from './workflows/runDockerPush.js';
+import { runPublish } from './workflows/runPublish.js'; // Import the new publish workflow
 /* istanbul ignore next */
 export async function run() {
     const inputs = getInputs();
@@ -33,12 +34,16 @@ export async function run() {
         console.log('Running Docker push...');
         await runDockerPush();
     }
+    if (inputs.runPublish) {
+        console.log('Running publish...');
+        await runPublish(); // Add the publish step
+    }
     if (inputs.runRelease) {
         console.log('Running release...');
         await runRelease();
     }
     if (inputs.runChangelog) {
-        console.log('Running changelog...');
+        console.log('Running changelog ..');
         await runChangelog();
     }
     console.log('Action completed successfully.');

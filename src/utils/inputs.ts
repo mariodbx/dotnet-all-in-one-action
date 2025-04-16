@@ -43,6 +43,13 @@
  * @property devKeywords - Keywords for development or experimental features.
  * @property runDockerBuild - Whether to run the Docker build step.
  * @property runDockerPush - Whether to run the Docker push step.
+ * @property includeGhcrPackage - Whether to include GHCR package.
+ * @property version - Version string.
+ * @property runPublish - Whether to publish.
+ * @property includeDotnetBinaries - Whether to include .NET binaries.
+ * @property publishLinux - Whether to publish for Linux.
+ * @property publishWindows - Whether to publish for Windows.
+ * @property publishMac - Whether to publish for Mac.
  */
 export interface ActionInputs {
   // General
@@ -68,6 +75,7 @@ export interface ActionInputs {
   rollbackMigrationsOnTestFailed: boolean
 
   // Versioning
+  version: string
   runVersioning: boolean
   csprojDepth: number
   csprojName: string
@@ -93,6 +101,9 @@ export interface ActionInputs {
   runRelease: boolean
 
   // Changelog
+  includeGhcrPackage: boolean
+  includeDotnetBinaries: boolean
+
   runChangelog: boolean
   majorKeywords: string
   minorKeywords: string
@@ -100,6 +111,12 @@ export interface ActionInputs {
   hotfixKeywords: string
   addedKeywords: string
   devKeywords: string
+
+  // Publish
+  runPublish: boolean
+  publishLinux: boolean
+  publishWindows: boolean
+  publishMac: boolean
 }
 
 import * as core from '@actions/core'
@@ -198,6 +215,7 @@ export function getInputs(): ActionInputs {
     ),
 
     // Versioning
+    version: getInputOrDefault('version', '0.0.0'),
     runVersioning: getInputOrDefaultBoolean('run_versioning', false),
     csprojDepth: parseInt(getInputOrDefault('csproj_depth', '1'), 10),
     csprojName: getInputOrDefault('csproj_name', '*.csproj'),
@@ -239,6 +257,14 @@ export function getInputs(): ActionInputs {
     ),
     hotfixKeywords: getInputOrDefault('hotfix_keywords', 'urgent, hotfix'),
     addedKeywords: getInputOrDefault('added_keywords', 'added, new'),
-    devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment')
+    devKeywords: getInputOrDefault('dev_keywords', 'dev, experiment'),
+
+    // Additional
+    includeGhcrPackage: getInputOrDefaultBoolean('include_ghcr_package', false),
+    includeDotnetBinaries: core.getBooleanInput('include_dotnet_binaries'),
+    runPublish: core.getBooleanInput('run_publish'),
+    publishLinux: core.getBooleanInput('publish_linux'),
+    publishWindows: core.getBooleanInput('publish_windows'),
+    publishMac: core.getBooleanInput('publish_mac')
   }
 }

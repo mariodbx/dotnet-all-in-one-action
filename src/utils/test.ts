@@ -6,7 +6,6 @@ import { installDotnetEfLocally } from './dotnet.js'
 
 /**
  * Executes .NET tests in a specified folder with a given configuration and uploads the test results as artifacts.
- * The function ensures that test artifacts are uploaded regardless of whether the tests pass or fail.
  *
  * @param {string} envName - The environment name to set for the test execution (e.g., 'Development', 'Production').
  * @param {string} testFolder - The folder containing the test project to execute.
@@ -17,35 +16,6 @@ import { installDotnetEfLocally } from './dotnet.js'
  * @returns {Promise<void>} A Promise that resolves when the test execution and artifact upload process is complete.
  *
  * @throws {Error} Throws an error if the test execution fails or if artifact upload encounters an issue.
- *
- * @example
- * ```typescript
- * import { tests } from './utils/test.js';
- *
- * (async () => {
- *   try {
- *     await tests(
- *       'Development',          // Environment name
- *       './tests/MyTestProject',// Test folder
- *       './output',             // Test output folder
- *       'trx',                  // Test result format (e.g., trx, html, json)
- *       false                   // Use global dotnet-ef tool
- *     );
- *   } catch (error) {
- *     console.error(`Error running tests: ${error.message}`);
- *     process.exit(1);
- *   }
- * })();
- * ```
- *
- * @remarks
- * - The `DOTNET_ENVIRONMENT` environment variable is set to the value of `envName` during the test execution.
- * - If `testFormat` is provided, the test results are logged to a file in the specified format and stored in the `testOutputFolder`.
- * - The function ensures that the test output directory exists before running the tests.
- * - Test artifacts are uploaded using the `@actions/artifact` package, and the artifact retention period is set to 7 days.
- * - If an error occurs during test execution, it is captured and rethrown after the artifact upload process to ensure the action fails appropriately.
- * - The `exec.getExecOutput` function is used to execute the `dotnet test` command with the specified arguments.
- * - This function is asynchronous and should be awaited to ensure proper error handling and artifact upload.
  */
 export async function tests(
   envName: string,
