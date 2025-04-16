@@ -1,15 +1,17 @@
 import * as core from '@actions/core';
 import { dockerLogin, qualifyImageName, buildAndPushCompose, buildAndPushDockerfile } from '../utils/docker.js';
 import { getInputs } from '../utils/inputs.js';
+import { findCsprojFile, readCsprojFile, extractVersion } from '../utils/csproj.js';
 export async function runDockerPush() {
     try {
         const inputs = getInputs();
         // Log into Docker registry using dockerLogin.
         await dockerLogin(inputs.registryType, false);
-        // Extract version from inputs or set a default.
-        const currentVersion = core.getInput('current_version');
-        const newVersion = core.getInput('new_version');
-        core.info(`Current version: ${currentVersion}, New version: ${newVersion}`);
+        // Extract version from the .csproj file.
+        const csprojPath = await findCsprojFile(inputs.csprojDepth, inputs.csprojName);
+        const csprojContent = await readCsprojFile(csprojPath);
+        const newVersion = extractVersion(csprojContent);
+        core.info(`New version: ${newVersion}`);
         if (!newVersion) {
             core.error('New version is required.');
             core.setFailed('New version is required.');

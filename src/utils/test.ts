@@ -9,19 +9,6 @@ const ARTIFACT_NAME = 'test-results'
 const ARTIFACT_RETENTION_DAYS = 7
 
 /**
- * Utility function to handle errors and log them appropriately.
- * @param {unknown} error - The error to handle.
- * @param {string} message - Custom error message to log.
- */
-function logError(error: unknown, message: string): void {
-  if (error instanceof Error) {
-    core.error(`${message}: ${error.message}`)
-  } else {
-    core.error(`${message}: Unknown error occurred.`)
-  }
-}
-
-/**
  * Executes .NET tests in a specified folder with a given configuration and uploads the test results as artifacts.
  * The function ensures that test artifacts are uploaded regardless of whether the tests pass or fail.
  *
@@ -71,72 +58,124 @@ export async function tests(
   testFormat: string,
   useGlobalDotnetEf: boolean
 ): Promise<void> {
-  core.info(`Setting environment to ${envName} for test execution...`)
+  core.info(`Setting DOTNET_ENVIRONMENT to "${envName}" for test execution...`)
 
-  // Ensure dotnet-ef is available if not using the global version
+  // Validate that the test folder exists.
+  if (!fs.existsSync(testFolder)) {
+    throw new Error(`Test folder does not exist: ${testFolder}`)
+  }
+
+  // Ensure dotnet-ef is available locally if the global flag is not set.
   if (!useGlobalDotnetEf) {
-    await installDotnetEfLocally()
-  } // Set the DOTNET_ENVIRONMENT variable for the test run
+    core.info('Installing dotnet-ef locally...')
+    try {
+      await installDotnetEfLocally()
+      core.info('dotnet-ef successfully installed locally.')
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        core.error(`Failed to install dotnet-ef locally: ${error.message}`)
+      } else {
+        core.error(
+          `Failed to install dotnet-ef locally: Unknown error occurred.`
+        )
+      }
+      throw error instanceof Error
+        ? error
+        : new Error('Unknown error during dotnet-ef installation.')
+    }
+  }
+
+  // Set the environment variable for the dotnet test command.
   process.env.DOTNET_ENVIRONMENT = envName
 
-  core.info(`Running tests in ${testFolder}...`)
+  core.info(`Running tests in folder: ${testFolder}...`)
 
-  // Create command arguments with detailed verbosity
+  // Initialize the arguments for the dotnet test command.
   const args = ['test', testFolder, '--verbosity', 'detailed']
 
-  // Resolve the test output folder
-  const resultFolder = path.resolve(testOutputFolder)
+  // Determine the output result file path if a test format is provided.
+  const resolvedOutputFolder = path.resolve(testOutputFolder)
   let resultFilePath = ''
 
   if (testFormat) {
-    // Build the result file name and resolve full path
+    // Construct the test result file's full path.
     const resultFileName = `TestResults.${testFormat}`
-    resultFilePath = path.join(resultFolder, resultFileName)
+    resultFilePath = path.join(resolvedOutputFolder, resultFileName)
 
-    // Ensure that the test output directory exists
-    fs.mkdirSync(resultFolder, { recursive: true })
+    // Ensure the output directory exists.
+    fs.mkdirSync(resolvedOutputFolder, { recursive: true })
 
-    // Add logging parameter to the test command so that results are output to a file
+    // Append logger parameters to the dotnet test arguments.
     args.push('--logger', `${testFormat};LogFileName=${resultFilePath}`)
   }
 
-  let testExecError: Error | undefined = undefined
+  let testExecError: Error | undefined
 
   try {
-    // Run the tests using exec.getExecOutput
-    const { stdout } = await exec.getExecOutput('dotnet', args)
+    // Execute the dotnet test command.
+    core.info(`Executing command: dotnet ${args.join(' ')}`)
+    const { stdout, stderr, exitCode } = await exec.getExecOutput(
+      'dotnet',
+      args
+    )
+
+    // Print outputs for debugging purposes.
     core.info(stdout)
+    if (stderr) {
+      core.warning(stderr)
+    }
+
+    // If the command did not complete successfully, capture and report the exit code.
+    if (exitCode !== 0) {
+      throw new Error(`dotnet test failed with exit code ${exitCode}`)
+    }
+
     core.info('Tests completed successfully.')
   } catch (error: unknown) {
-    // Capture the test error but do not rethrow immediately, to allow artifact upload
     testExecError =
       error instanceof Error
         ? error
-        : new Error('Unknown test execution error.')
-    logError(testExecError, 'Test execution encountered an error')
+        : new Error('Unknown error during test execution.')
+    if (testExecError instanceof Error) {
+      core.error(
+        `Test execution encountered an error: ${testExecError.message}`
+      )
+    } else {
+      core.error(`Test execution encountered an unknown error.`)
+    }
   } finally {
-    // Always attempt to upload the test artifacts if a result file was generated.
+    // Attempt to upload the test result file if it was generated.
     if (resultFilePath && fs.existsSync(resultFilePath)) {
-      core.info(`Uploading test result file from ${resultFilePath}...`)
+      core.info(
+        `Uploading test result artifact from file: ${resultFilePath}...`
+      )
       const artifactClient = new artifact.DefaultArtifactClient()
 
       try {
         const { id, size } = await artifactClient.uploadArtifact(
           ARTIFACT_NAME,
           [resultFilePath],
-          resultFolder,
+          resolvedOutputFolder,
           { retentionDays: ARTIFACT_RETENTION_DAYS }
         )
-        core.info(`Created artifact with id: ${id} (bytes: ${size})`)
+        core.info(`Artifact uploaded with id: ${id} (size: ${size} bytes).`)
       } catch (uploadError: unknown) {
-        logError(uploadError, 'Failed to upload test results')
+        if (uploadError instanceof Error) {
+          core.error(
+            `Failed to upload test results artifact: ${uploadError.message}`
+          )
+        } else {
+          core.error(
+            `Failed to upload test results artifact: Unknown error occurred.`
+          )
+        }
       }
     } else {
       core.warning('No test result file found to upload.')
     }
   }
 
-  // If there was an error during test execution, throw it now to mark the action as failed.
+  // If an error occurred during test execution, throw it to mark the action as failed.
   if (testExecError) {
     throw testExecError
   }
