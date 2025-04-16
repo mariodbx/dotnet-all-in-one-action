@@ -96,6 +96,8 @@ export function getInputs() {
         registryType: getInputOrDefault('registry_type', 'GHCR'),
         pushWithVersion: getInputOrDefaultBoolean('push_with_version', true),
         pushWithLatest: getInputOrDefaultBoolean('push_with_latest', true),
+        runDockerBuild: getInputOrDefaultBoolean('run_docker_build', false),
+        runDockerPush: getInputOrDefaultBoolean('run_docker_push', false),
         // Release
         runRelease: getInputOrDefaultBoolean('run_release', false),
         // Changelog

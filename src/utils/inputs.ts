@@ -41,6 +41,8 @@
  * @property hotfixKeywords - Keywords for hotfix version bumps.
  * @property addedKeywords - Keywords for added features.
  * @property devKeywords - Keywords for development or experimental features.
+ * @property runDockerBuild - Whether to run the Docker build step.
+ * @property runDockerPush - Whether to run the Docker push step.
  */
 export interface ActionInputs {
   // General
@@ -84,6 +86,8 @@ export interface ActionInputs {
   registryType: string
   pushWithVersion: boolean
   pushWithLatest: boolean
+  runDockerBuild: boolean
+  runDockerPush: boolean
 
   // Release
   runRelease: boolean
@@ -218,6 +222,8 @@ export function getInputs(): ActionInputs {
     registryType: getInputOrDefault('registry_type', 'GHCR'),
     pushWithVersion: getInputOrDefaultBoolean('push_with_version', true),
     pushWithLatest: getInputOrDefaultBoolean('push_with_latest', true),
+    runDockerBuild: getInputOrDefaultBoolean('run_docker_build', false),
+    runDockerPush: getInputOrDefaultBoolean('run_docker_push', false),
 
     // Release
     runRelease: getInputOrDefaultBoolean('run_release', false),

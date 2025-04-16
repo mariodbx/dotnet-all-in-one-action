@@ -3,12 +3,13 @@
  * executes the main logic from various modules.
  */
 import { getInputs } from './utils/inputs.js';
-import { runMigrations } from './runMigrations.js';
-import { runTests } from './runTests.js';
-import { runVersioning } from './runVersioning.js';
-import { runDocker } from './runDocker.js';
-import { runRelease } from './runRelease.js';
-import { runChangelog } from './runChangelog.js';
+import { runMigrations } from './workflows/runMigrations.js';
+import { runTests } from './workflows/runTests.js';
+import { runVersioning } from './workflows/runVersioning.js';
+import { runRelease } from './workflows/runRelease.js';
+import { runChangelog } from './workflows/runChangelog.js';
+import { runDockerBuild } from './workflows/runDockerBuild.js';
+import { runDockerPush } from './workflows/runDockerPush.js';
 /* istanbul ignore next */
 export async function run() {
     const inputs = getInputs();
@@ -24,9 +25,13 @@ export async function run() {
         console.log('Running versioning...');
         await runVersioning();
     }
-    if (inputs.runPushToRegistry) {
-        console.log('Running Push to Registry...');
-        await runDocker();
+    if (inputs.runDockerBuild) {
+        console.log('Running Docker build...');
+        await runDockerBuild();
+    }
+    if (inputs.runDockerPush) {
+        console.log('Running Docker push...');
+        await runDockerPush();
     }
     if (inputs.runRelease) {
         console.log('Running release...');

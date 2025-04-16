@@ -110,8 +110,12 @@ inputs:
     default: 'New Version: bump version to '
 
   # Docker
-  run_push_to_registry:
-    description: 'Push images to the registry? (true/false)'
+  run_docker_build:
+    description: 'Run Docker build step? (true/false)'
+    required: false
+    default: 'false'
+  run_docker_push:
+    description: 'Run Docker push step? (true/false)'
     required: false
     default: 'false'
   docker_compose_files:
