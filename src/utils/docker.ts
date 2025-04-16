@@ -2,144 +2,146 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
 /**
- * Returns a fully qualified image name based on the registry type.
- *
- * @param {string} image - The base image name (e.g., "sample-project.mvc").
- * @param {string} registryType - The container registry type (e.g., "ghcr", "acr", "dockerhub").
- * @returns {string} The fully qualified image name.
- * @throws {Error} Throws an error if the registry type is unsupported.
- * @example
- * const imageName: string = qualifyImageName('my-app', 'ghcr');
- * console.log(imageName); // "ghcr.io/<owner>/my-app"
- * @remarks
- * - For `ghcr`, the repository owner is derived from the `GITHUB_REPOSITORY` environment variable.
- * - For `acr`, the `ACR_SERVER` environment variable must be set.
- * - For `dockerhub`, the username is prepended if the image name does not include a slash.
+ * Interface for container registry operations.
  */
-export function qualifyImageName(image: string, registryType: string): string {
-  switch (registryType.toLowerCase()) {
-    case 'ghcr': {
-      // Use the repository owner from GITHUB_REPOSITORY, or fall back to a default.
-      const owner =
-        process.env.GITHUB_REPOSITORY?.toLowerCase().split('/')[0] ||
-        'default-owner'
-      // If the image is already qualified, return as is.
-      if (image.startsWith('ghcr.io/')) {
-        return image
-      }
-      return `ghcr.io/${owner}/${image}`
+interface IRegistry {
+  qualifyImageName(image: string): string
+  login(showFullOutput: boolean): Promise<string>
+}
+
+/**
+ * GHCR registry implementation.
+ */
+class GHCRRegistry implements IRegistry {
+  qualifyImageName(image: string): string {
+    const owner =
+      process.env.GITHUB_REPOSITORY?.toLowerCase().split('/')[0] ||
+      'default-owner'
+    if (image.startsWith('ghcr.io/')) {
+      return image
     }
-    case 'acr': {
-      // Expect the ACR server to be provided as an env var.
-      if (!process.env.ACR_SERVER) {
-        throw new Error('ACR_SERVER environment variable is not set.')
-      }
-      // If the image is already fully qualified, return it.
-      if (image.startsWith(process.env.ACR_SERVER)) {
-        return image
-      }
-      return `${process.env.ACR_SERVER}/${image}`
+    return `ghcr.io/${owner}/${image}`
+  }
+
+  async login(showFullOutput: boolean): Promise<string> {
+    const username = (process.env.GHCR_USERNAME || '').trim()
+    const token = (process.env.GHCR_TOKEN || '').trim()
+    const server = 'ghcr.io'
+
+    if (!username || !token) {
+      throw new Error('GHCR credentials are missing.')
     }
-    case 'dockerhub': {
-      // For Docker Hub, if the image doesn’t include a slash, prepend the username.
-      const username = process.env.DOCKERHUB_USERNAME || ''
-      if (image.includes('/') || !username) {
-        return image
-      }
-      return `${username}/${image}`
+
+    core.info(`Logging into ${server}...`)
+    const options = {
+      input: Buffer.from(token),
+      silent: !showFullOutput
     }
-    default:
-      throw new Error(`Unsupported registry type: ${registryType}`)
+
+    await exec.exec(
+      'docker',
+      ['login', server, '-u', username, '--password-stdin'],
+      options
+    )
+    return showFullOutput ? `Logged into ${server}` : ''
   }
 }
 
 /**
- * Performs a Docker login based on the registry type.
- *
- * @param {string} registryType - The container registry type (e.g., "ghcr", "acr", "dockerhub").
- * @param {boolean} showFullOutput - Whether to return the full output of the command.
- * @returns {Promise<string>} The full output of the command if `showFullOutput` is true, otherwise undefined.
- * @throws {Error} Throws an error if the registry type is unsupported or credentials are missing.
- * @example
- * const output: string = await dockerLogin('ghcr', true);
- * console.log(output);
- * @remarks
- * - Ensure the appropriate environment variables for credentials are set before calling this function.
- * - The `docker login` command is executed with the provided credentials.
+ * ACR registry implementation.
  */
-export async function dockerLogin(
-  registryType: string,
-  showFullOutput: boolean
-): Promise<string> {
-  const credentials: Record<
-    string,
-    { username: string; token: string; server?: string }
-  > = {
-    ghcr: {
-      username: (process.env.GHCR_USERNAME || '').trim(),
-      token: (process.env.GHCR_TOKEN || '').trim(),
-      server: 'ghcr.io'
-    },
-    acr: {
-      username: (process.env.ACR_USERNAME || '').trim(),
-      token: (process.env.ACR_PASSWORD || '').trim(),
-      server: process.env.ACR_SERVER
-    },
-    dockerhub: {
-      username: (process.env.DOCKERHUB_USERNAME || '').trim(),
-      token: (process.env.DOCKERHUB_TOKEN || '').trim(),
-      server: 'docker.io'
+class ACRRegistry implements IRegistry {
+  qualifyImageName(image: string): string {
+    const server = process.env.ACR_SERVER
+    if (!server) {
+      throw new Error('ACR_SERVER environment variable is not set.')
+    }
+    if (image.startsWith(server)) {
+      return image
+    }
+    return `${server}/${image}`
+  }
+
+  async login(showFullOutput: boolean): Promise<string> {
+    const username = (process.env.ACR_USERNAME || '').trim()
+    const token = (process.env.ACR_PASSWORD || '').trim()
+    const server = process.env.ACR_SERVER
+
+    if (!username || !token || !server) {
+      throw new Error('ACR credentials are missing.')
+    }
+
+    core.info(`Logging into ${server}...`)
+    const options = {
+      input: Buffer.from(token),
+      silent: !showFullOutput
+    }
+
+    await exec.exec(
+      'docker',
+      ['login', server, '-u', username, '--password-stdin'],
+      options
+    )
+    return showFullOutput ? `Logged into ${server}` : ''
+  }
+}
+
+/**
+ * DockerHub registry implementation.
+ */
+class DockerHubRegistry implements IRegistry {
+  qualifyImageName(image: string): string {
+    const username = process.env.DOCKERHUB_USERNAME || ''
+    if (image.includes('/') || !username) {
+      return image
+    }
+    return `${username}/${image}`
+  }
+
+  async login(showFullOutput: boolean): Promise<string> {
+    const username = (process.env.DOCKERHUB_USERNAME || '').trim()
+    const token = (process.env.DOCKERHUB_TOKEN || '').trim()
+    const server = 'docker.io'
+
+    if (!username || !token) {
+      throw new Error('DockerHub credentials are missing.')
+    }
+
+    core.info(`Logging into ${server}...`)
+    const options = {
+      input: Buffer.from(token),
+      silent: !showFullOutput
+    }
+
+    await exec.exec(
+      'docker',
+      ['login', server, '-u', username, '--password-stdin'],
+      options
+    )
+    return showFullOutput ? `Logged into ${server}` : ''
+  }
+}
+
+/**
+ * Factory to create registry instances.
+ */
+class RegistryFactory {
+  static createRegistry(registryType: string): IRegistry {
+    switch (registryType.toLowerCase()) {
+      case 'ghcr':
+        return new GHCRRegistry()
+      case 'acr':
+        return new ACRRegistry()
+      case 'dockerhub':
+        return new DockerHubRegistry()
+      default:
+        throw new Error(`Unsupported registry type: ${registryType}`)
     }
   }
-
-  const registry = credentials[registryType.toLowerCase()]
-  if (!registry) throw new Error(`Unsupported registry type: ${registryType}`)
-
-  if (!registry.username || !registry.token) {
-    throw new Error(`${registryType.toUpperCase()} credentials are missing.`)
-  }
-
-  const server = registry.server
-  core.info(`Logging into ${server}...`)
-
-  const options = {
-    input: Buffer.from(registry.token),
-    silent: !showFullOutput
-  }
-
-  await exec.exec(
-    'docker',
-    ['login', server || '', '-u', registry.username, '--password-stdin'],
-    options
-  )
-  return showFullOutput ? `Logged into ${server}` : ''
 }
 
 /**
  * Builds and pushes images using Docker Compose.
- *
- * @param {string} dockerComposeFile - The docker-compose file to use.
- * @param {string} version - The version to use for tagging.
- * @param {string[]} images - An array of image names as declared in docker-compose.
- * @param {boolean} pushWithVersion - Whether to push images tagged with the version.
- * @param {boolean} pushWithLatest - Whether to push images tagged as latest.
- * @param {string} registryType - The container registry type.
- * @param {boolean} showFullOutput - Whether to return the full output of the command.
- * @returns {Promise<string | void>} The full output of the command if `showFullOutput` is true, otherwise undefined.
- * @throws {Error} Throws an error if the build or push commands fail.
- * @example
- * const output: string | void = await buildAndPushCompose(
- *   'docker-compose.yml',
- *   '1.0.0',
- *   ['app'],
- *   true,
- *   true,
- *   'ghcr',
- *   true
- * );
- * @remarks
- * - This function builds and optionally pushes images using Docker Compose.
- * - Ensure the `docker-compose` CLI is installed and available in the PATH.
  */
 export async function buildAndPushCompose(
   dockerComposeFile: string,
@@ -149,13 +151,15 @@ export async function buildAndPushCompose(
   pushWithLatest: boolean,
   registryType: string
 ): Promise<string | void> {
+  const registry = RegistryFactory.createRegistry(registryType)
+
   core.info(`Building using Docker Compose file: ${dockerComposeFile}`)
   await exec.exec('docker-compose', ['-f', dockerComposeFile, 'build'], {})
 
   if (pushWithVersion) {
     core.info(`Pushing images (version tag "${version}")...`)
     for (const image of images) {
-      const qualifiedImage = qualifyImageName(image, registryType)
+      const qualifiedImage = registry.qualifyImageName(image)
       const imageWithVersion = `${qualifiedImage}:${version}`
       await exec.exec('docker', ['push', imageWithVersion], {})
     }
@@ -163,7 +167,7 @@ export async function buildAndPushCompose(
 
   if (pushWithLatest) {
     for (const image of images) {
-      const qualifiedImage = qualifyImageName(image, registryType)
+      const qualifiedImage = registry.qualifyImageName(image)
       const imageWithVersion = `${qualifiedImage}:${version}`
       const imageLatest = `${qualifiedImage}:latest`
       core.info(`Tagging ${imageWithVersion} as ${imageLatest}`)
@@ -175,29 +179,6 @@ export async function buildAndPushCompose(
 
 /**
  * Builds and pushes an image using a Dockerfile.
- *
- * @param {string} dockerfile - The path to the Dockerfile.
- * @param {string} buildContext - The build context for the Docker build.
- * @param {string} version - The version tag.
- * @param {string} image - The image name (repository) to use.
- * @param {string} registryType - The container registry type.
- * @param {boolean} pushWithVersion - Whether to push images tagged with the version.
- * @param {boolean} pushWithLatest - Whether to push images tagged as latest.
- * @returns {Promise<void>} Resolves when the build and push operations are complete.
- * @throws {Error} Throws an error if the build or push commands fail.
- * @example
- * await buildAndPushDockerfile(
- *   'Dockerfile',
- *   '.',
- *   '1.0.0',
- *   'my-app',
- *   'ghcr',
- *   true,
- *   true
- * );
- * @remarks
- * - This function builds and optionally pushes a Docker image using a Dockerfile.
- * - Ensure the `docker` CLI is installed and available in the PATH.
  */
 export async function buildAndPushDockerfile(
   dockerfile: string,
@@ -208,7 +189,8 @@ export async function buildAndPushDockerfile(
   pushWithVersion: boolean,
   pushWithLatest: boolean
 ): Promise<void> {
-  const qualifiedImage = qualifyImageName(image, registryType)
+  const registry = RegistryFactory.createRegistry(registryType)
+  const qualifiedImage = registry.qualifyImageName(image)
 
   if (pushWithVersion) {
     const imageWithVersion = `${qualifiedImage}:${version}`
