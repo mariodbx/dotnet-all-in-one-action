@@ -41,7 +41,7 @@ export async function runTests() {
         // Run tests and capture output file path and folder.
         try {
             core.debug('Starting test execution...');
-            await tests(inputs.envName, inputs.testMigrationsFolder, inputs.testOutputFolder, inputs.testFormat, inputs.useGlobalDotnetEf);
+            await tests(inputs.envName, inputs.testFolder, inputs.testOutputFolder, inputs.testFormat, inputs.useGlobalDotnetEf);
             core.info('Tests executed successfully.');
             resultFolder = inputs.testOutputFolder;
             resultFilePath = path.join(resultFolder, `TestResults.${inputs.testFormat}`);

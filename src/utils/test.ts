@@ -1,12 +1,8 @@
 import * as core from '@actions/core'
-import * as artifact from '@actions/artifact'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as exec from '@actions/exec'
 import { installDotnetEfLocally } from './dotnet.js'
-
-const ARTIFACT_NAME = 'test-results'
-const ARTIFACT_RETENTION_DAYS = 7
 
 /**
  * Executes .NET tests in a specified folder with a given configuration and uploads the test results as artifacts.
@@ -142,36 +138,6 @@ export async function tests(
       )
     } else {
       core.error(`Test execution encountered an unknown error.`)
-    }
-  } finally {
-    // Attempt to upload the test result file if it was generated.
-    if (resultFilePath && fs.existsSync(resultFilePath)) {
-      core.info(
-        `Uploading test result artifact from file: ${resultFilePath}...`
-      )
-      const artifactClient = new artifact.DefaultArtifactClient()
-
-      try {
-        const { id, size } = await artifactClient.uploadArtifact(
-          ARTIFACT_NAME,
-          [resultFilePath],
-          resolvedOutputFolder,
-          { retentionDays: ARTIFACT_RETENTION_DAYS }
-        )
-        core.info(`Artifact uploaded with id: ${id} (size: ${size} bytes).`)
-      } catch (uploadError: unknown) {
-        if (uploadError instanceof Error) {
-          core.error(
-            `Failed to upload test results artifact: ${uploadError.message}`
-          )
-        } else {
-          core.error(
-            `Failed to upload test results artifact: Unknown error occurred.`
-          )
-        }
-      }
-    } else {
-      core.warning('No test result file found to upload.')
     }
   }
 

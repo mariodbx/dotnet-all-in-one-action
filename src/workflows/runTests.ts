@@ -63,7 +63,7 @@ export async function runTests(): Promise<void> {
       core.debug('Starting test execution...')
       await tests(
         inputs.envName,
-        inputs.testMigrationsFolder,
+        inputs.testFolder,
         inputs.testOutputFolder,
         inputs.testFormat,
         inputs.useGlobalDotnetEf
