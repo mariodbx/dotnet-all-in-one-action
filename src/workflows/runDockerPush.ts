@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import * as exec from '@actions/exec'
 import {
   dockerLogin,
   qualifyImageName,
@@ -11,6 +12,17 @@ import {
   readCsprojFile,
   extractVersion
 } from '../utils/csproj.js'
+
+export async function checkGhcrImageExists(
+  imageName: string
+): Promise<boolean> {
+  try {
+    await exec.exec('docker', ['pull', imageName], { silent: true })
+    return true
+  } catch {
+    return false
+  }
+}
 
 export async function runDockerPush(): Promise<void> {
   try {

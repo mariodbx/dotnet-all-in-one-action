@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import { generateChangelog, createRelease } from '../utils/release.js';
-import { runDockerPush } from './runDockerPush.js';
+import { runDockerPush, checkGhcrImageExists } from './runDockerPush.js';
 import { getInputs } from '../utils/inputs.js';
 export async function runChangelog() {
     try {
@@ -12,9 +12,28 @@ export async function runChangelog() {
         let changelog = '';
         if (inputs.includeGhcrPackage) {
             core.info('Including GHCR package...');
-            await runDockerPush();
+            const version = inputs.version || '';
+            if (!version) {
+                throw new Error('Version is not defined.');
+            }
+            const repo = process.env.GITHUB_REPOSITORY || '';
+            if (!repo) {
+                throw new Error('GITHUB_REPOSITORY is not defined.');
+            }
+            const imageName = `${repo}/${inputs.dockerfileImages}:${version}`;
+            const imageExists = await checkGhcrImageExists(imageName);
+            if (imageExists) {
+                core.info(`GHCR package image ${imageName} already exists.`);
+            }
+            else {
+                core.info(`GHCR package image ${imageName} does not exist. Pushing...`);
+                await runDockerPush();
+            }
             core.info('Generating changelog with GHCR package details...');
             changelog = await generateChangelog();
+            // Add GHCR package image details to the changelog
+            changelog += `\n\n### GHCR Package\n- Image: \`${imageName}\``;
+            core.info('GHCR package image details added to the changelog.');
         }
         else if (inputs.runChangelog) {
             core.info('Generating changelog...');

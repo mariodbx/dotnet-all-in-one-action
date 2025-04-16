@@ -1,7 +1,17 @@
 import * as core from '@actions/core';
+import * as exec from '@actions/exec';
 import { dockerLogin, qualifyImageName, buildAndPushCompose, buildAndPushDockerfile } from '../utils/docker.js';
 import { getInputs } from '../utils/inputs.js';
 import { findCsprojFile, readCsprojFile, extractVersion } from '../utils/csproj.js';
+export async function checkGhcrImageExists(imageName) {
+    try {
+        await exec.exec('docker', ['pull', imageName], { silent: true });
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
 export async function runDockerPush() {
     try {
         const inputs = getInputs();
