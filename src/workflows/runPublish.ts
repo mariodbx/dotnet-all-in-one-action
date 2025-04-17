@@ -1,13 +1,15 @@
 import * as core from '@actions/core'
-import { publishDotnetProject } from '../utils/dotnet.js'
-import { getInputs } from '../utils/inputs.js'
+import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
+import { InputsManager } from '../inputs-manager/InputsManager.js'
 
 export async function runPublish(): Promise<void> {
-  const inputs = getInputs()
+  const inputs = new InputsManager()
+  const dotnetManager = new DotnetManager()
   console.log('Publishing binaries...')
+
   if (inputs.publishLinux) {
     core.info('Publishing .NET binaries for Linux...')
-    await publishDotnetProject('Release', './publish/linux', [
+    await dotnetManager.publishProject('Release', './publish/linux', [
       '--self-contained',
       '--runtime',
       'linux-x64'
@@ -16,7 +18,7 @@ export async function runPublish(): Promise<void> {
 
   if (inputs.publishWindows) {
     core.info('Publishing .NET binaries for Windows...')
-    await publishDotnetProject('Release', './publish/windows', [
+    await dotnetManager.publishProject('Release', './publish/windows', [
       '--self-contained',
       '--runtime',
       'win-x64'
@@ -25,7 +27,7 @@ export async function runPublish(): Promise<void> {
 
   if (inputs.publishMac) {
     core.info('Publishing .NET binaries for macOS...')
-    await publishDotnetProject('Release', './publish/macos', [
+    await dotnetManager.publishProject('Release', './publish/macos', [
       '--self-contained',
       '--runtime',
       'osx-x64'

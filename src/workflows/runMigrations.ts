@@ -1,15 +1,13 @@
 import * as core from '@actions/core'
-import { getInputs } from '../utils/inputs.js'
-import {
-  processMigrations,
-  getLastNonPendingMigration
-} from '../utils/migrations.js'
+import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
+import { InputsManager } from '../inputs-manager/InputsManager.js'
 
 export async function runMigrations(): Promise<void> {
   try {
-    const inputs = getInputs()
+    const inputs = new InputsManager()
+    const dotnetManager = new DotnetManager()
 
-    const baselineMigration = await getLastNonPendingMigration(
+    const baselineMigration = await dotnetManager.getLastNonPendingMigration(
       inputs.envName,
       inputs.homeDirectory,
       inputs.migrationsFolder,
@@ -20,7 +18,7 @@ export async function runMigrations(): Promise<void> {
       `Baseline migration before new migrations: ${baselineMigration || 'None'}`
     )
 
-    const newMigration = await processMigrations(
+    const newMigration = await dotnetManager.processMigrations(
       inputs.envName,
       inputs.homeDirectory,
       inputs.migrationsFolder,

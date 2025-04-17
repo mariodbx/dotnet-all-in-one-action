@@ -1,12 +1,7 @@
 import * as core from '@actions/core'
-import { getInputs } from '../utils/inputs.js'
-import {
-  processMigrations,
-  getLastNonPendingMigration,
-  rollbackMigrations
-} from '../utils/migrations.js'
-import { tests } from '../utils/test.js'
-import { uploadTestArtifact } from '../utils/artifact.js'
+import { InputsManager } from '../inputs-manager/InputsManager.js'
+import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
+import { ArtifactManager } from '../artifacts-manager/ArctifactsManager.js'
 import * as path from 'path'
 
 export async function runTests(): Promise<void> {
@@ -14,16 +9,16 @@ export async function runTests(): Promise<void> {
   let newMigration = ''
   let resultFilePath = ''
   let resultFolder = ''
-
+  // Retrieve and validate inputs
+  const inputs = new InputsManager()
+  const dotnetManager = new DotnetManager()
+  const artifactManager = new ArtifactManager('test-results', 7)
   try {
-    // Retrieve and validate inputs
-    const inputs = getInputs()
-
     // Migrations block: Get baseline and process new migrations if requested.
     if (inputs.runTestsMigrations) {
       core.debug('Attempting to run migrations...')
       try {
-        baselineMigration = await getLastNonPendingMigration(
+        baselineMigration = await dotnetManager.getLastNonPendingMigration(
           inputs.testsEnvName,
           inputs.homeDirectory,
           inputs.testMigrationsFolder,
@@ -34,7 +29,7 @@ export async function runTests(): Promise<void> {
           `Baseline migration before new migrations: ${baselineMigration}`
         )
 
-        newMigration = await processMigrations(
+        newMigration = await dotnetManager.processMigrations(
           inputs.testsEnvName,
           inputs.homeDirectory,
           inputs.testMigrationsFolder,
@@ -51,7 +46,6 @@ export async function runTests(): Promise<void> {
         if (migrationError instanceof Error) {
           core.error(migrationError.message)
         }
-        // Re-throw error if migrations block is critical; otherwise, you may decide to continue.
         throw migrationError
       }
     } else {
@@ -61,12 +55,11 @@ export async function runTests(): Promise<void> {
     // Run tests and capture output file path and folder.
     try {
       core.debug('Starting test execution...')
-      await tests(
-        inputs.envName,
+      await dotnetManager.runTests(
+        inputs.testsEnvName,
         inputs.testFolder,
         inputs.testOutputFolder,
-        inputs.testFormat,
-        inputs.useGlobalDotnetEf
+        inputs.testFormat
       )
       core.info('Tests executed successfully.')
 
@@ -78,7 +71,6 @@ export async function runTests(): Promise<void> {
       core.debug(`Determined test results file path: ${resultFilePath}`)
     } catch (testError) {
       core.error('Tests failed.')
-      // Roll back migrations only if conditions are met.
       if (
         inputs.rollbackMigrationsOnTestFailed &&
         baselineMigration &&
@@ -88,7 +80,7 @@ export async function runTests(): Promise<void> {
           core.info(
             `Rolling back migrations to baseline: ${baselineMigration} due to test failure...`
           )
-          await rollbackMigrations(
+          await dotnetManager.rollbackMigration(
             inputs.testsEnvName,
             inputs.homeDirectory,
             inputs.testMigrationsFolder,
@@ -108,7 +100,6 @@ export async function runTests(): Promise<void> {
           'Rollback skipped as no valid baseline migration was available or flag not set.'
         )
       }
-      // Propagate the test error to mark the GitHub Action as failed.
       throw testError
     }
   } catch (error) {
@@ -121,13 +112,11 @@ export async function runTests(): Promise<void> {
       core.setFailed('Unknown error occurred.')
     }
   } finally {
-    // Upload test artifact in a safe manner even if earlier steps failed.
     if (resultFilePath && resultFolder) {
       try {
-        const inputs = getInputs()
         if (inputs.uploadTestsResults) {
           core.debug('Uploading test artifact...')
-          await uploadTestArtifact(resultFilePath, resultFolder)
+          await artifactManager.upload(resultFilePath, resultFolder)
           core.info('Artifact uploaded successfully.')
         } else {
           core.debug('Artifact upload skipped as per configuration.')
