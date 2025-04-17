@@ -240,9 +240,7 @@ export class GitManager {
     await this.execGitCommand(['add', csprojPath])
     const commitMessage = `${commitMessagePrefix} Bump version to ${newVersion}`
     await this.execGitCommand(['commit', '-m', commitMessage])
-    // await this.execGitCommand(['tag', newVersion])
     await this.execGitCommand(['push', 'origin', 'HEAD'])
-    // await this.execGitCommand(['push', 'origin', '--tags'])
     this.core.info(`Version updated to ${newVersion} and pushed to remote.`)
   }
 
