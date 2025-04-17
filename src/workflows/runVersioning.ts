@@ -3,6 +3,7 @@ import { InputsManager } from '../inputs-manager/InputsManager.js'
 import { GitManager } from '../git-manager/GitManager.js'
 import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
 import { VersionManager } from '../version-manager/VersionManager.js'
+import { Timer } from '../utils/Timer.js'
 
 export async function runVersioning(): Promise<void> {
   try {
@@ -14,6 +15,10 @@ export async function runVersioning(): Promise<void> {
     core.info(
       `Configuration: csproj_depth=${inputs.csprojDepth}, csproj_name=${inputs.csprojName}, commit_user=${inputs.commitUser}, commit_email=${inputs.commitEmail}`
     )
+    Timer.wait(5000)
+    core.info('Waiting for 5 seconds before ensuring the latest version...')
+    gitManager.pullRepo('.', 'main')
+    core.info('Running git pull to fetch the latest version...')
 
     // Get the latest commit message.
     const commitMessage = await gitManager.getLatestCommitMessage()
@@ -74,6 +79,7 @@ export async function runVersioning(): Promise<void> {
       inputs.commitEmail,
       inputs.commitMessagePrefix
     )
+
     core.info(`Version bump process completed successfully.`)
   } catch (error: unknown) {
     if (error instanceof Error) {
