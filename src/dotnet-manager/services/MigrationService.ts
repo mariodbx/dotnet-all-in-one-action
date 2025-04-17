@@ -162,6 +162,59 @@ export class MigrationService extends DotnetBase implements IMigrationService {
     }
   }
 
+  public async addMigration(
+    migrationName: string,
+    outputDir: string,
+    context?: string
+  ): Promise<void> {
+    const args = ['migrations', 'add', migrationName, '--output-dir', outputDir]
+    if (context) {
+      args.push('--context', context)
+    }
+    await this.execDotnetCommand(args)
+  }
+
+  public async updateDatabase(
+    envName: string,
+    home: string,
+    migrationsFolder: string,
+    dotnetRoot: string,
+    useGlobalDotnetEf: boolean
+  ): Promise<void> {
+    const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`
+    const args = [
+      efTool,
+      'database',
+      'update',
+      '--project',
+      migrationsFolder,
+      '--environment',
+      envName
+    ]
+    await this.execDotnetCommand(args, home)
+  }
+
+  public async listMigrations(
+    envName: string,
+    home: string,
+    migrationsFolder: string,
+    dotnetRoot: string,
+    useGlobalDotnetEf: boolean
+  ): Promise<string[]> {
+    const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`
+    const args = [
+      efTool,
+      'migrations',
+      'list',
+      '--project',
+      migrationsFolder,
+      '--environment',
+      envName
+    ]
+    const output = await this.getExecDotnetCommandOutput(args, home)
+    return output.split('\n').filter((line) => line.trim())
+  }
+
   private async installDotnetEfLocally(): Promise<void> {
     try {
       this.core.info('Installing dotnet-ef tool locally...')

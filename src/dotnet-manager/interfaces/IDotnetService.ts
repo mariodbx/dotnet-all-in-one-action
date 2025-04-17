@@ -16,4 +16,15 @@ export interface IDotnetService {
     outputDir: string,
     additionalFlags?: string[]
   ): Promise<void>
+
+  /**
+   * Restores the NuGet packages for a .NET project.
+   */
+  restorePackages(): Promise<void>
+
+  /**
+   * Builds a .NET project with the specified configuration.
+   * @param configuration - The build configuration (e.g., Debug or Release).
+   */
+  buildProject(configuration: string): Promise<void>
 }

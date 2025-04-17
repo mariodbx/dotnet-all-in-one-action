@@ -8,7 +8,7 @@ export async function runVersioning(): Promise<void> {
   try {
     const inputs = new InputsManager()
     const gitManager = new GitManager()
-    const dotnetManager = new DotnetManager() // Use DotnetManager for csproj operations
+    const dotnetManager = new DotnetManager()
     const versionManager = new VersionManager()
 
     core.info(
@@ -38,7 +38,7 @@ export async function runVersioning(): Promise<void> {
     }
 
     // Locate the csproj file.
-    const csprojPath = await dotnetManager.findFile(
+    const csprojPath = await dotnetManager.findCsproj(
       inputs.csprojDepth,
       inputs.csprojName
     )
@@ -48,22 +48,23 @@ export async function runVersioning(): Promise<void> {
     core.info(`Found csproj file: ${csprojPath}`)
 
     // Read and parse the csproj file.
-    const currentVersion = await dotnetManager.extractVersion(csprojPath)
+    const csprojContent = await dotnetManager.readCsproj(csprojPath)
+    const currentVersion = dotnetManager.extractVersion(csprojContent)
     core.info(`Current version: ${currentVersion}`)
     core.setOutput('current_version', currentVersion)
 
     // Calculate the new version using VersionManager.
-    const newVersion = VersionManager.bumpVersion(currentVersion, bumpType)
+    const newVersion = versionManager.bumpVersion(currentVersion, bumpType)
     core.info(`New version: ${newVersion}`)
     core.setOutput('new_version', newVersion)
 
     // Update the csproj file with the new version.
-    await dotnetManager.updateVersion(csprojPath, newVersion)
+    const updatedContent = dotnetManager.updateVersion(
+      csprojContent,
+      newVersion
+    )
+    await dotnetManager.updateCsproj(csprojPath, updatedContent)
     core.info(`csproj file updated with new version.`)
-
-    // // Run .NET-specific tasks if needed using DotnetManager.
-    // await dotnetManager.restoreDependencies(csprojPath)
-    // core.info(`Dependencies restored for ${csprojPath}.`)
 
     // Update Git with the version bump.
     await gitManager.updateVersion(

@@ -49,4 +49,20 @@ export class TestService extends DotnetBase implements ITestService {
       throw new Error(errorMessage)
     }
   }
+
+  public async cleanTestResults(testOutputFolder: string): Promise<void> {
+    try {
+      this.core.info(`Cleaning test results in folder: ${testOutputFolder}...`)
+      if (fs.existsSync(testOutputFolder)) {
+        fs.rmSync(testOutputFolder, { recursive: true, force: true })
+        this.core.info('Test results cleaned successfully.')
+      } else {
+        this.core.info('Test output folder does not exist. Nothing to clean.')
+      }
+    } catch (error) {
+      const errorMessage = `Failed to clean test results: ${(error as Error).message}`
+      this.core.error(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
 }

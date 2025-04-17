@@ -1,7 +1,10 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import * as fs from 'fs/promises'
+import { getOctokit } from '@actions/github'
 import { GitOptions } from './interfaces/IGitOptions.js'
 import { GitDependencies } from './interfaces/IGitDependencies.js'
+import { Buffer } from 'buffer'
 
 export class GitManager {
   private actor: string
@@ -31,9 +34,14 @@ export class GitManager {
     }
   }
 
-  private async execGitCommand(args: string[], cwd?: string): Promise<void> {
+  private async execGitCommand(
+    args: string[],
+    cwd?: string,
+    execOptions?: exec.ExecOptions
+  ): Promise<void> {
     try {
-      await this.exec.exec('git', args, cwd ? { cwd } : undefined)
+      const options = cwd ? { cwd, ...execOptions } : execOptions
+      await this.exec.exec('git', args, options)
     } catch (error) {
       const errorMessage = `Git command failed: ${args.join(' ')} in directory: ${cwd || 'current working directory'}`
       this.core.error(errorMessage)
@@ -204,5 +212,190 @@ export class GitManager {
         `${errorMessage}. Original error: ${(error as Error).message}`
       )
     }
+  }
+
+  public async getLatestCommitMessage(): Promise<string> {
+    let stdout = ''
+    const options: exec.ExecOptions = {
+      listeners: {
+        stdout: (data: Buffer) => {
+          stdout += data.toString()
+        }
+      }
+    }
+    await this.execGitCommand(['log', '-1', '--pretty=%B'], undefined, options)
+    return stdout.trim()
+  }
+
+  public async updateVersion(
+    newVersion: string,
+    csprojPath: string,
+    commitUser: string,
+    commitEmail: string,
+    commitMessagePrefix: string
+  ): Promise<void> {
+    await this.execGitCommand(['config', 'user.name', commitUser])
+    await this.execGitCommand(['config', 'user.email', commitEmail])
+    await this.execGitCommand(['add', csprojPath])
+    const commitMessage = `${commitMessagePrefix} Bump version to ${newVersion}`
+    await this.execGitCommand(['commit', '-m', commitMessage])
+  }
+
+  public async createRelease(params: {
+    owner: string
+    repo: string
+    tagName: string
+    releaseName: string
+    body: string
+    draft?: boolean
+    prerelease?: boolean
+  }): Promise<number> {
+    const octokit = getOctokit(this.token)
+    core.info(`Creating release for tag: ${params.tagName}`)
+    const response = await octokit.rest.repos.createRelease({
+      owner: params.owner,
+      repo: params.repo,
+      tag_name: params.tagName,
+      name: params.releaseName,
+      body: params.body,
+      draft: params.draft ?? false,
+      prerelease: params.prerelease ?? false
+    })
+    core.info(`Release created with ID: ${response.data.id}`)
+    return response.data.id
+  }
+
+  public async uploadAssets(
+    owner: string,
+    repo: string,
+    releaseId: number,
+    assets: { name: string; path: string }[]
+  ): Promise<void> {
+    const octokit = getOctokit(this.token)
+    for (const asset of assets) {
+      try {
+        this.core.info(`Uploading asset: ${asset.name} from ${asset.path}...`)
+        const fileContent = await fs.readFile(asset.path)
+        const stat = await fs.stat(asset.path)
+        await octokit.rest.repos.uploadReleaseAsset({
+          owner,
+          repo,
+          release_id: releaseId,
+          name: asset.name,
+          data: fileContent.toString(),
+          headers: {
+            'content-length': stat.size,
+            'content-type': 'application/octet-stream'
+          }
+        })
+        this.core.info(`Asset ${asset.name} uploaded successfully.`)
+      } catch (error) {
+        const errorMessage = `Failed to upload asset ${asset.name} from ${asset.path}`
+        this.core.error(errorMessage)
+        throw new Error(
+          `${errorMessage}. Original error: ${(error as Error).message}`
+        )
+      }
+    }
+  }
+
+  public async generateChangelog(
+    majorKeywords: string,
+    minorKeywords: string,
+    patchKeywords: string,
+    hotfixKeywords: string,
+    addedKeywords: string,
+    devKeywords: string,
+    changelogFile: string = 'changelog.txt'
+  ): Promise<string> {
+    let lastTag = ''
+    try {
+      const output = await exec.getExecOutput('git', [
+        'describe',
+        '--tags',
+        '--abbrev=0'
+      ])
+      lastTag = output.stdout.trim()
+      this.core.info(`Found last tag: ${lastTag}`)
+    } catch (error) {
+      const errorMessage = 'Failed to retrieve last tag'
+      this.core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
+
+    const range = lastTag ? `${lastTag}..HEAD` : ''
+    let commits = ''
+    try {
+      const output = await exec.getExecOutput('git', [
+        'log',
+        ...(range ? [range] : []),
+        '--no-merges',
+        '--pretty=format:%h %s'
+      ])
+      commits = output.stdout.trim()
+    } catch (error) {
+      const errorMessage = 'Failed to retrieve commits'
+      this.core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
+
+    const buildKeywordRegex = (keywordsInput: string): RegExp => {
+      const keywords = keywordsInput
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean)
+
+      if (keywords.length === 0) return /^$/
+
+      const pattern = keywords
+        .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('|')
+      return new RegExp(`(${pattern})`, 'i')
+    }
+
+    const categorize = (commits: string, pattern: RegExp): string => {
+      return (
+        commits
+          .split('\n')
+          .filter((line) => pattern.test(line))
+          .join('\n') || 'None'
+      )
+    }
+
+    const changelog = [
+      ['### Major Changes', buildKeywordRegex(majorKeywords)],
+      ['### Minor Changes', buildKeywordRegex(minorKeywords)],
+      ['### Patch/Bug Fixes', buildKeywordRegex(patchKeywords)],
+      ['### Hotfixes', buildKeywordRegex(hotfixKeywords)],
+      ['### Additions', buildKeywordRegex(addedKeywords)],
+      ['### Dev Changes', buildKeywordRegex(devKeywords)]
+    ]
+      .map(
+        ([label, regex]) => `${label}\n${categorize(commits, regex as RegExp)}`
+      )
+      .join('\n\n')
+
+    await fs.writeFile(changelogFile, changelog, 'utf8')
+    core.info('Generated changelog:\n' + changelog)
+    return changelog
+  }
+
+  public async releaseExists(repo: string, version: string): Promise<boolean> {
+    const url = `https://api.github.com/repos/${repo}/releases/tags/v${version}`
+    const response = await fetch(url, {
+      headers: { Authorization: `token ${this.token}` }
+    })
+
+    if (!response.ok && response.status !== 404) {
+      throw new Error(
+        `Failed to check release existence: ${response.status} ${response.statusText}`
+      )
+    }
+
+    return response.status === 200
   }
 }

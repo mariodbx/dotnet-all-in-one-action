@@ -31,4 +31,26 @@ export interface IMigrationService {
     dotnetRoot: string,
     useGlobalDotnetEf: boolean
   ): Promise<string>
+
+  addMigration(
+    migrationName: string,
+    outputDir: string,
+    context?: string
+  ): Promise<void>
+
+  updateDatabase(
+    envName: string,
+    home: string,
+    migrationsFolder: string,
+    dotnetRoot: string,
+    useGlobalDotnetEf: boolean
+  ): Promise<void>
+
+  listMigrations(
+    envName: string,
+    home: string,
+    migrationsFolder: string,
+    dotnetRoot: string,
+    useGlobalDotnetEf: boolean
+  ): Promise<string[]>
 }

@@ -5,4 +5,6 @@ export interface ITestService {
     testOutputFolder: string,
     testFormat?: string
   ): Promise<void>
+
+  cleanTestResults(testOutputFolder: string): Promise<void>
 }

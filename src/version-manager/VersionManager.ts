@@ -124,4 +124,27 @@ export class VersionManager {
     ])
     return commits
   }
+
+  public extractBumpType(commitMessage: string): string {
+    const match = commitMessage.match(/bump:\s*(\w+)/i)
+    return match ? match[1].toLowerCase() : ''
+  }
+
+  public isValidBumpType(bumpType: string): boolean {
+    return ['major', 'minor', 'patch'].includes(bumpType)
+  }
+
+  public bumpVersion(currentVersion: string, bumpType: string): string {
+    const [major, minor, patch] = currentVersion.split('.').map(Number)
+    switch (bumpType) {
+      case 'major':
+        return `${major + 1}.0.0`
+      case 'minor':
+        return `${major}.${minor + 1}.0`
+      case 'patch':
+        return `${major}.${minor}.${patch + 1}`
+      default:
+        throw new Error(`Invalid bump type: ${bumpType}`)
+    }
+  }
 }

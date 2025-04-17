@@ -47,4 +47,28 @@ export class DotnetService extends DotnetBase implements IDotnetService {
       )
     }
   }
+
+  async restorePackages(): Promise<void> {
+    try {
+      this.core.info('Restoring NuGet packages...')
+      await this.execDotnetCommand(['restore'])
+      this.core.info('NuGet packages restored successfully.')
+    } catch (error) {
+      const errorMessage = `Failed to restore NuGet packages: ${(error as Error).message}`
+      this.core.error(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
+
+  async buildProject(configuration: string): Promise<void> {
+    try {
+      this.core.info(`Building project with configuration: ${configuration}...`)
+      await this.execDotnetCommand(['build', '-c', configuration])
+      this.core.info('Project built successfully.')
+    } catch (error) {
+      const errorMessage = `Failed to build project: ${(error as Error).message}`
+      this.core.error(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
 }
