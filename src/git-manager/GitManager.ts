@@ -5,6 +5,7 @@ import { getOctokit } from '@actions/github'
 import { GitOptions } from './interfaces/IGitOptions.js'
 import { GitDependencies } from './interfaces/IGitDependencies.js'
 import { Buffer } from 'buffer'
+import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods'
 
 export class GitManager {
   private actor: string
@@ -241,28 +242,25 @@ export class GitManager {
     await this.execGitCommand(['commit', '-m', commitMessage])
   }
 
-  public async createRelease(params: {
-    owner: string
-    repo: string
-    tagName: string
-    releaseName: string
-    body: string
-    draft?: boolean
-    prerelease?: boolean
-  }): Promise<number> {
+  public async createRelease(
+    repo: string,
+    tag: string,
+    changelog: string
+  ): Promise<RestEndpointMethodTypes['repos']['createRelease']['response']> {
+    const [owner, repoName] = repo.split('/')
     const octokit = getOctokit(this.token)
-    core.info(`Creating release for tag: ${params.tagName}`)
+    this.core.info(`Creating release for tag ${tag}...`)
     const response = await octokit.rest.repos.createRelease({
-      owner: params.owner,
-      repo: params.repo,
-      tag_name: params.tagName,
-      name: params.releaseName,
-      body: params.body,
-      draft: params.draft ?? false,
-      prerelease: params.prerelease ?? false
+      owner,
+      repo: repoName,
+      tag_name: tag,
+      name: tag,
+      body: changelog,
+      draft: false,
+      prerelease: false
     })
-    core.info(`Release created with ID: ${response.data.id}`)
-    return response.data.id
+    this.core.info(`Release created with ID ${response.data.id}.`)
+    return response
   }
 
   public async uploadAssets(
@@ -299,89 +297,75 @@ export class GitManager {
     }
   }
 
-  public async generateChangelog(
-    majorKeywords: string,
-    minorKeywords: string,
-    patchKeywords: string,
-    hotfixKeywords: string,
-    addedKeywords: string,
-    devKeywords: string,
-    changelogFile: string = 'changelog.txt'
-  ): Promise<string> {
+  public async generateChangelog(inputs: {
+    majorKeywords: string
+    minorKeywords: string
+    patchKeywords: string
+    hotfixKeywords: string
+    addedKeywords: string
+    devKeywords: string
+  }): Promise<string> {
     let lastTag = ''
     try {
-      const output = await exec.getExecOutput('git', [
+      const { stdout } = await exec.getExecOutput('git', [
         'describe',
         '--tags',
         '--abbrev=0'
       ])
-      lastTag = output.stdout.trim()
+      lastTag = stdout.trim()
       this.core.info(`Found last tag: ${lastTag}`)
-    } catch (error) {
-      const errorMessage = 'Failed to retrieve last tag'
-      this.core.error(errorMessage)
-      throw new Error(
-        `${errorMessage}. Original error: ${(error as Error).message}`
-      )
+    } catch {
+      this.core.info('No tags found, using all commits.')
     }
 
     const range = lastTag ? `${lastTag}..HEAD` : ''
-    let commits = ''
-    try {
-      const output = await exec.getExecOutput('git', [
-        'log',
-        ...(range ? [range] : []),
-        '--no-merges',
-        '--pretty=format:%h %s'
-      ])
-      commits = output.stdout.trim()
-    } catch (error) {
-      const errorMessage = 'Failed to retrieve commits'
-      this.core.error(errorMessage)
-      throw new Error(
-        `${errorMessage}. Original error: ${(error as Error).message}`
-      )
-    }
-
-    const buildKeywordRegex = (keywordsInput: string): RegExp => {
-      const keywords = keywordsInput
-        .split(',')
-        .map((k) => k.trim())
-        .filter(Boolean)
-
-      if (keywords.length === 0) return /^$/
-
-      const pattern = keywords
-        .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .join('|')
-      return new RegExp(`(${pattern})`, 'i')
-    }
-
-    const categorize = (commits: string, pattern: RegExp): string => {
-      return (
-        commits
-          .split('\n')
-          .filter((line) => pattern.test(line))
-          .join('\n') || 'None'
-      )
-    }
+    const { stdout: commits } = await exec.getExecOutput('git', [
+      'log',
+      ...(range ? [range] : []),
+      '--no-merges',
+      '--pretty=format:%h %s'
+    ])
 
     const changelog = [
-      ['### Major Changes', buildKeywordRegex(majorKeywords)],
-      ['### Minor Changes', buildKeywordRegex(minorKeywords)],
-      ['### Patch/Bug Fixes', buildKeywordRegex(patchKeywords)],
-      ['### Hotfixes', buildKeywordRegex(hotfixKeywords)],
-      ['### Additions', buildKeywordRegex(addedKeywords)],
-      ['### Dev Changes', buildKeywordRegex(devKeywords)]
+      ['### Major Changes', this.buildKeywordRegex(inputs.majorKeywords)],
+      ['### Minor Changes', this.buildKeywordRegex(inputs.minorKeywords)],
+      ['### Patch/Bug Fixes', this.buildKeywordRegex(inputs.patchKeywords)],
+      ['### Hotfixes', this.buildKeywordRegex(inputs.hotfixKeywords)],
+      ['### Additions', this.buildKeywordRegex(inputs.addedKeywords)],
+      ['### Dev Changes', this.buildKeywordRegex(inputs.devKeywords)]
     ]
       .map(
-        ([label, regex]) => `${label}\n${categorize(commits, regex as RegExp)}`
+        ([label, regex]) =>
+          `${label}\n${this.categorize(commits, regex as RegExp)}`
       )
       .join('\n\n')
 
-    await fs.writeFile(changelogFile, changelog, 'utf8')
-    core.info('Generated changelog:\n' + changelog)
+    await fs.writeFile('changelog.txt', changelog, 'utf8')
+    this.core.info('Generated changelog:\n' + changelog)
     return changelog
+  }
+
+  private buildKeywordRegex(keywordsInput: string): RegExp {
+    const keywords = keywordsInput
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean)
+
+    if (keywords.length === 0) return /^$/
+
+    const pattern = keywords
+      .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|')
+    return new RegExp(`(${pattern})`, 'i')
+  }
+
+  private categorize(commits: string, pattern: RegExp): string {
+    return (
+      commits
+        .split('\n')
+        .filter((line) => pattern.test(line))
+        .join('\n') || 'None'
+    )
   }
 
   public async releaseExists(repo: string, version: string): Promise<boolean> {
@@ -398,4 +382,14 @@ export class GitManager {
 
     return response.status === 200
   }
-}
+  /**
+   * Extracts a version string from a commit message.
+   * @param commitMessage The commit message to parse.
+   * @returns The extracted version string or null if not found.
+   */
+  extractVersionFromCommit(commitMessage: string): string | null {
+    const versionRegex = /version\s(\d+\.\d+\.\d+)/i
+    const match = commitMessage.match(versionRegex)
+    return match ? match[1] : null
+  }
+} //region

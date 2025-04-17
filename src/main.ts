@@ -2,19 +2,18 @@
  * The entrypoint for the action. This file logs all inputs and sequentially
  * executes the main logic from various modules.
  */
-import { getInputs } from './utils/inputs.js'
 import { runMigrations } from './workflows/runMigrations.js'
 import { runTests } from './workflows/runTests.js'
 import { runVersioning } from './workflows/runVersioning.js'
 import { runRelease } from './workflows/runRelease.js'
-import { runChangelog } from './workflows/runChangelog.js'
 import { runDockerBuild } from './workflows/runDockerBuild.js'
 import { runDockerPush } from './workflows/runDockerPush.js'
 import { runPublish } from './workflows/runPublish.js' // Import the new publish workflow
+import { InputsManager } from './inputs-manager/InputsManager.js'
 
 /* istanbul ignore next */
 export async function run() {
-  const inputs = getInputs()
+  const inputs = new InputsManager()
 
   if (inputs.runMigrations) {
     console.log('Running migrations...')
@@ -43,10 +42,6 @@ export async function run() {
   if (inputs.runRelease) {
     console.log('Running release...')
     await runRelease()
-  }
-  if (inputs.runChangelog) {
-    console.log('Running changelog ..')
-    await runChangelog()
   }
 
   console.log('Action completed successfully.')

@@ -10,6 +10,10 @@ export class DockerManager {
     this.registry = RegistryFactory.createRegistry(registryType)
   }
 
+  public qualifyImageName(image: string): string {
+    return this.registry.qualifyImageName(image)
+  }
+
   async login(showFullOutput: boolean = false): Promise<void> {
     core.info('Logging into the registry...')
     await this.registry.login(showFullOutput)

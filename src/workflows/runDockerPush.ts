@@ -1,17 +1,8 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
-import {
-  dockerLogin,
-  qualifyImageName,
-  buildAndPushCompose,
-  buildAndPushDockerfile
-} from '../utils/docker.js'
-import { getInputs } from '../utils/inputs.js'
-import {
-  findCsprojFile,
-  readCsprojFile,
-  extractVersion
-} from '../utils/csproj.js'
+import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
+import { InputsManager } from '../inputs-manager/InputsManager.js'
+import { DockerManager } from '../docker-manager/DockerManager.js'
 
 export async function checkGhcrImageExists(
   imageName: string
@@ -26,18 +17,24 @@ export async function checkGhcrImageExists(
 
 export async function runDockerPush(): Promise<void> {
   try {
-    const inputs = getInputs()
+    const inputs = new InputsManager()
+    const dotnetManager = new DotnetManager()
+    const dockerManager = new DockerManager(inputs.registryType)
 
-    // Log into Docker registry using dockerLogin.
-    await dockerLogin(inputs.registryType, false)
+    // Log into Docker registry using DockerManager.
+    await dockerManager.login(false)
 
     // Extract version from the .csproj file.
-    const csprojPath = await findCsprojFile(
+    const csprojPath = await dotnetManager.findCsproj(
       inputs.csprojDepth,
       inputs.csprojName
     )
-    const csprojContent = await readCsprojFile(csprojPath)
-    const newVersion = extractVersion(csprojContent)
+    if (!csprojPath) {
+      throw new Error(`No .csproj file found with name "${inputs.csprojName}".`)
+    }
+    core.info(`Found .csproj file: ${csprojPath}`)
+    const csprojContent = await dotnetManager.readCsproj(csprojPath)
+    const newVersion = dotnetManager.extractVersion(csprojContent)
 
     core.info(`New version: ${newVersion}`)
     if (!newVersion) {
@@ -59,18 +56,17 @@ export async function runDockerPush(): Promise<void> {
         .filter((file) => file)
       const composeImages = inputs.images
         .split(',')
-        .map((img) => qualifyImageName(img.trim(), inputs.registryType))
+        .map((img) => dockerManager.qualifyImageName(img.trim()))
         .filter((img) => img)
 
       for (const file of dcFiles) {
         core.info(`Processing Docker Compose file: ${file}`)
-        await buildAndPushCompose(
-          file,
+        await dockerManager.buildCompose(file)
+        await dockerManager.pushCompose(
           newVersion,
           composeImages,
           inputs.pushWithVersion,
-          inputs.pushWithLatest,
-          inputs.registryType
+          inputs.pushWithLatest
         )
       }
     }
@@ -88,7 +84,7 @@ export async function runDockerPush(): Promise<void> {
         .filter((f) => f)
       const dockerfileImages = inputs.dockerfileImages
         .split(',')
-        .map((img) => qualifyImageName(img.trim(), inputs.registryType))
+        .map((img) => dockerManager.qualifyImageName(img.trim()))
         .filter((img) => img)
       const contexts = inputs.dockerfileContexts
         ? inputs.dockerfileContexts
@@ -110,15 +106,13 @@ export async function runDockerPush(): Promise<void> {
         core.info(
           `Processing Dockerfile: ${dockerfiles[i]} with context: ${contexts[i]} and image: ${dockerfileImages[i]}`
         )
-        await buildAndPushDockerfile(
+        const imageWithVersion = await dockerManager.buildDocker(
           dockerfiles[i],
           contexts[i],
           newVersion,
-          dockerfileImages[i],
-          inputs.registryType,
-          inputs.pushWithVersion,
-          inputs.pushWithLatest
+          dockerfileImages[i]
         )
+        await dockerManager.pushDocker(imageWithVersion, inputs.pushWithLatest)
       }
     }
 

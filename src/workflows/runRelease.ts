@@ -1,36 +1,33 @@
 // runRelease.ts
 import * as core from '@actions/core'
-import * as exec from '@actions/exec'
-import {
-  getLatestCommitSubject,
-  extractVersionFromCommit
-} from '../utils/git.js'
-import { findCsprojFile, extractVersionFromCsproj } from '../utils/csproj.js'
-import { releaseExists, createRelease } from '../utils/release.js'
-import { getInputs } from '../utils/inputs.js'
-import { wait } from '../utils/wait.js'
-import * as fs from 'fs/promises'
+import { Timer } from '../utils/Timer.js'
+import { InputsManager } from '../inputs-manager/InputsManager.js'
+import { GitManager } from '../git-manager/GitManager.js'
+import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
 
 export async function runRelease(): Promise<void> {
   try {
-    const inputs = getInputs()
-    const token = process.env.GITHUB_TOKEN || ''
+    const inputs = new InputsManager()
+    const gitManager = new GitManager()
+    const dotnetManager = new DotnetManager()
+
+    // const token = process.env.GITHUB_TOKEN || ''
     const repo = process.env.GITHUB_REPOSITORY || ''
     if (!repo) throw new Error('GITHUB_REPOSITORY is not defined.')
 
     let version: string | null = null
 
     core.info('Waiting for 5 seconds before ensuring the latest version...')
-    await wait(5000)
+    await Timer.wait(5000)
 
     core.info('Running git pull to fetch the latest version...')
-    await exec.exec('git', ['pull'])
+    await gitManager.pullRepo('.', 'main')
 
     // Determine version based on configuration.
     if (inputs.useCommitMessage) {
-      const commitSubject = await getLatestCommitSubject()
+      const commitSubject = await gitManager.getLatestCommitMessage()
       core.info(`Latest commit subject: "${commitSubject}"`)
-      version = extractVersionFromCommit(commitSubject)
+      version = gitManager.extractVersionFromCommit(commitSubject)
       if (!version) {
         core.info(
           'No version bump detected in commit message. Skipping release.'
@@ -40,15 +37,20 @@ export async function runRelease(): Promise<void> {
       }
     } else {
       core.info(
-        `Searching for csproj file with pattern "${inputs.csprojName}" at max depth ${inputs.csprojDepth}`
+        `Searching for .csproj file with pattern "${inputs.csprojName}" at max depth ${inputs.csprojDepth}`
       )
-      const csprojPath = await findCsprojFile(
+      const csprojPath = await dotnetManager.findCsproj(
         inputs.csprojDepth,
         inputs.csprojName
       )
-      core.info(`Found csproj file at: ${csprojPath}`)
-      const csprojContent = await fs.readFile(csprojPath, 'utf8')
-      version = extractVersionFromCsproj(csprojContent)
+      if (!csprojPath) {
+        throw new Error(
+          `No .csproj file found with name "${inputs.csprojName}".`
+        )
+      }
+      core.info(`Found .csproj file at: ${csprojPath}`)
+      const csprojContent = await dotnetManager.readCsproj(csprojPath)
+      version = dotnetManager.extractVersion(csprojContent)
       if (!version) {
         core.info('No version found in the .csproj file. Skipping release.')
         core.setOutput('skip', 'true')
@@ -62,14 +64,14 @@ export async function runRelease(): Promise<void> {
     core.setOutput('skip', 'false')
 
     // Check if a release for this version already exists.
-    const exists = await releaseExists(repo, version, token)
+    const exists = await gitManager.releaseExists(repo, version)
     if (exists) {
       core.info(`Release v${version} already exists. Skipping creation.`)
       return
     }
 
     // Create a new release (changelog is left empty; it will be added later by runChangelog).
-    await createRelease(repo, version, '', token)
+    await gitManager.createRelease(repo, version, '')
     core.info(`Release v${version} created successfully.`)
   } catch (error: unknown) {
     core.setFailed(error instanceof Error ? error.message : String(error))

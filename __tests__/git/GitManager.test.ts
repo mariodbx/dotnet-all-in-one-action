@@ -1,6 +1,4 @@
 import { jest } from '@jest/globals' // Import jest explicitly
-import fs from 'fs/promises' // Import fs/promises for file operations
-import { Stats } from 'fs' // Import Stats for type casting
 import { GitManager } from '../../src/git-manager/GitManager.js'
 import * as execFixture from '../../__fixtures__/exec.js'
 import * as coreFixture from '../../__fixtures__/core.js'
@@ -396,94 +394,6 @@ describe('GitManager', () => {
       )
       expect(mockCore.error).toHaveBeenCalledWith(
         `Failed to restore repository in directory: ${localDir}`
-      )
-    })
-  })
-
-  describe('uploadAssets', () => {
-    test('should upload assets successfully', async () => {
-      const owner = 'test-owner'
-      const repo = 'test-repo'
-      const releaseId = 123
-      const assets = [{ name: 'test-asset.txt', path: '/tmp/test-asset.txt' }]
-
-      jest.spyOn(fs, 'readFile').mockResolvedValue(Buffer.from('file content'))
-      jest
-        .spyOn(fs, 'stat')
-        .mockResolvedValue({ size: 123 } as unknown as Stats)
-      const mockUploadReleaseAsset = jest.fn().mockResolvedValue({} as never) // Explicitly cast to 'never'
-      jest.spyOn(mockExec, 'exec').mockResolvedValue(0)
-
-      const octokitMock = {
-        rest: {
-          repos: {
-            uploadReleaseAsset: mockUploadReleaseAsset
-          }
-        }
-      }
-      jest.spyOn(mockCore, 'info').mockImplementation(jest.fn())
-      jest.spyOn(mockCore, 'error').mockImplementation(jest.fn())
-
-      const gitManager = new GitManager(defaultOptions, {
-        exec: mockExec,
-        core: mockCore
-      })
-      gitManager['getOctokit'] = jest.fn().mockReturnValue(octokitMock)
-
-      await gitManager.uploadAssets(owner, repo, releaseId, assets)
-
-      expect(mockUploadReleaseAsset).toHaveBeenCalledWith({
-        owner,
-        repo,
-        release_id: releaseId,
-        name: 'test-asset.txt',
-        data: 'file content',
-        headers: {
-          'content-length': 123,
-          'content-type': 'application/octet-stream'
-        }
-      } as never)
-      expect(mockCore.info).toHaveBeenCalledWith(
-        'Asset test-asset.txt uploaded successfully.'
-      )
-    })
-
-    test('should throw an error if asset upload fails', async () => {
-      const owner = 'test-owner'
-      const repo = 'test-repo'
-      const releaseId = 123
-      const assets = [{ name: 'test-asset.txt', path: '/tmp/test-asset.txt' }]
-
-      jest.spyOn(fs, 'readFile').mockResolvedValue(Buffer.from('file content'))
-      jest
-        .spyOn(fs, 'stat')
-        .mockResolvedValue({ size: 123 } as unknown as Stats)
-      const mockUploadReleaseAsset = jest
-        .fn()
-        .mockRejectedValue(new Error('Upload failed') as never)
-      const octokitMock = {
-        rest: {
-          repos: {
-            uploadReleaseAsset: mockUploadReleaseAsset
-          }
-        }
-      }
-      jest.spyOn(mockCore, 'info').mockImplementation(jest.fn())
-      jest.spyOn(mockCore, 'error').mockImplementation(jest.fn())
-
-      const gitManager = new GitManager(defaultOptions, {
-        exec: mockExec,
-        core: mockCore
-      })
-      gitManager['getOctokit'] = jest.fn().mockReturnValue(octokitMock)
-
-      await expect(
-        gitManager.uploadAssets(owner, repo, releaseId, assets)
-      ).rejects.toThrow(
-        `Failed to upload asset test-asset.txt from /tmp/test-asset.txt. Original error: ${new Error('Upload failed') as unknown as string}`
-      )
-      expect(mockCore.error).toHaveBeenCalledWith(
-        'Failed to upload asset test-asset.txt from /tmp/test-asset.txt'
       )
     })
   })

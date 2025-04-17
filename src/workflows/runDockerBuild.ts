@@ -1,23 +1,21 @@
 import * as core from '@actions/core'
-import * as fs from 'fs/promises'
-import { findCsprojFile, extractVersionFromCsproj } from '../utils/csproj.js'
-import {
-  getLatestCommitSubject,
-  extractVersionFromCommit
-} from '../utils/git.js'
-import { getInputs } from '../utils/inputs.js'
+import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
+import { GitManager } from '../git-manager/GitManager.js'
+import { InputsManager } from '../inputs-manager/InputsManager.js'
 
 export async function runDockerBuild(): Promise<void> {
   try {
-    const inputs = getInputs()
+    const inputs = new InputsManager()
+    const gitManager = new GitManager()
+    const dotnetManager = new DotnetManager()
 
     let version: string | null = null
 
     // Determine version based on commit message or .csproj file.
     if (inputs.useCommitMessage) {
-      const commitSubject = await getLatestCommitSubject()
+      const commitSubject = await gitManager.getLatestCommitMessage()
       core.info(`Latest commit subject: "${commitSubject}"`)
-      version = extractVersionFromCommit(commitSubject)
+      version = gitManager.extractVersionFromCommit(commitSubject)
       if (!version) {
         core.info(
           'No version bump detected in commit message. Skipping release.'
@@ -26,18 +24,18 @@ export async function runDockerBuild(): Promise<void> {
         return
       }
     } else {
-      const csprojPath = await findCsprojFile(
+      const csprojPath = await dotnetManager.findCsproj(
         inputs.csprojDepth,
         inputs.csprojName
       )
-      if (!csprojPath || csprojPath.trim() === '') {
+      if (!csprojPath) {
         throw new Error(
           `No .csproj file found with name "${inputs.csprojName}".`
         )
       }
-      core.info(`Found .csproj file: ${csprojPath.trim()}`)
-      const csprojContent = await fs.readFile(csprojPath.trim(), 'utf8')
-      version = extractVersionFromCsproj(csprojContent)
+      core.info(`Found .csproj file: ${csprojPath}`)
+      const csprojContent = await dotnetManager.readCsproj(csprojPath)
+      version = dotnetManager.extractVersion(csprojContent)
       if (!version) {
         core.info('No version found in the .csproj file. Skipping release.')
         core.setOutput('skip', 'true')
