@@ -109,8 +109,17 @@ export class VersionManager {
         return commits;
     }
     extractBumpType(commitMessage) {
-        const match = commitMessage.match(/bump:\s*(\w+)/i);
-        return match ? match[1].toLowerCase() : '';
+        const lowerCaseMessage = commitMessage.toLowerCase();
+        if (lowerCaseMessage.includes('major')) {
+            return 'major';
+        }
+        else if (lowerCaseMessage.includes('minor')) {
+            return 'minor';
+        }
+        else if (lowerCaseMessage.includes('patch')) {
+            return 'patch';
+        }
+        return '';
     }
     isValidBumpType(bumpType) {
         return ['major', 'minor', 'patch'].includes(bumpType);

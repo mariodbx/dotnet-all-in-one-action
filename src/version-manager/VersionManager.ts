@@ -126,8 +126,15 @@ export class VersionManager {
   }
 
   public extractBumpType(commitMessage: string): string {
-    const match = commitMessage.match(/bump:\s*(\w+)/i)
-    return match ? match[1].toLowerCase() : ''
+    const lowerCaseMessage = commitMessage.toLowerCase()
+    if (lowerCaseMessage.includes('major')) {
+      return 'major'
+    } else if (lowerCaseMessage.includes('minor')) {
+      return 'minor'
+    } else if (lowerCaseMessage.includes('patch')) {
+      return 'patch'
+    }
+    return ''
   }
 
   public isValidBumpType(bumpType: string): boolean {
