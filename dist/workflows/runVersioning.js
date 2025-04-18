@@ -11,9 +11,9 @@ export async function runVersioning() {
         const dotnetManager = new DotnetManager();
         const versionManager = new VersionManager();
         core.info(`Configuration: csproj_depth=${inputs.csprojDepth}, csproj_name=${inputs.csprojName}, commit_user=${inputs.commitUser}, commit_email=${inputs.commitEmail}`);
-        Timer.wait(5000);
+        await Timer.wait(5000);
         core.info('Waiting for 5 seconds before ensuring the latest version...');
-        gitManager.pullRepo('.', 'main');
+        await gitManager.pull();
         core.info('Running git pull to fetch the latest version...');
         // Get the latest commit message.
         const commitMessage = await gitManager.getLatestCommitMessage();

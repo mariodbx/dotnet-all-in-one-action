@@ -72,6 +72,18 @@ export class GitManager {
             throw new Error(`${errorMessage}. Original error: ${error.message}`);
         }
     }
+    async pull() {
+        try {
+            await this.configureGit();
+            this.core.info(`Pulling...`);
+            await this.execGitCommand(['pull']);
+        }
+        catch (error) {
+            const errorMessage = `Failed to pull...`;
+            this.core.error(errorMessage);
+            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+        }
+    }
     async commitAndPush(localDir, commitMessage) {
         try {
             await this.configureGit();

@@ -99,7 +99,19 @@ export class GitManager {
       )
     }
   }
-
+  public async pull(): Promise<void> {
+    try {
+      await this.configureGit()
+      this.core.info(`Pulling...`)
+      await this.execGitCommand(['pull'])
+    } catch (error) {
+      const errorMessage = `Failed to pull...`
+      this.core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
+  }
   public async commitAndPush(
     localDir: string,
     commitMessage: string
