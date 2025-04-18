@@ -15,7 +15,7 @@ describe('GitManager', () => {
 
   let gitManager: GitManager
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks() // Clear all mocks before each test
 
     jest.spyOn(mockExec, 'exec').mockResolvedValue(0) // Spy on and mock the exec method
@@ -25,6 +25,8 @@ describe('GitManager', () => {
       exec: { exec: mockExec.exec }, // Wrap mockExec in an object with an exec property
       core: mockCore
     })
+
+    await gitManager.initialize() // Explicitly initialize GitManager
   })
 
   describe('constructor', () => {
@@ -185,10 +187,10 @@ describe('GitManager', () => {
       })
 
       await expect(gitManager.pullRepo(localDir, branch)).rejects.toThrow(
-        `Failed to pull latest changes from branch ${branch} in directory: ${localDir}. Original error: Failed to configure Git user settings. Original error: Git command failed: config --global user.name test-actor in directory: current working directory. Original error: Command failed`
+        `Failed to pull latest changes from branch ${branch} in directory: ${localDir}. Original error: Command failed`
       )
       expect(mockCore.error).toHaveBeenCalledWith(
-        `Failed to pull latest changes from branch ${branch} in directory: ${localDir}`
+        `Failed to pull latest changes from branch ${branch} in directory: ${localDir}. Original error: Command failed`
       )
     })
   })
@@ -322,10 +324,10 @@ describe('GitManager', () => {
       await expect(
         gitManager.mergeBranch(localDir, branchToMerge)
       ).rejects.toThrow(
-        `Failed to merge branch ${branchToMerge} into directory: ${localDir}. Original error: Failed to configure Git user settings. Original error: Git command failed: config --global user.name test-actor in directory: current working directory. Original error: Command failed`
+        `Failed to merge branch ${branchToMerge} into directory: ${localDir}. Original error: Command failed`
       )
       expect(mockCore.error).toHaveBeenCalledWith(
-        `Failed to merge branch ${branchToMerge} into directory: ${localDir}`
+        `Failed to merge branch ${branchToMerge} into directory: ${localDir}. Original error: Command failed`
       )
     })
   })

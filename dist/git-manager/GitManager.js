@@ -24,10 +24,15 @@ export class GitManager {
         if (!this.repo) {
             throw new Error('GITHUB_REPOSITORY is not defined');
         }
-        // Configure Git during initialization
-        this.configureGit().catch((error) => {
-            throw new Error(`Failed to configure Git: ${error.message}`);
-        });
+    }
+    async initialize() {
+        try {
+            await this.configureGit();
+        }
+        catch (error) {
+            this.core.error(`Failed to initialize GitManager: ${error.message}`);
+            throw error;
+        }
     }
     //#region Git Command Execution
     async execGitCommand(args, cwd, execOptions) {
@@ -102,9 +107,9 @@ export class GitManager {
             await this.execGitCommand(['pull', 'origin', branch], localDir);
         }
         catch (error) {
-            const errorMessage = `Failed to pull latest changes from branch ${branch} in directory: ${localDir}`;
+            const errorMessage = `Failed to pull latest changes from branch ${branch} in directory: ${localDir}. Original error: ${error.message}`;
             this.core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+            throw new Error(errorMessage);
         }
     }
     async pull() {
@@ -163,9 +168,9 @@ export class GitManager {
             await this.execGitCommand(args, localDir);
         }
         catch (error) {
-            const errorMessage = `Failed to merge branch ${branchToMerge} into directory: ${localDir}`;
+            const errorMessage = `Failed to merge branch ${branchToMerge} into directory: ${localDir}. Original error: ${error.message}`;
             this.core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+            throw new Error(errorMessage);
         }
     }
     async pushBranch(localDir, branchName) {
@@ -185,9 +190,9 @@ export class GitManager {
             await this.execGitCommand(['clean', '-fdx'], localDir);
         }
         catch (error) {
-            const errorMessage = `Failed to clean repository in directory: ${localDir}`;
+            const errorMessage = `Failed to clean repository in directory: ${localDir}. Original error: Git command failed: clean -fdx in directory: ${localDir}. Original error: ${error.message}`;
             this.core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+            throw new Error(errorMessage);
         }
     }
     async restoreRepo(localDir) {
@@ -196,9 +201,9 @@ export class GitManager {
             await this.execGitCommand(['restore', '.'], localDir);
         }
         catch (error) {
-            const errorMessage = `Failed to restore repository in directory: ${localDir}`;
+            const errorMessage = `Failed to restore repository in directory: ${localDir}. Original error: Git command failed: restore . in directory: ${localDir}. Original error: ${error.message}`;
             this.core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+            throw new Error(errorMessage);
         }
     }
     //#endregion
