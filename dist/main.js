@@ -10,6 +10,7 @@ import { runDockerBuild } from './workflows/runDockerBuild.js';
 import { runDockerPush } from './workflows/runDockerPush.js';
 import { runPublish } from './workflows/runPublish.js'; // Import the new publish workflow
 import { InputsManager } from './inputs-manager/InputsManager.js';
+import { runContainerize } from './workflows/runContainerize.js';
 /* istanbul ignore next */
 export async function run() {
     const inputs = new InputsManager();
@@ -24,6 +25,11 @@ export async function run() {
     if (inputs.runVersioning) {
         console.log('Running versioning...');
         await runVersioning();
+    }
+    const runContainer = true;
+    if (runContainer) {
+        console.log('Running containerization...');
+        await runContainerize();
     }
     if (inputs.runDockerBuild) {
         console.log('Running Docker build...');

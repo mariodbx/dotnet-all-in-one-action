@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import { InputsManager } from '../inputs-manager/InputsManager.js';
 import { GitManager } from '../git-manager/GitManager.js';
 import { DotnetManager } from '../dotnet-manager/DotnetManager.js';
-import { VersionManager } from '../version-manager/VersionManager.js';
+import { VersionManager } from '../utils/VersionManager.js';
 import { Timer } from '../utils/Timer.js';
 export async function runVersioning() {
     try {
