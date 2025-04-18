@@ -1,8 +1,8 @@
 import * as core from '@actions/core'
 import { InputsManager } from '../inputs-manager/InputsManager.js'
 import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
-import { ArtifactManager } from '../artifacts-manager/ArctifactsManager.js'
 import * as path from 'path'
+import { GitManager } from '../git-manager/GitManager.js'
 
 export async function runTests(): Promise<void> {
   let baselineMigration = ''
@@ -12,7 +12,7 @@ export async function runTests(): Promise<void> {
   // Retrieve and validate inputs
   const inputs = new InputsManager()
   const dotnetManager = new DotnetManager()
-  const artifactManager = new ArtifactManager('test-results', 7)
+  const gitManager = new GitManager()
   try {
     // Migrations block: Get baseline and process new migrations if requested.
     if (inputs.runTestsMigrations) {
@@ -116,7 +116,7 @@ export async function runTests(): Promise<void> {
       try {
         if (inputs.uploadTestsResults) {
           core.debug('Uploading test artifact...')
-          await artifactManager.upload(resultFilePath, resultFolder)
+          await gitManager.uploadTestArtifact(resultFilePath, resultFolder)
           core.info('Artifact uploaded successfully.')
         } else {
           core.debug('Artifact upload skipped as per configuration.')

@@ -6,6 +6,7 @@ import { GitOptions } from './interfaces/IGitOptions.js'
 import { GitDependencies } from './interfaces/IGitDependencies.js'
 import { Buffer } from 'buffer'
 import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods'
+import * as artifact from '@actions/artifact'
 
 export class GitManager {
   private actor: string
@@ -33,8 +34,14 @@ export class GitManager {
     if (!this.repo) {
       throw new Error('GITHUB_REPOSITORY is not defined')
     }
+
+    // Configure Git during initialization
+    this.configureGit().catch((error) => {
+      throw new Error(`Failed to configure Git: ${(error as Error).message}`)
+    })
   }
 
+  //#region Git Command Execution
   private async execGitCommand(
     args: string[],
     cwd?: string,
@@ -52,6 +59,35 @@ export class GitManager {
     }
   }
 
+  // private async getExecGitCommandOutput(
+  //   args: string[],
+  //   cwd?: string,
+  //   execOptions?: exec.ExecOptions
+  // ): Promise<string> {
+  //   let stdout = ''
+  //   const options: exec.ExecOptions = {
+  //     ...execOptions,
+  //     cwd,
+  //     listeners: {
+  //       stdout: (data: Buffer) => {
+  //         stdout += data.toString()
+  //       }
+  //     }
+  //   }
+  //   try {
+  //     await this.exec.exec('git', args, options)
+  //     return stdout.trim()
+  //   } catch (error) {
+  //     const errorMessage = `Git command failed: ${args.join(' ')} in directory: ${cwd || 'current working directory'}`
+  //     this.core.error(errorMessage)
+  //     throw new Error(
+  //       `${errorMessage}. Original error: ${(error as Error).message}`
+  //     )
+  //   }
+  // }
+  //#endregion
+
+  //#region Git Configuration
   private async configureGit(): Promise<void> {
     try {
       const email = `${this.actor}@users.noreply.github.com`
@@ -66,7 +102,9 @@ export class GitManager {
       )
     }
   }
+  //#endregion
 
+  //#region Repository Operations
   public async cloneRepo(localDir: string): Promise<void> {
     try {
       const repoUrl = `https://${this.actor}:${this.token}@github.com/${this.repo}.git`
@@ -88,7 +126,6 @@ export class GitManager {
     branch: string = 'main'
   ): Promise<void> {
     try {
-      await this.configureGit()
       this.core.info(`Pulling latest changes from branch ${branch}`)
       await this.execGitCommand(['pull', 'origin', branch], localDir)
     } catch (error) {
@@ -99,9 +136,9 @@ export class GitManager {
       )
     }
   }
+
   public async pull(): Promise<void> {
     try {
-      await this.configureGit()
       this.core.info(`Pulling...`)
       await this.execGitCommand(['pull'])
     } catch (error) {
@@ -112,12 +149,12 @@ export class GitManager {
       )
     }
   }
+
   public async commitAndPush(
     localDir: string,
     commitMessage: string
   ): Promise<void> {
     try {
-      await this.configureGit()
       this.core.info('Committing and pushing changes')
       await this.execGitCommand(['add', '.'], localDir)
       await this.execGitCommand(['commit', '-m', commitMessage], localDir)
@@ -136,7 +173,6 @@ export class GitManager {
     branchName: string
   ): Promise<void> {
     try {
-      await this.configureGit()
       this.core.info(`Creating and checking out branch ${branchName}`)
       await this.execGitCommand(['checkout', '-b', branchName], localDir)
     } catch (error) {
@@ -153,7 +189,6 @@ export class GitManager {
     branchName: string
   ): Promise<void> {
     try {
-      await this.configureGit()
       this.core.info(`Checking out branch ${branchName}`)
       await this.execGitCommand(['checkout', branchName], localDir)
     } catch (error) {
@@ -171,7 +206,6 @@ export class GitManager {
     conflictStrategy?: 'ours' | 'theirs'
   ): Promise<void> {
     try {
-      await this.configureGit()
       this.core.info(`Merging branch ${branchToMerge}`)
       const args = ['merge', branchToMerge]
       if (conflictStrategy) {
@@ -189,7 +223,6 @@ export class GitManager {
 
   public async pushBranch(localDir: string, branchName: string): Promise<void> {
     try {
-      await this.configureGit()
       this.core.info(`Pushing branch ${branchName}`)
       await this.execGitCommand(['push', '-u', 'origin', branchName], localDir)
     } catch (error) {
@@ -226,7 +259,9 @@ export class GitManager {
       )
     }
   }
+  //#endregion
 
+  //#region Utility Methods
   public async getLatestCommitMessage(): Promise<string> {
     let stdout = ''
     const options: exec.ExecOptions = {
@@ -396,14 +431,62 @@ export class GitManager {
 
     return response.status === 200
   }
-  /**
-   * Extracts a version string from a commit message.
-   * @param commitMessage The commit message to parse.
-   * @returns The extracted version string or null if not found.
-   */
-  extractVersionFromCommit(commitMessage: string): string | null {
+
+  public extractVersionFromCommit(commitMessage: string): string | null {
     const versionRegex = /version\s(\d+\.\d+\.\d+)/i
     const match = commitMessage.match(versionRegex)
     return match ? match[1] : null
   }
-} //region
+  //#endregion
+
+  //#region Artifact Management
+  private async uploadArtifact(
+    artifactName: string,
+    resultFilePath: string,
+    resultFolder: string,
+    retentionDays: number
+  ): Promise<void> {
+    if (
+      await fs
+        .access(resultFilePath)
+        .then(() => true)
+        .catch(() => false)
+    ) {
+      this.core.info(`Uploading artifact from ${resultFilePath}...`)
+      const artifactClient = new artifact.DefaultArtifactClient()
+
+      try {
+        const { id, size } = await artifactClient.uploadArtifact(
+          artifactName,
+          [resultFilePath],
+          resultFolder,
+          { retentionDays }
+        )
+        this.core.info(`Created artifact with id: ${id} (bytes: ${size})`)
+      } catch (uploadError: unknown) {
+        if (uploadError instanceof Error) {
+          this.core.error(`Failed to upload artifact: ${uploadError.message}`)
+        } else {
+          this.core.error('Failed to upload artifact due to an unknown error.')
+        }
+      }
+    } else {
+      this.core.info('No file found to upload as an artifact.')
+    }
+  }
+
+  public async uploadTestArtifact(
+    resultFilePath: string,
+    resultFolder: string
+  ): Promise<void> {
+    const artifactName = 'test-results'
+    const retentionDays = 7
+    await this.uploadArtifact(
+      artifactName,
+      resultFilePath,
+      resultFolder,
+      retentionDays
+    )
+  }
+  //#endregion
+}
