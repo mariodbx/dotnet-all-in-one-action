@@ -24,14 +24,14 @@ export class DotnetManager {
         await this.dependencies.exec.exec('dotnet', args, options);
         return output;
     }
-    // Methods from TestService
+    // TestService
     async runTests(envName, testFolder, testOutputFolder, testFormat) {
-        core.info(`Setting DOTNET_ENVIRONMENT to "${envName}" for test execution...`);
+        this.dependencies.core.info(`Setting DOTNET_ENVIRONMENT to "${envName}"...`);
         if (!fs.existsSync(testFolder)) {
             throw new Error(`Test folder does not exist: ${testFolder}`);
         }
         process.env.DOTNET_ENVIRONMENT = envName;
-        core.info(`Running tests in folder: ${testFolder}...`);
+        this.dependencies.core.info(`Running tests in folder: ${testFolder}...`);
         const args = ['test', testFolder, '--verbosity', 'detailed'];
         const resolvedOutputFolder = path.resolve(testOutputFolder);
         if (testFormat) {
@@ -41,38 +41,35 @@ export class DotnetManager {
             args.push('--logger', `${testFormat};LogFileName=${resultFilePath}`);
         }
         try {
-            core.info(`Executing command: dotnet ${args.join(' ')}`);
             const stdout = await this.getExecDotnetCommandOutput(args);
-            core.info(stdout);
-            core.info('Tests completed successfully.');
+            this.dependencies.core.info(stdout);
+            this.dependencies.core.info('Tests completed successfully.');
         }
         catch (error) {
-            const errorMessage = `Test execution encountered an error: ${error.message}`;
-            core.error(errorMessage);
-            throw new Error(errorMessage);
+            const msg = `Test execution error: ${error.message}`;
+            this.dependencies.core.error(msg);
+            throw new Error(msg);
         }
     }
     async cleanTestResults(testOutputFolder) {
         try {
-            core.info(`Cleaning test results in folder: ${testOutputFolder}...`);
             if (fs.existsSync(testOutputFolder)) {
                 fs.rmSync(testOutputFolder, { recursive: true, force: true });
-                core.info('Test results cleaned successfully.');
+                this.dependencies.core.info('Test results cleaned.');
             }
             else {
-                core.info('Test output folder does not exist. Nothing to clean.');
+                this.dependencies.core.info('No test results to clean.');
             }
         }
         catch (error) {
-            const errorMessage = `Failed to clean test results: ${error.message}`;
-            core.error(errorMessage);
-            throw new Error(errorMessage);
+            const msg = `Clean test results failed: ${error.message}`;
+            this.dependencies.core.error(msg);
+            throw new Error(msg);
         }
     }
-    // Methods from MigrationService
+    // MigrationService
     async processMigrations(envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
         try {
-            core.info(`Processing migrations for environment: ${envName}`);
             const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`;
             const args = [
                 efTool,
@@ -84,18 +81,16 @@ export class DotnetManager {
                 envName
             ];
             await this.execDotnetCommand(args, home);
-            core.info('Migrations processed successfully');
             return 'Migrations applied successfully';
         }
         catch (error) {
-            const errorMessage = `Failed to process migrations for environment: ${envName}`;
-            core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+            const msg = `Migration failed: ${error.message}`;
+            this.dependencies.core.error(msg);
+            throw new Error(msg);
         }
     }
     async rollbackMigration(envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf, targetMigration) {
         try {
-            core.info(`Rolling back to migration: ${targetMigration} for environment: ${envName}`);
             const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`;
             const args = [
                 efTool,
@@ -108,19 +103,17 @@ export class DotnetManager {
                 envName
             ];
             await this.execDotnetCommand(args, home);
-            core.info('Migration rolled back successfully');
         }
         catch (error) {
-            const errorMessage = `Failed to rollback to migration: ${targetMigration} for environment: ${envName}`;
-            core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+            const msg = `Rollback migration failed: ${error.message}`;
+            this.dependencies.core.error(msg);
+            throw new Error(msg);
         }
     }
     async getCurrentAppliedMigration(envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
         try {
             if (!useGlobalDotnetEf) {
-                core.info('Ensuring local dotnet-ef tool is installed...');
-                await this.installDotnetEfLocally();
+                await this.installDotnetEf();
             }
             const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`;
             const args = [
@@ -132,27 +125,23 @@ export class DotnetManager {
                 '--environment',
                 envName
             ];
-            const migrationOutput = await this.getExecDotnetCommandOutput(args, home);
-            core.info(`Full migration output:\n${migrationOutput}`);
-            const appliedMigrations = migrationOutput
+            const output = await this.getExecDotnetCommandOutput(args, home);
+            const applied = output
                 .split('\n')
                 .filter((line) => line.includes('[applied]'))
-                .map((line) => line.replace(/\[applied\]/i, '').trim());
-            const lastApplied = appliedMigrations.length > 0 ? appliedMigrations.pop() : '0';
-            core.info(`Current applied migration: ${lastApplied}`);
-            return lastApplied;
+                .map((line) => line.replace('[applied]', '').trim());
+            return applied.length > 0 ? applied.pop() : '0';
         }
         catch (error) {
-            const errorMessage = `Failed to get current applied migration for environment: ${envName}`;
-            core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+            const msg = `Fetch current migration failed: ${error.message}`;
+            this.dependencies.core.error(msg);
+            throw new Error(msg);
         }
     }
     async getLastNonPendingMigration(envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
         try {
             if (!useGlobalDotnetEf) {
-                core.info('Ensuring local dotnet-ef tool is installed...');
-                await this.installDotnetEfLocally();
+                await this.installDotnetEf();
             }
             const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`;
             const args = [
@@ -164,27 +153,31 @@ export class DotnetManager {
                 '--environment',
                 envName
             ];
-            const migrationOutput = await this.getExecDotnetCommandOutput(args, home);
-            core.info(`Full migration output:\n${migrationOutput}`);
-            const nonPendingMigrations = migrationOutput
+            const output = await this.getExecDotnetCommandOutput(args, home);
+            const nonPending = output
                 .split('\n')
-                .filter((line) => line.trim() && !/\(pending\)/i.test(line));
-            const lastMigration = nonPendingMigrations.length > 0 ? nonPendingMigrations.pop() : '0';
-            core.info(`Last non-pending migration: ${lastMigration}`);
-            return lastMigration;
+                .filter((line) => line.trim() && !line.includes('(pending)'));
+            return nonPending.length > 0 ? nonPending.pop() : '0';
         }
         catch (error) {
-            const errorMessage = `Failed to get last non-pending migration for environment: ${envName}`;
-            core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+            const msg = `Get non-pending migration failed: ${error.message}`;
+            this.dependencies.core.error(msg);
+            throw new Error(msg);
         }
     }
     async addMigration(migrationName, outputDir, context) {
-        const args = ['migrations', 'add', migrationName, '--output-dir', outputDir];
+        const args = [
+            'ef',
+            'migrations',
+            'add',
+            migrationName,
+            '--output-dir',
+            outputDir
+        ];
         if (context) {
             args.push('--context', context);
         }
-        await this.execDotnetCommand(args);
+        await this.execDotnetCommand(['dotnet', ...args]);
     }
     async updateDatabase(envName, home, migrationsFolder, dotnetRoot, useGlobalDotnetEf) {
         const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`;
@@ -215,70 +208,27 @@ export class DotnetManager {
     }
     async installDotnetEfLocally() {
         try {
-            core.info('Installing dotnet-ef tool locally...');
             const args = ['tool', 'install', '--global', 'dotnet-ef'];
             await this.execDotnetCommand(args);
-            core.info('dotnet-ef tool installed successfully');
         }
         catch (error) {
-            const errorMessage = 'Failed to install dotnet-ef tool locally';
-            core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
+            const msg = `Global dotnet-ef install failed: ${error.message}`;
+            this.dependencies.core.error(msg);
+            throw new Error(msg);
         }
     }
-    // Methods from DotnetService
     async installDotnetEf() {
         try {
-            core.info('Installing dotnet-ef tool locally...');
+            this.dependencies.core.info('Creating or overwriting tool manifest...');
             await this.execDotnetCommand(['new', 'tool-manifest', '--force']);
-            await this.execDotnetCommand(['tool', 'install', '--local', 'dotnet-ef']);
+            this.dependencies.core.info('Installing dotnet-ef as local tool...');
+            await this.execDotnetCommand(['tool', 'install', 'dotnet-ef']);
+            this.dependencies.core.info('dotnet-ef tool installed locally.');
         }
         catch (error) {
-            const errorMessage = 'Failed to install dotnet-ef tool locally';
-            core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
-        }
-    }
-    async publishProject(configuration, outputDir, additionalFlags = []) {
-        try {
-            core.info(`Publishing .NET project with configuration: ${configuration}`);
-            await this.execDotnetCommand([
-                'publish',
-                '-c',
-                configuration,
-                '-o',
-                outputDir,
-                ...additionalFlags
-            ]);
-        }
-        catch (error) {
-            const errorMessage = `Failed to publish .NET project with configuration: ${configuration}`;
-            core.error(errorMessage);
-            throw new Error(`${errorMessage}. Original error: ${error.message}`);
-        }
-    }
-    async restorePackages() {
-        try {
-            core.info('Restoring NuGet packages...');
-            await this.execDotnetCommand(['restore']);
-            core.info('NuGet packages restored successfully.');
-        }
-        catch (error) {
-            const errorMessage = `Failed to restore NuGet packages: ${error.message}`;
-            core.error(errorMessage);
-            throw new Error(errorMessage);
-        }
-    }
-    async buildProject(configuration) {
-        try {
-            core.info(`Building project with configuration: ${configuration}...`);
-            await this.execDotnetCommand(['build', '-c', configuration]);
-            core.info('Project built successfully.');
-        }
-        catch (error) {
-            const errorMessage = `Failed to build project: ${error.message}`;
-            core.error(errorMessage);
-            throw new Error(errorMessage);
+            const msg = `Local dotnet-ef install failed: ${error.message}`;
+            this.dependencies.core.error(msg);
+            throw new Error(msg);
         }
     }
 }
