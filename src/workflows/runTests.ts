@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { InputsManager } from '../inputs-manager/InputsManager.js'
+import { Inputs } from '../Inputs.js'
 import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
 import * as path from 'path'
 import { GitManager } from '../git-manager/GitManager.js'
@@ -10,7 +10,7 @@ export async function runTests(): Promise<void> {
   let resultFilePath = ''
   let resultFolder = ''
   // Retrieve and validate inputs
-  const inputs = new InputsManager()
+  const inputs = new Inputs()
   const dotnetManager = new DotnetManager()
   const gitManager = new GitManager()
   try {

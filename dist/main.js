@@ -9,10 +9,10 @@ import { runRelease } from './workflows/runRelease.js';
 import { runDockerBuild } from './workflows/runDockerBuild.js';
 import { runDockerPush } from './workflows/runDockerPush.js';
 import { runPublish } from './workflows/runPublish.js'; // Import the new publish workflow
-import { InputsManager } from './inputs-manager/InputsManager.js';
+import { Inputs } from './Inputs.js';
 /* istanbul ignore next */
 export async function run() {
-    const inputs = new InputsManager();
+    const inputs = new Inputs();
     if (inputs.runMigrations) {
         console.log('Running migrations...');
         await runMigrations();

@@ -1,8 +1,8 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
-import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
-import { InputsManager } from '../inputs-manager/InputsManager.js'
+import { Inputs } from '../Inputs.js'
 import { DockerManager } from '../docker-manager/DockerManager.js'
+import { Csproj } from '../utils/Csproj.js'
 
 export async function checkGhcrImageExists(
   imageName: string
@@ -17,15 +17,14 @@ export async function checkGhcrImageExists(
 
 export async function runDockerPush(): Promise<void> {
   try {
-    const inputs = new InputsManager()
-    const dotnetManager = new DotnetManager()
+    const inputs = new Inputs()
     const dockerManager = new DockerManager(inputs.registryType)
 
     // Log into Docker registry using DockerManager.
     await dockerManager.login(false)
 
     // Extract version from the .csproj file.
-    const csprojPath = await dotnetManager.findCsproj(
+    const csprojPath = await Csproj.findCsproj(
       inputs.csprojDepth,
       inputs.csprojName
     )
@@ -33,8 +32,8 @@ export async function runDockerPush(): Promise<void> {
       throw new Error(`No .csproj file found with name "${inputs.csprojName}".`)
     }
     core.info(`Found .csproj file: ${csprojPath}`)
-    const csprojContent = await dotnetManager.readCsproj(csprojPath)
-    const newVersion = dotnetManager.extractVersion(csprojContent)
+    const csprojContent = await Csproj.readCsproj(csprojPath)
+    const newVersion = Csproj.extractVersion(csprojContent)
 
     core.info(`New version: ${newVersion}`)
     if (!newVersion) {

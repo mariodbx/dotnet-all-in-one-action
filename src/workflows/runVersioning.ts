@@ -1,16 +1,14 @@
 import * as core from '@actions/core'
-import { InputsManager } from '../inputs-manager/InputsManager.js'
+import { Inputs } from '../Inputs.js'
 import { GitManager } from '../git-manager/GitManager.js'
-import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
-import { VersionManager } from '../utils/VersionManager.js'
+import { Version } from '../utils/Version.js'
 import { Timer } from '../utils/Timer.js'
+import { Csproj } from '../utils/Csproj.js'
 
 export async function runVersioning(): Promise<void> {
   try {
-    const inputs = new InputsManager()
+    const inputs = new Inputs()
     const gitManager = new GitManager()
-    const dotnetManager = new DotnetManager()
-    const versionManager = new VersionManager()
 
     core.info(
       `Configuration: csproj_depth=${inputs.csprojDepth}, csproj_name=${inputs.csprojName}, commit_user=${inputs.commitUser}, commit_email=${inputs.commitEmail}`
@@ -25,9 +23,9 @@ export async function runVersioning(): Promise<void> {
     core.info(`Latest commit message: "${commitMessage}"`)
 
     // Determine bump type using VersionManager.
-    const bumpType = versionManager.extractBumpType(commitMessage)
+    const bumpType = Version.extractBumpType(commitMessage)
     core.info(`Extracted bump type: "${bumpType}"`)
-    if (!versionManager.isValidBumpType(bumpType)) {
+    if (!Version.isValidBumpType(bumpType)) {
       core.info(
         'Commit message does not indicate a version bump. Skipping release.'
       )
@@ -43,7 +41,7 @@ export async function runVersioning(): Promise<void> {
     }
 
     // Locate the csproj file.
-    const csprojPath = await dotnetManager.findCsproj(
+    const csprojPath = await Csproj.findCsproj(
       inputs.csprojDepth,
       inputs.csprojName
     )
@@ -53,22 +51,21 @@ export async function runVersioning(): Promise<void> {
     core.info(`Found csproj file: ${csprojPath}`)
 
     // Read and parse the csproj file.
-    const csprojContent = await dotnetManager.readCsproj(csprojPath)
-    const currentVersion = dotnetManager.extractVersion(csprojContent)
+    const csprojContent = await Csproj.readCsproj(csprojPath)
+    const currentVersion = Csproj.extractVersion(csprojContent)
     core.info(`Current version: ${currentVersion}`)
     core.setOutput('current_version', currentVersion)
 
     // Calculate the new version using VersionManager.
-    const newVersion = versionManager.bumpVersion(currentVersion, bumpType)
+    const oldVersion = Version.parseVersion(currentVersion)
+    const newVersion = Version.bumpVersion(oldVersion, bumpType)
+    core.info(`Bumping version from ${oldVersion} to ${newVersion}`)
     core.info(`New version: ${newVersion}`)
     core.setOutput('new_version', newVersion)
 
     // Update the csproj file with the new version.
-    const updatedContent = dotnetManager.updateVersion(
-      csprojContent,
-      newVersion
-    )
-    await dotnetManager.updateCsproj(csprojPath, updatedContent)
+    const updatedContent = Csproj.updateVersion(csprojContent, newVersion)
+    await Csproj.updateCsproj(csprojPath, updatedContent)
     core.info(`csproj file updated with new version.`)
 
     // Update Git with the version bump.

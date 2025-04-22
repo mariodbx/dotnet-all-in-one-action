@@ -1,15 +1,13 @@
 import * as core from '@actions/core';
-import { InputsManager } from '../inputs-manager/InputsManager.js';
+import { Inputs } from '../Inputs.js';
 import { GitManager } from '../git-manager/GitManager.js';
-import { DotnetManager } from '../dotnet-manager/DotnetManager.js';
-import { VersionManager } from '../utils/VersionManager.js';
+import { Version } from '../utils/Version.js';
 import { Timer } from '../utils/Timer.js';
+import { Csproj } from '../utils/Csproj.js';
 export async function runVersioning() {
     try {
-        const inputs = new InputsManager();
+        const inputs = new Inputs();
         const gitManager = new GitManager();
-        const dotnetManager = new DotnetManager();
-        const versionManager = new VersionManager();
         core.info(`Configuration: csproj_depth=${inputs.csprojDepth}, csproj_name=${inputs.csprojName}, commit_user=${inputs.commitUser}, commit_email=${inputs.commitEmail}`);
         await Timer.wait(5000);
         core.info('Waiting for 5 seconds before ensuring the latest version...');
@@ -19,9 +17,9 @@ export async function runVersioning() {
         const commitMessage = await gitManager.getLatestCommitMessage();
         core.info(`Latest commit message: "${commitMessage}"`);
         // Determine bump type using VersionManager.
-        const bumpType = versionManager.extractBumpType(commitMessage);
+        const bumpType = Version.extractBumpType(commitMessage);
         core.info(`Extracted bump type: "${bumpType}"`);
-        if (!versionManager.isValidBumpType(bumpType)) {
+        if (!Version.isValidBumpType(bumpType)) {
             core.info('Commit message does not indicate a version bump. Skipping release.');
             core.setOutput('skip_release', 'true');
             return;
@@ -33,23 +31,25 @@ export async function runVersioning() {
             throw new Error('csproj_depth must be a positive integer');
         }
         // Locate the csproj file.
-        const csprojPath = await dotnetManager.findCsproj(inputs.csprojDepth, inputs.csprojName);
+        const csprojPath = await Csproj.findCsproj(inputs.csprojDepth, inputs.csprojName);
         if (!csprojPath) {
             throw new Error(`No csproj file found with name "${inputs.csprojName}"`);
         }
         core.info(`Found csproj file: ${csprojPath}`);
         // Read and parse the csproj file.
-        const csprojContent = await dotnetManager.readCsproj(csprojPath);
-        const currentVersion = dotnetManager.extractVersion(csprojContent);
+        const csprojContent = await Csproj.readCsproj(csprojPath);
+        const currentVersion = Csproj.extractVersion(csprojContent);
         core.info(`Current version: ${currentVersion}`);
         core.setOutput('current_version', currentVersion);
         // Calculate the new version using VersionManager.
-        const newVersion = versionManager.bumpVersion(currentVersion, bumpType);
+        const oldVersion = Version.parseVersion(currentVersion);
+        const newVersion = Version.bumpVersion(oldVersion, bumpType);
+        core.info(`Bumping version from ${oldVersion} to ${newVersion}`);
         core.info(`New version: ${newVersion}`);
         core.setOutput('new_version', newVersion);
         // Update the csproj file with the new version.
-        const updatedContent = dotnetManager.updateVersion(csprojContent, newVersion);
-        await dotnetManager.updateCsproj(csprojPath, updatedContent);
+        const updatedContent = Csproj.updateVersion(csprojContent, newVersion);
+        await Csproj.updateCsproj(csprojPath, updatedContent);
         core.info(`csproj file updated with new version.`);
         // Update Git with the version bump.
         await gitManager.updateVersion(newVersion, csprojPath, inputs.commitUser, inputs.commitEmail, inputs.commitMessagePrefix);

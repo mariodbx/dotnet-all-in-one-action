@@ -1,9 +1,9 @@
 import * as core from '@actions/core';
 import { DotnetManager } from '../dotnet-manager/DotnetManager.js';
-import { InputsManager } from '../inputs-manager/InputsManager.js';
+import { Inputs } from '../Inputs.js';
 export async function runMigrations() {
     try {
-        const inputs = new InputsManager();
+        const inputs = new Inputs();
         const dotnetManager = new DotnetManager();
         const baselineMigration = await dotnetManager.getLastNonPendingMigration(inputs.envName, inputs.homeDirectory, inputs.migrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
         core.info(`Baseline migration before new migrations: ${baselineMigration || 'None'}`);

@@ -181,16 +181,12 @@ describe('GitManager', () => {
         .mockRejectedValue(new Error('Command failed'))
       const localDir = '/tmp/repo'
       const branch = 'main'
-      const gitManager = new GitManager(defaultOptions, {
-        exec: mockExec,
-        core: mockCore
-      })
 
       await expect(gitManager.pullRepo(localDir, branch)).rejects.toThrow(
-        `Failed to pull latest changes from branch ${branch} in directory: ${localDir}. Original error: Command failed`
+        `Failed to pull latest changes from branch ${branch} in directory: ${localDir}. Original error: Git command failed: pull origin ${branch} in directory: ${localDir}. Original error: Command failed`
       )
       expect(mockCore.error).toHaveBeenCalledWith(
-        `Failed to pull latest changes from branch ${branch} in directory: ${localDir}. Original error: Command failed`
+        `Failed to pull latest changes from branch ${branch} in directory: ${localDir}`
       )
     })
   })
@@ -324,10 +320,10 @@ describe('GitManager', () => {
       await expect(
         gitManager.mergeBranch(localDir, branchToMerge)
       ).rejects.toThrow(
-        `Failed to merge branch ${branchToMerge} into directory: ${localDir}. Original error: Command failed`
+        `Failed to merge branch ${branchToMerge} in directory: ${localDir}. Original error: Git command failed: merge ${branchToMerge} in directory: ${localDir}. Original error: Command failed`
       )
       expect(mockCore.error).toHaveBeenCalledWith(
-        `Failed to merge branch ${branchToMerge} into directory: ${localDir}. Original error: Command failed`
+        `Failed to merge branch ${branchToMerge} in directory: ${localDir}`
       )
     })
   })

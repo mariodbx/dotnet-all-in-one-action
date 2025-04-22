@@ -2,6 +2,9 @@
  * Utility class for introducing delays in asynchronous workflows.
  */
 export class Timer {
+    constructor() {
+        // Prevent instantiation
+    }
     /**
      * Waits for a specified number of milliseconds before resolving.
      *

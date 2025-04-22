@@ -1,82 +1,90 @@
 import * as core from '@actions/core'
-import { IDotnetService } from './interfaces/IDotnetService.js'
-import { ICsprojService } from './interfaces/ICsprojService.js'
-import { IMigrationService } from './interfaces/IMigrationService.js'
-import { TestService } from './services/TestService.js'
-import { MigrationService } from './services/MigrationService.js'
-import { CsprojService } from './services/CsprojService.js'
-import { DotnetService } from './services/DotnetService.js'
-import { ITestService } from './interfaces/ITestService.js'
+import * as exec from '@actions/exec'
+import * as fs from 'fs'
+import * as path from 'path'
 
 export class DotnetManager {
-  private dotnetService: IDotnetService
-  private csprojService: ICsprojService
-  private migrationService: IMigrationService
-  private testService: ITestService
+  constructor(private dependencies = { exec, core }) {}
 
-  constructor(
-    dotnetService: IDotnetService = new DotnetService(),
-    csprojService: ICsprojService = new CsprojService(),
-    migrationService: IMigrationService = new MigrationService(),
-    testService: ITestService = new TestService()
-  ) {
-    this.dotnetService = dotnetService
-    this.csprojService = csprojService
-    this.migrationService = migrationService
-    this.testService = testService
+  private async execDotnetCommand(args: string[], cwd?: string): Promise<void> {
+    const options = { cwd }
+    await this.dependencies.exec.exec('dotnet', args, options)
   }
 
-  public async installDotnetEf(): Promise<void> {
-    core.info('Installing dotnet-ef tool...')
-    await this.dotnetService.installDotnetEf()
-  }
-
-  public async publishProject(
-    configuration: string,
-    outputDir: string,
-    additionalFlags: string[] = []
-  ): Promise<void> {
-    core.info('Publishing .NET project...')
-    await this.dotnetService.publishProject(
-      configuration,
-      outputDir,
-      additionalFlags
-    )
-  }
-
-  public async findCsproj(
-    csprojDepth: number,
-    csprojName: string
+  private async getExecDotnetCommandOutput(
+    args: string[],
+    cwd?: string
   ): Promise<string> {
-    core.info(
-      `Searching for .csproj file: ${csprojName} within depth ${csprojDepth}...`
-    )
-    return await this.csprojService.findCsproj(csprojDepth, csprojName)
+    let output = ''
+    const options = {
+      cwd,
+      listeners: {
+        stdout: (data: Buffer) => {
+          output += data.toString()
+        }
+      }
+    }
+    await this.dependencies.exec.exec('dotnet', args, options)
+    return output
   }
 
-  public async readCsproj(csprojPath: string): Promise<string> {
-    core.info(`Reading .csproj file: ${csprojPath}...`)
-    return await this.csprojService.readCsproj(csprojPath)
-  }
-
-  public async updateCsproj(
-    csprojPath: string,
-    content: string
+  // Methods from TestService
+  public async runTests(
+    envName: string,
+    testFolder: string,
+    testOutputFolder: string,
+    testFormat?: string
   ): Promise<void> {
-    core.info(`Updating .csproj file: ${csprojPath}...`)
-    await this.csprojService.updateCsproj(csprojPath, content)
+    core.info(
+      `Setting DOTNET_ENVIRONMENT to "${envName}" for test execution...`
+    )
+
+    if (!fs.existsSync(testFolder)) {
+      throw new Error(`Test folder does not exist: ${testFolder}`)
+    }
+
+    process.env.DOTNET_ENVIRONMENT = envName
+    core.info(`Running tests in folder: ${testFolder}...`)
+
+    const args = ['test', testFolder, '--verbosity', 'detailed']
+    const resolvedOutputFolder = path.resolve(testOutputFolder)
+
+    if (testFormat) {
+      const resultFileName = `TestResults.${testFormat}`
+      const resultFilePath = path.join(resolvedOutputFolder, resultFileName)
+      fs.mkdirSync(resolvedOutputFolder, { recursive: true })
+      args.push('--logger', `${testFormat};LogFileName=${resultFilePath}`)
+    }
+
+    try {
+      core.info(`Executing command: dotnet ${args.join(' ')}`)
+      const stdout = await this.getExecDotnetCommandOutput(args)
+      core.info(stdout)
+      core.info('Tests completed successfully.')
+    } catch (error) {
+      const errorMessage = `Test execution encountered an error: ${(error as Error).message}`
+      core.error(errorMessage)
+      throw new Error(errorMessage)
+    }
   }
 
-  public extractVersion(csprojContent: string): string {
-    core.info('Extracting version from .csproj content...')
-    return this.csprojService.extractVersion(csprojContent)
+  public async cleanTestResults(testOutputFolder: string): Promise<void> {
+    try {
+      core.info(`Cleaning test results in folder: ${testOutputFolder}...`)
+      if (fs.existsSync(testOutputFolder)) {
+        fs.rmSync(testOutputFolder, { recursive: true, force: true })
+        core.info('Test results cleaned successfully.')
+      } else {
+        core.info('Test output folder does not exist. Nothing to clean.')
+      }
+    } catch (error) {
+      const errorMessage = `Failed to clean test results: ${(error as Error).message}`
+      core.error(errorMessage)
+      throw new Error(errorMessage)
+    }
   }
 
-  public updateVersion(csprojContent: string, newVersion: string): string {
-    core.info('Updating version in .csproj content...')
-    return this.csprojService.updateVersion(csprojContent, newVersion)
-  }
-
+  // Methods from MigrationService
   public async processMigrations(
     envName: string,
     home: string,
@@ -84,14 +92,28 @@ export class DotnetManager {
     dotnetRoot: string,
     useGlobalDotnetEf: boolean
   ): Promise<string> {
-    core.info('Processing EF Core migrations...')
-    return await this.migrationService.processMigrations(
-      envName,
-      home,
-      migrationsFolder,
-      dotnetRoot,
-      useGlobalDotnetEf
-    )
+    try {
+      core.info(`Processing migrations for environment: ${envName}`)
+      const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`
+      const args = [
+        efTool,
+        'database',
+        'update',
+        '--project',
+        migrationsFolder,
+        '--environment',
+        envName
+      ]
+      await this.execDotnetCommand(args, home)
+      core.info('Migrations processed successfully')
+      return 'Migrations applied successfully'
+    } catch (error) {
+      const errorMessage = `Failed to process migrations for environment: ${envName}`
+      core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
   }
 
   public async rollbackMigration(
@@ -102,15 +124,30 @@ export class DotnetManager {
     useGlobalDotnetEf: boolean,
     targetMigration: string
   ): Promise<void> {
-    core.info(`Rolling back to migration: ${targetMigration}...`)
-    await this.migrationService.rollbackMigration(
-      envName,
-      home,
-      migrationsFolder,
-      dotnetRoot,
-      useGlobalDotnetEf,
-      targetMigration
-    )
+    try {
+      core.info(
+        `Rolling back to migration: ${targetMigration} for environment: ${envName}`
+      )
+      const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`
+      const args = [
+        efTool,
+        'database',
+        'update',
+        targetMigration,
+        '--project',
+        migrationsFolder,
+        '--environment',
+        envName
+      ]
+      await this.execDotnetCommand(args, home)
+      core.info('Migration rolled back successfully')
+    } catch (error) {
+      const errorMessage = `Failed to rollback to migration: ${targetMigration} for environment: ${envName}`
+      core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
   }
 
   public async getCurrentAppliedMigration(
@@ -120,14 +157,42 @@ export class DotnetManager {
     dotnetRoot: string,
     useGlobalDotnetEf: boolean
   ): Promise<string> {
-    core.info('Getting the current applied migration...')
-    return await this.migrationService.getCurrentAppliedMigration(
-      envName,
-      home,
-      migrationsFolder,
-      dotnetRoot,
-      useGlobalDotnetEf
-    )
+    try {
+      if (!useGlobalDotnetEf) {
+        core.info('Ensuring local dotnet-ef tool is installed...')
+        await this.installDotnetEfLocally()
+      }
+
+      const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`
+      const args = [
+        efTool,
+        'migrations',
+        'list',
+        '--project',
+        migrationsFolder,
+        '--environment',
+        envName
+      ]
+
+      const migrationOutput = await this.getExecDotnetCommandOutput(args, home)
+      core.info(`Full migration output:\n${migrationOutput}`)
+
+      const appliedMigrations = migrationOutput
+        .split('\n')
+        .filter((line) => line.includes('[applied]'))
+        .map((line) => line.replace(/\[applied\]/i, '').trim())
+
+      const lastApplied =
+        appliedMigrations.length > 0 ? appliedMigrations.pop()! : '0'
+      core.info(`Current applied migration: ${lastApplied}`)
+      return lastApplied
+    } catch (error) {
+      const errorMessage = `Failed to get current applied migration for environment: ${envName}`
+      core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
   }
 
   public async getLastNonPendingMigration(
@@ -137,34 +202,41 @@ export class DotnetManager {
     dotnetRoot: string,
     useGlobalDotnetEf: boolean
   ): Promise<string> {
-    core.info('Getting the last non-pending migration...')
-    return await this.migrationService.getLastNonPendingMigration(
-      envName,
-      home,
-      migrationsFolder,
-      dotnetRoot,
-      useGlobalDotnetEf
-    )
-  }
+    try {
+      if (!useGlobalDotnetEf) {
+        core.info('Ensuring local dotnet-ef tool is installed...')
+        await this.installDotnetEfLocally()
+      }
 
-  public async installDotnetEfLocally(): Promise<void> {
-    core.info('Installing dotnet-ef tool locally...')
-    await this.dotnetService.installDotnetEf()
-  }
+      const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`
+      const args = [
+        efTool,
+        'migrations',
+        'list',
+        '--project',
+        migrationsFolder,
+        '--environment',
+        envName
+      ]
 
-  public async runTests(
-    envName: string,
-    testFolder: string,
-    testOutputFolder: string,
-    testFormat?: string
-  ): Promise<void> {
-    core.info('Running tests...')
-    await this.testService.runTests(
-      envName,
-      testFolder,
-      testOutputFolder,
-      testFormat
-    )
+      const migrationOutput = await this.getExecDotnetCommandOutput(args, home)
+      core.info(`Full migration output:\n${migrationOutput}`)
+
+      const nonPendingMigrations = migrationOutput
+        .split('\n')
+        .filter((line) => line.trim() && !/\(pending\)/i.test(line))
+
+      const lastMigration =
+        nonPendingMigrations.length > 0 ? nonPendingMigrations.pop()! : '0'
+      core.info(`Last non-pending migration: ${lastMigration}`)
+      return lastMigration
+    } catch (error) {
+      const errorMessage = `Failed to get last non-pending migration for environment: ${envName}`
+      core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
   }
 
   public async addMigration(
@@ -172,8 +244,11 @@ export class DotnetManager {
     outputDir: string,
     context?: string
   ): Promise<void> {
-    core.info(`Adding migration: ${migrationName}...`)
-    await this.migrationService.addMigration(migrationName, outputDir, context)
+    const args = ['migrations', 'add', migrationName, '--output-dir', outputDir]
+    if (context) {
+      args.push('--context', context)
+    }
+    await this.execDotnetCommand(args)
   }
 
   public async updateDatabase(
@@ -183,14 +258,17 @@ export class DotnetManager {
     dotnetRoot: string,
     useGlobalDotnetEf: boolean
   ): Promise<void> {
-    core.info('Updating the database...')
-    await this.migrationService.updateDatabase(
-      envName,
-      home,
+    const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`
+    const args = [
+      efTool,
+      'database',
+      'update',
+      '--project',
       migrationsFolder,
-      dotnetRoot,
-      useGlobalDotnetEf
-    )
+      '--environment',
+      envName
+    ]
+    await this.execDotnetCommand(args, home)
   }
 
   public async listMigrations(
@@ -200,28 +278,95 @@ export class DotnetManager {
     dotnetRoot: string,
     useGlobalDotnetEf: boolean
   ): Promise<string[]> {
-    core.info('Listing migrations...')
-    return await this.migrationService.listMigrations(
-      envName,
-      home,
+    const efTool = useGlobalDotnetEf ? 'dotnet-ef' : `${dotnetRoot}/dotnet-ef`
+    const args = [
+      efTool,
+      'migrations',
+      'list',
+      '--project',
       migrationsFolder,
-      dotnetRoot,
-      useGlobalDotnetEf
-    )
+      '--environment',
+      envName
+    ]
+    const output = await this.getExecDotnetCommandOutput(args, home)
+    return output.split('\n').filter((line) => line.trim())
   }
 
-  public async cleanTestResults(testOutputFolder: string): Promise<void> {
-    core.info('Cleaning test results...')
-    await this.testService.cleanTestResults(testOutputFolder)
+  private async installDotnetEfLocally(): Promise<void> {
+    try {
+      core.info('Installing dotnet-ef tool locally...')
+      const args = ['tool', 'install', '--global', 'dotnet-ef']
+      await this.execDotnetCommand(args)
+      core.info('dotnet-ef tool installed successfully')
+    } catch (error) {
+      const errorMessage = 'Failed to install dotnet-ef tool locally'
+      core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
+  }
+
+  // Methods from DotnetService
+  public async installDotnetEf(): Promise<void> {
+    try {
+      core.info('Installing dotnet-ef tool locally...')
+      await this.execDotnetCommand(['new', 'tool-manifest', '--force'])
+      await this.execDotnetCommand(['tool', 'install', '--local', 'dotnet-ef'])
+    } catch (error) {
+      const errorMessage = 'Failed to install dotnet-ef tool locally'
+      core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
+  }
+
+  public async publishProject(
+    configuration: string,
+    outputDir: string,
+    additionalFlags: string[] = []
+  ): Promise<void> {
+    try {
+      core.info(`Publishing .NET project with configuration: ${configuration}`)
+      await this.execDotnetCommand([
+        'publish',
+        '-c',
+        configuration,
+        '-o',
+        outputDir,
+        ...additionalFlags
+      ])
+    } catch (error) {
+      const errorMessage = `Failed to publish .NET project with configuration: ${configuration}`
+      core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
   }
 
   public async restorePackages(): Promise<void> {
-    core.info('Restoring NuGet packages...')
-    await this.dotnetService.restorePackages()
+    try {
+      core.info('Restoring NuGet packages...')
+      await this.execDotnetCommand(['restore'])
+      core.info('NuGet packages restored successfully.')
+    } catch (error) {
+      const errorMessage = `Failed to restore NuGet packages: ${(error as Error).message}`
+      core.error(errorMessage)
+      throw new Error(errorMessage)
+    }
   }
 
   public async buildProject(configuration: string): Promise<void> {
-    core.info('Building the .NET project...')
-    await this.dotnetService.buildProject(configuration)
+    try {
+      core.info(`Building project with configuration: ${configuration}...`)
+      await this.execDotnetCommand(['build', '-c', configuration])
+      core.info('Project built successfully.')
+    } catch (error) {
+      const errorMessage = `Failed to build project: ${(error as Error).message}`
+      core.error(errorMessage)
+      throw new Error(errorMessage)
+    }
   }
 }

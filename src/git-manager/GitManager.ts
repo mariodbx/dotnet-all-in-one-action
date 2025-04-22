@@ -135,9 +135,11 @@ export class GitManager {
       this.core.info(`Pulling latest changes from branch ${branch}`)
       await this.execGitCommand(['pull', 'origin', branch], localDir)
     } catch (error) {
-      const errorMessage = `Failed to pull latest changes from branch ${branch} in directory: ${localDir}. Original error: ${(error as Error).message}`
+      const errorMessage = `Failed to pull latest changes from branch ${branch} in directory: ${localDir}`
       this.core.error(errorMessage)
-      throw new Error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
     }
   }
 
@@ -217,9 +219,11 @@ export class GitManager {
       }
       await this.execGitCommand(args, localDir)
     } catch (error) {
-      const errorMessage = `Failed to merge branch ${branchToMerge} into directory: ${localDir}. Original error: ${(error as Error).message}`
+      const errorMessage = `Failed to merge branch ${branchToMerge} in directory: ${localDir}`
       this.core.error(errorMessage)
-      throw new Error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
     }
   }
 
@@ -241,9 +245,11 @@ export class GitManager {
       this.core.info(`Cleaning repository in directory: ${localDir}`)
       await this.execGitCommand(['clean', '-fdx'], localDir)
     } catch (error) {
-      const errorMessage = `Failed to clean repository in directory: ${localDir}. Original error: Git command failed: clean -fdx in directory: ${localDir}. Original error: ${(error as Error).message}`
+      const errorMessage = `Failed to clean repository in directory: ${localDir}`
       this.core.error(errorMessage)
-      throw new Error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
     }
   }
 
@@ -252,9 +258,11 @@ export class GitManager {
       this.core.info(`Restoring repository in directory: ${localDir}`)
       await this.execGitCommand(['restore', '.'], localDir)
     } catch (error) {
-      const errorMessage = `Failed to restore repository in directory: ${localDir}. Original error: Git command failed: restore . in directory: ${localDir}. Original error: ${(error as Error).message}`
+      const errorMessage = `Failed to restore repository in directory: ${localDir}`
       this.core.error(errorMessage)
-      throw new Error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
     }
   }
   //#endregion
