@@ -17,9 +17,9 @@ export async function runTests() {
         if (inputs.runTestsMigrations) {
             core.debug('Attempting to run migrations...');
             try {
-                baselineMigration = await dotnetManager.getLastNonPendingMigration(inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+                baselineMigration = await dotnetManager.getLastNonPendingMigration(inputs.testsEnvName, process.env.HOME || '', inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
                 core.info(`Baseline migration before new migrations: ${baselineMigration}`);
-                newMigration = await dotnetManager.processMigrations(inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+                newMigration = await dotnetManager.processMigrations(inputs.testsEnvName, process.env.HOME || '', inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
                 if (newMigration) {
                     core.info(`New migration applied: ${newMigration}`);
                 }
@@ -54,7 +54,7 @@ export async function runTests() {
                 baselineMigration !== '0') {
                 try {
                     core.info(`Rolling back migrations to baseline: ${baselineMigration} due to test failure...`);
-                    await dotnetManager.rollbackMigration(inputs.testsEnvName, inputs.homeDirectory, inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf, baselineMigration);
+                    await dotnetManager.rollbackMigration(inputs.testsEnvName, process.env.HOME || '', inputs.testMigrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf, baselineMigration);
                     core.info('Rollback completed successfully.');
                 }
                 catch (rollbackError) {

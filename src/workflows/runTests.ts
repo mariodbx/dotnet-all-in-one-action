@@ -20,7 +20,7 @@ export async function runTests(): Promise<void> {
       try {
         baselineMigration = await dotnetManager.getLastNonPendingMigration(
           inputs.testsEnvName,
-          inputs.homeDirectory,
+          process.env.HOME || '',
           inputs.testMigrationsFolder,
           inputs.dotnetRoot,
           inputs.useGlobalDotnetEf
@@ -31,7 +31,7 @@ export async function runTests(): Promise<void> {
 
         newMigration = await dotnetManager.processMigrations(
           inputs.testsEnvName,
-          inputs.homeDirectory,
+          process.env.HOME || '',
           inputs.testMigrationsFolder,
           inputs.dotnetRoot,
           inputs.useGlobalDotnetEf
@@ -82,7 +82,7 @@ export async function runTests(): Promise<void> {
           )
           await dotnetManager.rollbackMigration(
             inputs.testsEnvName,
-            inputs.homeDirectory,
+            process.env.HOME || '',
             inputs.testMigrationsFolder,
             inputs.dotnetRoot,
             inputs.useGlobalDotnetEf,

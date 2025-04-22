@@ -9,7 +9,7 @@ export async function runMigrations(): Promise<void> {
 
     const baselineMigration = await dotnetManager.getLastNonPendingMigration(
       inputs.envName,
-      inputs.homeDirectory,
+      process.env.HOME || '',
       inputs.migrationsFolder,
       inputs.dotnetRoot,
       inputs.useGlobalDotnetEf
@@ -20,7 +20,7 @@ export async function runMigrations(): Promise<void> {
 
     const newMigration = await dotnetManager.processMigrations(
       inputs.envName,
-      inputs.homeDirectory,
+      process.env.HOME || '',
       inputs.migrationsFolder,
       inputs.dotnetRoot,
       inputs.useGlobalDotnetEf
