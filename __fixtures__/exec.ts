@@ -8,4 +8,8 @@ export const exec = jest
       options?: { cwd?: string }
     ) => Promise<number>
   >()
-  .mockResolvedValue(0) // Ensure it returns a resolved Promise<number>
+  .mockImplementation(async (command, args, options) => {
+    // Default mock implementation, can be overridden in tests
+    console.log(`Mock exec called with:`, { command, args, options })
+    return 0 // Default resolved value
+  })

@@ -2,239 +2,239 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as fs from 'fs/promises'
 import { getOctokit } from '@actions/github'
-import { GitOptions } from './interfaces/IGitOptions.js'
-import { GitDependencies } from './interfaces/IGitDependencies.js'
 import { Buffer } from 'buffer'
 import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods'
 import * as artifact from '@actions/artifact'
 
-export class GitManager {
-  private actor: string
-  private token: string
-  private repo: string
-  private exec: GitDependencies['exec']
-  private core: GitDependencies['core']
+export function createGitManager(
+  options: {
+    actor?: string
+    token?: string
+    repo?: string
+  } = {},
+  dependencies = { exec, core }
+) {
+  const actor = options.actor || process.env['GITHUB_ACTOR'] || ''
+  const token = options.token || process.env['GITHUB_TOKEN'] || ''
+  const repo = options.repo || process.env['GITHUB_REPOSITORY'] || ''
 
-  constructor(
-    options: GitOptions = {},
-    dependencies: GitDependencies = { exec, core }
-  ) {
-    this.actor = options.actor || process.env['GITHUB_ACTOR'] || ''
-    this.token = options.token || process.env['GITHUB_TOKEN'] || ''
-    this.repo = options.repo || process.env['GITHUB_REPOSITORY'] || ''
-    this.exec = dependencies.exec
-    this.core = dependencies.core
-
-    if (!this.actor) {
-      throw new Error('GITHUB_ACTOR is not defined')
-    }
-    if (!this.token) {
-      throw new Error('GITHUB_TOKEN is not defined')
-    }
-    if (!this.repo) {
-      throw new Error('GITHUB_REPOSITORY is not defined')
-    }
+  if (!actor) {
+    throw new Error('GITHUB_ACTOR is not defined')
+  }
+  if (!token) {
+    throw new Error('GITHUB_TOKEN is not defined')
+  }
+  if (!repo) {
+    throw new Error('GITHUB_REPOSITORY is not defined')
   }
 
-  public async initialize(): Promise<void> {
+  async function initialize(): Promise<void> {
     try {
-      await this.configureGit()
+      await configureGit()
     } catch (error) {
-      this.core.error(
-        `Failed to initialize GitManager: ${(error as Error).message}`
-      )
+      core.error(`Failed to initialize GitManager: ${(error as Error).message}`)
       throw error
     }
   }
 
-  //#region Git Command Execution
-  private async execGitCommand(
-    args: string[],
-    cwd?: string,
-    execOptions?: exec.ExecOptions
-  ): Promise<void> {
+  async function configureGit(): Promise<void> {
     try {
-      const options = cwd ? { cwd, ...execOptions } : execOptions
-      await this.exec.exec('git', args, options)
-    } catch (error) {
-      const errorMessage = `Git command failed: ${args.join(' ')} in directory: ${cwd || 'current working directory'}`
-      this.core.error(errorMessage)
-      throw new Error(
-        `${errorMessage}. Original error: ${(error as Error).message}`
-      )
-    }
-  }
-
-  // private async getExecGitCommandOutput(
-  //   args: string[],
-  //   cwd?: string,
-  //   execOptions?: exec.ExecOptions
-  // ): Promise<string> {
-  //   let stdout = ''
-  //   const options: exec.ExecOptions = {
-  //     ...execOptions,
-  //     cwd,
-  //     listeners: {
-  //       stdout: (data: Buffer) => {
-  //         stdout += data.toString()
-  //       }
-  //     }
-  //   }
-  //   try {
-  //     await this.exec.exec('git', args, options)
-  //     return stdout.trim()
-  //   } catch (error) {
-  //     const errorMessage = `Git command failed: ${args.join(' ')} in directory: ${cwd || 'current working directory'}`
-  //     this.core.error(errorMessage)
-  //     throw new Error(
-  //       `${errorMessage}. Original error: ${(error as Error).message}`
-  //     )
-  //   }
-  // }
-  //#endregion
-
-  //#region Git Configuration
-  private async configureGit(): Promise<void> {
-    try {
-      const email = `${this.actor}@users.noreply.github.com`
-      await this.execGitCommand(['config', '--global', 'user.name', this.actor])
-      await this.execGitCommand(['config', '--global', 'user.email', email])
-      this.core.info(`Configured Git for user: ${this.actor}`)
+      const email = `${actor}@users.noreply.github.com`
+      await exec.exec('git', ['config', '--global', 'user.name', actor])
+      await exec.exec('git', ['config', '--global', 'user.email', email])
+      core.info(`Configured Git for user: ${actor}`)
     } catch (error) {
       const errorMessage = 'Failed to configure Git user settings'
-      this.core.error(errorMessage)
+      core.error(errorMessage)
       throw new Error(
         `${errorMessage}. Original error: ${(error as Error).message}`
       )
     }
   }
-  //#endregion
 
-  //#region Repository Operations
-  public async cloneRepo(localDir: string): Promise<void> {
+  async function cloneRepo(localDir: string): Promise<void> {
     try {
-      const repoUrl = `https://${this.actor}:${this.token}@github.com/${this.repo}.git`
-      this.core.info(
-        `Cloning repository ${this.repo} into directory: ${localDir}`
-      )
-      await this.execGitCommand(['clone', repoUrl, localDir])
+      const repoUrl = `https://${actor}:${token}@github.com/${repo}.git`
+      core.info(`Cloning repository ${repo} into directory: ${localDir}`)
+      await exec.exec('git', ['clone', repoUrl, localDir])
     } catch (error) {
-      const errorMessage = `Failed to clone repository ${this.repo} into directory: ${localDir}`
-      this.core.error(errorMessage)
+      const errorMessage = `Failed to clone repository ${repo} into directory: ${localDir}`
+      core.error(errorMessage)
       throw new Error(
         `${errorMessage}. Original error: ${(error as Error).message}`
       )
     }
   }
 
-  public async pullRepo(
+  async function pullRepo(
     localDir: string,
     branch: string = 'main'
   ): Promise<void> {
     try {
-      this.core.info(`Pulling latest changes from branch ${branch}`)
-      await this.execGitCommand(['pull', 'origin', branch], localDir)
+      core.info(`Pulling latest changes from branch ${branch}`)
+      await exec.exec('git', ['pull', 'origin', branch], { cwd: localDir })
     } catch (error) {
       const errorMessage = `Failed to pull latest changes from branch ${branch} in directory: ${localDir}`
-      this.core.error(errorMessage)
+      core.error(errorMessage)
       throw new Error(
         `${errorMessage}. Original error: ${(error as Error).message}`
       )
     }
   }
 
-  public async pull(): Promise<void> {
+  async function pull(): Promise<void> {
     try {
-      this.core.info(`Pulling...`)
-      await this.execGitCommand(['pull'])
+      core.info(`Pulling...`)
+      await exec.exec('git', ['pull'])
     } catch (error) {
       const errorMessage = `Failed to pull...`
-      this.core.error(errorMessage)
+      core.error(errorMessage)
       throw new Error(
         `${errorMessage}. Original error: ${(error as Error).message}`
       )
     }
   }
 
-  public async commitAndPush(
+  async function commitAndPush(
     localDir: string,
     commitMessage: string
   ): Promise<void> {
     try {
-      this.core.info('Committing and pushing changes')
-      await this.execGitCommand(['add', '.'], localDir)
-      await this.execGitCommand(['commit', '-m', commitMessage], localDir)
-      await this.execGitCommand(['push', 'origin', 'HEAD'], localDir)
+      core.info('Committing and pushing changes')
+      await exec.exec('git', ['add', '.'], { cwd: localDir })
+      await exec.exec('git', ['commit', '-m', commitMessage], { cwd: localDir })
+      await exec.exec('git', ['push', 'origin', 'HEAD'], { cwd: localDir })
     } catch (error) {
       const errorMessage = `Failed to commit and push changes in directory: ${localDir}`
-      this.core.error(errorMessage)
+      core.error(errorMessage)
       throw new Error(
         `${errorMessage}. Original error: ${(error as Error).message}`
       )
     }
   }
 
-  public async createAndCheckoutBranch(
+  async function createAndCheckoutBranch(
     localDir: string,
     branchName: string
   ): Promise<void> {
     try {
-      this.core.info(`Creating and checking out branch ${branchName}`)
-      await this.execGitCommand(['checkout', '-b', branchName], localDir)
+      core.info(`Creating and checking out branch ${branchName}`)
+      await exec.exec('git', ['checkout', '-b', branchName], { cwd: localDir })
     } catch (error) {
       const errorMessage = `Failed to create and checkout branch ${branchName} in directory: ${localDir}`
-      this.core.error(errorMessage)
+      core.error(errorMessage)
       throw new Error(
         `${errorMessage}. Original error: ${(error as Error).message}`
       )
     }
   }
 
-  public async checkoutBranch(
-    localDir: string,
-    branchName: string
+  async function getLatestCommitMessage(): Promise<string> {
+    try {
+      const { stdout } = await exec.getExecOutput('git', [
+        'log',
+        '-1',
+        '--pretty=%B'
+      ])
+      return stdout.trim()
+    } catch (error) {
+      const errorMessage = 'Failed to get the latest commit message'
+      core.error(errorMessage)
+      throw new Error(
+        `${errorMessage}. Original error: ${(error as Error).message}`
+      )
+    }
+  }
+
+  async function generateChangelog(inputs: {
+    majorKeywords: string
+    minorKeywords: string
+    patchKeywords: string
+    hotfixKeywords: string
+    addedKeywords: string
+    devKeywords: string
+  }): Promise<string> {
+    let lastTag = ''
+    try {
+      const { stdout } = await exec.getExecOutput('git', [
+        'describe',
+        '--tags',
+        '--abbrev=0'
+      ])
+      lastTag = stdout.trim()
+      core.info(`Found last tag: ${lastTag}`)
+    } catch {
+      core.info('No tags found, using all commits.')
+    }
+
+    const range = lastTag ? `${lastTag}..HEAD` : ''
+    const { stdout: commits } = await exec.getExecOutput('git', [
+      'log',
+      ...(range ? [range] : []),
+      '--no-merges',
+      '--pretty=format:%h %s'
+    ])
+
+    const changelog = [
+      ['### Major Changes', buildKeywordRegex(inputs.majorKeywords)],
+      ['### Minor Changes', buildKeywordRegex(inputs.minorKeywords)],
+      ['### Patch/Bug Fixes', buildKeywordRegex(inputs.patchKeywords)],
+      ['### Hotfixes', buildKeywordRegex(inputs.hotfixKeywords)],
+      ['### Additions', buildKeywordRegex(inputs.addedKeywords)],
+      ['### Dev Changes', buildKeywordRegex(inputs.devKeywords)]
+    ]
+      .map(([label, regex]) => {
+        const categorizedCommits = categorize(commits, regex as RegExp)
+        return `${label}\n${categorizedCommits}`
+      })
+      .join('\n\n')
+
+    await fs.writeFile('changelog.txt', changelog, 'utf8')
+    core.info('Generated changelog:\n' + changelog)
+    return changelog
+  }
+
+  function buildKeywordRegex(keywordsInput: string): RegExp {
+    const keywords = keywordsInput
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean)
+
+    if (keywords.length === 0) return /.*/ // Match all if no keywords provided.
+
+    const pattern = keywords
+      .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|')
+    return new RegExp(`\\b(${pattern})\\b`, 'i') // Ensure whole-word matching.
+  }
+
+  function categorize(commits: string, pattern: RegExp): string {
+    const filteredCommits = commits
+      .split('\n')
+      .filter((line) => pattern.test(line))
+      .join('\n')
+    return filteredCommits || 'None'
+  }
+
+  async function uploadArtifact(
+    artifactName: string,
+    resultFilePath: string,
+    resultFolder: string,
+    retentionDays: number
   ): Promise<void> {
-    try {
-      this.core.info(`Checking out branch ${branchName}`)
-      await this.execGitCommand(['checkout', branchName], localDir)
-    } catch (error) {
-      const errorMessage = `Failed to checkout branch ${branchName} in directory: ${localDir}`
-      this.core.error(errorMessage)
-      throw new Error(
-        `${errorMessage}. Original error: ${(error as Error).message}`
-      )
-    }
-  }
+    if (
+      await fs
+        .access(resultFilePath)
+        .then(() => true)
+        .catch(() => false)
+    ) {
+      core.info(`Uploading artifact from ${resultFilePath}...`)
+      const artifactClient = new artifact.DefaultArtifactClient()
 
-  public async mergeBranch(
-    localDir: string,
-    branchToMerge: string,
-    conflictStrategy?: 'ours' | 'theirs'
-  ): Promise<void> {
-    try {
-      this.core.info(`Merging branch ${branchToMerge}`)
-      const args = ['merge', branchToMerge]
-      if (conflictStrategy) {
-        args.push(`-X${conflictStrategy}`)
-      }
-      await this.execGitCommand(args, localDir)
-    } catch (error) {
-      const errorMessage = `Failed to merge branch ${branchToMerge} in directory: ${localDir}`
-      this.core.error(errorMessage)
-      throw new Error(
-        `${errorMessage}. Original error: ${(error as Error).message}`
-      )
-    }
-  }
-
-  public async pushBranch(localDir: string, branchName: string): Promise<void> {
-    try {
-      this.core.info(`Pushing branch ${branchName}`)
-      await this.execGitCommand(['push', '-u', 'origin', branchName], localDir)
-    } catch (error) {
-      const errorMessage = `Failed to push branch ${branchName} from directory: ${localDir}`
-      this.core.error(errorMessage)
-      throw new Error(
+      try {
+        const { id, size } = await artifactClient.uploadArtifact(
+          artifactName,
+          [resultFilePath],
         `${errorMessage}. Original error: ${(error as Error).message}`
       )
     }
