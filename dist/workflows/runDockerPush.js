@@ -26,12 +26,13 @@ export async function runDockerPush() {
         core.info(`Found .csproj file: ${csprojPath}`);
         const csprojContent = await Csproj.readCsproj(csprojPath);
         const newVersion = Csproj.extractVersion(csprojContent);
-        core.info(`New version: ${newVersion}`);
-        if (!newVersion) {
-            core.error('New version is required.');
-            core.setFailed('New version is required.');
+        // Ensure the full version, including the build number, is extracted.
+        if (!newVersion || !/^\d+\.\d+\.\d+(\.\d+)?$/.test(newVersion)) {
+            core.error('Invalid or incomplete version extracted from .csproj file.');
+            core.setFailed('A valid version (including build number) is required.');
             return;
         }
+        core.info(`New version (including build number): ${newVersion}`);
         // Process Docker Compose builds if provided.
         if (inputs.dockerComposeFiles) {
             if (!inputs.images) {

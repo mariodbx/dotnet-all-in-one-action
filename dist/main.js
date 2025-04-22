@@ -10,9 +10,15 @@ import { runDockerBuild } from './workflows/runDockerBuild.js';
 import { runDockerPush } from './workflows/runDockerPush.js';
 import { runPublish } from './workflows/runPublish.js'; // Import the new publish workflow
 import { Inputs } from './Inputs.js';
+import { GitManager } from './git-manager/GitManager.js'; // Import GitManager
 /* istanbul ignore next */
 export async function run() {
     const inputs = new Inputs();
+    // Fetch the commit message using GitManager
+    const gitManager = new GitManager();
+    const commitMessage = await gitManager.getLatestCommitMessage();
+    // Use a regex to match "major", "minor", or "patch" in a case-insensitive manner
+    const shouldRunAll = /\b(major|minor|patch)\b/i.test(commitMessage);
     if (inputs.runMigrations) {
         console.log('Running migrations...');
         await runMigrations();
@@ -20,6 +26,10 @@ export async function run() {
     if (inputs.runTests) {
         console.log('Running tests...');
         await runTests();
+    }
+    if (!shouldRunAll) {
+        console.log('Skipping remaining steps as commit message does not contain "major", "minor", or "patch".');
+        return;
     }
     if (inputs.runVersioning) {
         console.log('Running versioning...');
@@ -35,7 +45,7 @@ export async function run() {
     }
     if (inputs.runPublish) {
         console.log('Running publish...');
-        await runPublish(); // Add the publish step
+        await runPublish();
     }
     if (inputs.runRelease) {
         console.log('Running release...');

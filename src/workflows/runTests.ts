@@ -94,6 +94,7 @@ export async function runTests(): Promise<void> {
           if (rollbackError instanceof Error) {
             core.error(rollbackError.message)
           }
+          core.error('Rollback failure will not stop the workflow.')
         }
       } else {
         core.info(
@@ -126,6 +127,7 @@ export async function runTests(): Promise<void> {
         if (uploadError instanceof Error) {
           core.error(uploadError.message)
         }
+        core.error('Artifact upload failure will not stop the workflow.')
       }
     } else {
       core.info(

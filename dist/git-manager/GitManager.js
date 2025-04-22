@@ -301,7 +301,10 @@ export class GitManager {
             ['### Additions', this.buildKeywordRegex(inputs.addedKeywords)],
             ['### Dev Changes', this.buildKeywordRegex(inputs.devKeywords)]
         ]
-            .map(([label, regex]) => `${label}\n${this.categorize(commits, regex)}`)
+            .map(([label, regex]) => {
+            const categorizedCommits = this.categorize(commits, regex);
+            return `${label}\n${categorizedCommits}`;
+        })
             .join('\n\n');
         await fs.writeFile('changelog.txt', changelog, 'utf8');
         this.core.info('Generated changelog:\n' + changelog);
@@ -313,17 +316,18 @@ export class GitManager {
             .map((k) => k.trim())
             .filter(Boolean);
         if (keywords.length === 0)
-            return /^$/;
+            return /.*/; // Match all if no keywords provided.
         const pattern = keywords
             .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
             .join('|');
-        return new RegExp(`(${pattern})`, 'i');
+        return new RegExp(`\\b(${pattern})\\b`, 'i'); // Ensure whole-word matching.
     }
     categorize(commits, pattern) {
-        return (commits
+        const filteredCommits = commits
             .split('\n')
             .filter((line) => pattern.test(line))
-            .join('\n') || 'None');
+            .join('\n');
+        return filteredCommits || 'None';
     }
     async releaseExists(repo, version) {
         const url = `https://api.github.com/repos/${repo}/releases/tags/v${version}`;

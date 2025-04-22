@@ -389,10 +389,10 @@ export class GitManager {
       ['### Additions', this.buildKeywordRegex(inputs.addedKeywords)],
       ['### Dev Changes', this.buildKeywordRegex(inputs.devKeywords)]
     ]
-      .map(
-        ([label, regex]) =>
-          `${label}\n${this.categorize(commits, regex as RegExp)}`
-      )
+      .map(([label, regex]) => {
+        const categorizedCommits = this.categorize(commits, regex as RegExp)
+        return `${label}\n${categorizedCommits}`
+      })
       .join('\n\n')
 
     await fs.writeFile('changelog.txt', changelog, 'utf8')
@@ -406,21 +406,20 @@ export class GitManager {
       .map((k) => k.trim())
       .filter(Boolean)
 
-    if (keywords.length === 0) return /^$/
+    if (keywords.length === 0) return /.*/ // Match all if no keywords provided.
 
     const pattern = keywords
       .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
       .join('|')
-    return new RegExp(`(${pattern})`, 'i')
+    return new RegExp(`\\b(${pattern})\\b`, 'i') // Ensure whole-word matching.
   }
 
   private categorize(commits: string, pattern: RegExp): string {
-    return (
-      commits
-        .split('\n')
-        .filter((line) => pattern.test(line))
-        .join('\n') || 'None'
-    )
+    const filteredCommits = commits
+      .split('\n')
+      .filter((line) => pattern.test(line))
+      .join('\n')
+    return filteredCommits || 'None'
   }
 
   public async releaseExists(repo: string, version: string): Promise<boolean> {
