@@ -23,7 +23,6 @@ export class ef {
         try {
             if (this.useGlobalDotnetEf) {
                 // Install globally
-                const efCommand = 'tool install --global dotnet-ef';
                 this.core.info('Installing dotnet-ef tool globally...');
                 const globalToolPath = path.join(process.env.HOME || '/tmp', '.dotnet', 'tools');
                 const updatedEnv = {
@@ -31,29 +30,23 @@ export class ef {
                     DOTNET_ROOT: this.dotnetRoot,
                     PATH: `${globalToolPath}:${process.env.PATH}`
                 };
-                await this.exec.exec('dotnet', efCommand.split(' '), {
+                // Install the tool
+                await this.exec.exec('dotnet', ['tool', 'install', '--global', 'dotnet-ef'], {
                     env: updatedEnv
                 });
-                // Add the global tools directory to the PATH
-                process.env.PATH = updatedEnv.PATH;
-                this.core.info(`Added global tool path to PATH: ${globalToolPath}`);
-                this.core.info(`Current PATH: ${process.env.PATH}`);
-                // Verify that the global tools directory contains dotnet-ef
+                // Verify the executable exists
                 const dotnetEfPath = path.join(globalToolPath, 'dotnet-ef');
                 if (!fs.existsSync(dotnetEfPath)) {
                     throw new Error(`The dotnet-ef executable was not found in the global tools directory: ${dotnetEfPath}`);
                 }
+                // Add the global tools directory to the PATH
+                process.env.PATH = updatedEnv.PATH;
+                this.core.info(`Added global tool path to PATH: ${globalToolPath}`);
+                this.core.info(`Current PATH: ${process.env.PATH}`);
                 // Verify that dotnet-ef is accessible
-                const verifyCommand = 'dotnet-ef --version';
                 this.core.info('Verifying dotnet-ef installation...');
-                try {
-                    await this.exec.exec('dotnet-ef', verifyCommand.split(' '), {
-                        env: updatedEnv
-                    });
-                }
-                catch {
-                    throw new Error('Unable to locate executable file: dotnet-ef. Please verify the PATH environment variable.');
-                }
+                await this.exec.exec(dotnetEfPath, ['--version'], { env: updatedEnv });
+                this.core.info('dotnet-ef tool installed and verified successfully.');
             }
             else {
                 // Install locally using a tool manifest
