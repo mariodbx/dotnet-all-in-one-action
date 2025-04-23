@@ -28,25 +28,55 @@ export class ef {
   }
 
   private getEfCommand(): string[] {
-    return this.useGlobalDotnetEf ? [] : ['ef']
+    if (this.useGlobalDotnetEf) {
+      return []
+    }
+    return ['tool', 'run', 'dotnet-ef']
   }
 
   async installDotnetEf(): Promise<void> {
     try {
-      const efCommand = this.useGlobalDotnetEf
-        ? 'dotnet tool install --global dotnet-ef'
-        : 'dotnet tool install dotnet-ef'
+      if (this.useGlobalDotnetEf) {
+        // Install globally
+        const efCommand = 'dotnet tool install --global dotnet-ef'
+        this.core.info('Installing dotnet-ef tool globally...')
+        await this.exec.exec('dotnet', efCommand.split(' '), {
+          env: { DOTNET_ROOT: this.dotnetRoot }
+        })
 
-      this.core.info('Installing dotnet-ef tool...')
-      await this.exec.exec('dotnet', efCommand.split(' '), {
-        env: { DOTNET_ROOT: this.dotnetRoot }
-      })
+        // Add the global tools directory to the PATH
+        const globalToolPath = `${process.env.HOME}/.dotnet/tools`
+        process.env.PATH = `${globalToolPath}:${process.env.PATH}`
+        this.core.info(`Added global tool path to PATH: ${globalToolPath}`)
+      } else {
+        // Install locally using a tool manifest
+        this.core.info(
+          'Setting up local tool manifest and installing dotnet-ef...'
+        )
+        const toolManifestArgs = ['new', 'tool-manifest', '--force']
+        const installEfArgs = [
+          'tool',
+          'install',
+          '--local',
+          'dotnet-ef',
+          '--version',
+          'latest',
+          '--force'
+        ]
 
-      if (!this.useGlobalDotnetEf) {
-        // Correctly determine the local tool installation directory
-        const localToolPath = `${process.env.HOME}/.dotnet/tools`
-        process.env.PATH = `${localToolPath}:${process.env.PATH}`
-        this.core.info(`Added local tool path to PATH: ${localToolPath}`)
+        // Create the tool manifest
+        await this.exec.exec('dotnet', toolManifestArgs, {
+          cwd: this.dotnetRoot,
+          env: { DOTNET_ROOT: this.dotnetRoot }
+        })
+
+        // Install dotnet-ef locally
+        await this.exec.exec('dotnet', installEfArgs, {
+          cwd: this.dotnetRoot,
+          env: { DOTNET_ROOT: this.dotnetRoot }
+        })
+
+        this.core.info('dotnet-ef installed locally via tool manifest.')
       }
 
       this.core.info('dotnet-ef tool installed successfully.')
