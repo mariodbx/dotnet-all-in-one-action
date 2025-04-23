@@ -14,7 +14,10 @@ export class ef {
         this.useGlobalDotnetEf = useGlobalDotnetEf;
     }
     getEfTool() {
-        return this.useGlobalDotnetEf ? 'dotnet-ef' : `${this.dotnetRoot}/dotnet-ef`;
+        if (this.useGlobalDotnetEf) {
+            return 'dotnet-ef';
+        }
+        return 'dotnet';
     }
     async installDotnetEf() {
         try {

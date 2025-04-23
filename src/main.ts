@@ -15,10 +15,15 @@ import { GitManager } from './git-manager/GitManager.js' // Import GitManager
 /* istanbul ignore next */
 export async function run() {
   const inputs = new Inputs()
+  const git = new GitManager()
 
+  const pullRepo = true
+  if (pullRepo) await git.repo.pull('.', process.env.GITHUB_REF_NAME)
+  console.log(
+    `Fetched the latest changes from the repository: ${process.env.GITHUB_REF_NAME}`
+  )
   // Fetch the commit message using GitManager
-  const gitManager = new GitManager()
-  const commitMessage = await gitManager.getLatestCommitMessage()
+  const commitMessage = await git.getLatestCommitMessage()
 
   // Use a regex to match "major", "minor", or "patch" in a case-insensitive manner
   const shouldRunAll = /\b(major|minor|patch)\b/i.test(commitMessage)
