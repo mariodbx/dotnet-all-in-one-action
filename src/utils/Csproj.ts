@@ -194,15 +194,15 @@ export class Csproj {
   }
 }
 
-// Example usage
-(async () => {
-  try {
-    const csprojName = 'example.csproj'
-    const csprojDepth = 3
+// // Example usage
+// (async () => {
+//   try {
+//     const csprojName = 'example.csproj'
+//     const csprojDepth = 3
 
-    // Find the .csproj file
-    const csprojPath = await Csproj.findCsproj(csprojDepth, csprojName)
-    console.log(`Found .csproj file at: ${csprojPath}`)
+//     // Find the .csproj file
+//     const csprojPath = await Csproj.findCsproj(csprojDepth, csprojName)
+//     console.log(`Found .csproj file at: ${csprojPath}`)
 
-    // Read the .csproj file
-    const csprojContent = await Csproj.readCsproj(csprojPath)
+//     // Read the .csproj file
+//     const csprojContent = await Csproj.readCsproj(csprojPath)
