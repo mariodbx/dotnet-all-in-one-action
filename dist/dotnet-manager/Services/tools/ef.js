@@ -32,7 +32,9 @@ export class ef {
                 await this.exec.exec('dotnet', ['tool', 'install', '--global', 'dotnet-ef'], { env: updatedEnv });
                 // Verify that dotnet-ef is accessible
                 this.core.info('Verifying dotnet-ef installation...');
-                await this.exec.exec('dotnet-ef', ['--version'], { env: updatedEnv });
+                await this.exec.exec('dotnet', ['dotnet-ef', '--version'], {
+                    env: updatedEnv
+                });
                 this.core.info('dotnet-ef tool installed and verified successfully.');
             }
             else {
