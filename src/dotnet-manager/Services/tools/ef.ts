@@ -43,8 +43,8 @@ export class ef {
       })
 
       if (!this.useGlobalDotnetEf) {
-        // Add the local tool installation directory to the PATH
-        const localToolPath = `${this.dotnetRoot}/.dotnet/tools`
+        // Correctly determine the local tool installation directory
+        const localToolPath = `${process.env.HOME}/.dotnet/tools`
         process.env.PATH = `${localToolPath}:${process.env.PATH}`
         this.core.info(`Added local tool path to PATH: ${localToolPath}`)
       }
