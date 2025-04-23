@@ -49,10 +49,14 @@ export class ef {
                     'latest',
                     '--force'
                 ];
+                // Normalize dotnetRoot to ensure it's a valid directory
+                const normalizedDotnetRoot = fs.statSync(this.dotnetRoot).isDirectory()
+                    ? this.dotnetRoot
+                    : path.dirname(this.dotnetRoot);
                 // Create the tool manifest
                 this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`);
                 await this.exec.exec('dotnet', toolManifestArgs, {
-                    cwd: this.dotnetRoot,
+                    cwd: normalizedDotnetRoot,
                     env: {
                         ...process.env,
                         DOTNET_ROOT: this.dotnetRoot
@@ -62,7 +66,7 @@ export class ef {
                 // Install dotnet-ef locally
                 this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`);
                 await this.exec.exec('dotnet', installEfArgs, {
-                    cwd: this.dotnetRoot,
+                    cwd: normalizedDotnetRoot,
                     env: {
                         ...process.env,
                         DOTNET_ROOT: this.dotnetRoot
