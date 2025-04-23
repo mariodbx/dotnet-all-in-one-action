@@ -32,9 +32,18 @@ export class ef {
                     }
                 });
                 // Add the global tools directory to the PATH
-                const globalToolPath = `${process.env.HOME}/.dotnet/tools`;
+                const globalToolPath = path.join(process.env.HOME || '/tmp', '.dotnet', 'tools');
                 process.env.PATH = `${globalToolPath}:${process.env.PATH}`;
                 this.core.info(`Added global tool path to PATH: ${globalToolPath}`);
+                // Verify that dotnet-ef is accessible
+                const verifyCommand = 'dotnet-ef --version';
+                this.core.info('Verifying dotnet-ef installation...');
+                await this.exec.exec('dotnet-ef', verifyCommand.split(' '), {
+                    env: {
+                        ...process.env,
+                        PATH: process.env.PATH
+                    }
+                });
             }
             else {
                 // Install locally using a tool manifest
@@ -49,14 +58,15 @@ export class ef {
                     'latest',
                     '--force'
                 ];
-                // Normalize dotnetRoot to ensure it's a valid directory
-                const normalizedDotnetRoot = fs.statSync(this.dotnetRoot).isDirectory()
-                    ? this.dotnetRoot
-                    : path.dirname(this.dotnetRoot);
+                // Use a writable directory for creating the tool manifest
+                const writableDir = path.join(process.env.HOME || '/tmp', '.dotnet-tools');
+                if (!fs.existsSync(writableDir)) {
+                    fs.mkdirSync(writableDir, { recursive: true });
+                }
                 // Create the tool manifest
                 this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`);
                 await this.exec.exec('dotnet', toolManifestArgs, {
-                    cwd: normalizedDotnetRoot,
+                    cwd: writableDir,
                     env: {
                         ...process.env,
                         DOTNET_ROOT: this.dotnetRoot
@@ -66,7 +76,7 @@ export class ef {
                 // Install dotnet-ef locally
                 this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`);
                 await this.exec.exec('dotnet', installEfArgs, {
-                    cwd: normalizedDotnetRoot,
+                    cwd: writableDir,
                     env: {
                         ...process.env,
                         DOTNET_ROOT: this.dotnetRoot
