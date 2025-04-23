@@ -65,17 +65,19 @@ export class ef {
         ]
 
         // Create the tool manifest
+        this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`)
         await this.exec.exec('dotnet', toolManifestArgs, {
           cwd: this.dotnetRoot,
           env: { DOTNET_ROOT: this.dotnetRoot }
         })
+        this.core.info('Tool manifest created successfully.')
 
         // Install dotnet-ef locally
+        this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`)
         await this.exec.exec('dotnet', installEfArgs, {
           cwd: this.dotnetRoot,
           env: { DOTNET_ROOT: this.dotnetRoot }
         })
-
         this.core.info('dotnet-ef installed locally via tool manifest.')
       }
 
@@ -115,9 +117,10 @@ export class ef {
 
     // List migrations to check for pending migrations
     this.core.info(`Listing migrations in folder: ${migrationsFolder}...`)
+    this.core.info(`Running: ${efCmd} ${efArgs.join(' ')}`)
     await exec.exec(efCmd, efArgs, migrationOptions)
 
-    this.core.info(migrationOutput)
+    this.core.info(`Migration output:\n${migrationOutput}`)
 
     const pendingMigrations = migrationOutput
       .split('\n')
@@ -131,6 +134,7 @@ export class ef {
       this.core.info(`Last pending migration: ${lastMigration}`)
 
       efArgs = [...this.getEfCommand(), 'database', 'update']
+      this.core.info(`Running: ${efCmd} ${efArgs.join(' ')}`)
       await exec.exec(efCmd, efArgs, migrationOptions)
 
       this.core.info('Migrations applied successfully.')
