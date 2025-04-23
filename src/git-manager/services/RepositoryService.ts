@@ -48,6 +48,26 @@ export class RepositoryService {
     }
   }
 
+  async fetch(localDir: string): Promise<void> {
+    try {
+      this.core.info('Fetching updates from the remote repository')
+      await this.exec.exec('git', ['fetch'], { cwd: localDir })
+    } catch (error) {
+      this.core.error('Failed to fetch updates from the remote repository')
+      throw error
+    }
+  }
+
+  async checkout(localDir: string, branch: string): Promise<void> {
+    try {
+      this.core.info(`Checking out to branch ${branch}`)
+      await this.exec.exec('git', ['checkout', branch], { cwd: localDir })
+    } catch (error) {
+      this.core.error(`Failed to checkout to branch ${branch}`)
+      throw error
+    }
+  }
+
   async commitAndPush(localDir: string, commitMessage: string): Promise<void> {
     try {
       this.core.info('Committing and pushing changes')
@@ -58,6 +78,17 @@ export class RepositoryService {
       await this.exec.exec('git', ['push', 'origin', 'HEAD'], { cwd: localDir })
     } catch (error) {
       this.core.error('Failed to commit and push changes')
+      throw error
+    }
+  }
+
+  async restore(localDir: string): Promise<void> {
+    try {
+      this.core.info('Restoring repository to a clean state')
+      await this.exec.exec('git', ['reset', '--hard'], { cwd: localDir })
+      await this.exec.exec('git', ['clean', '-fd'], { cwd: localDir })
+    } catch (error) {
+      this.core.error('Failed to restore repository to a clean state')
       throw error
     }
   }

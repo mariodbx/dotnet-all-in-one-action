@@ -14,9 +14,24 @@ import { GitManager } from './git-manager/GitManager.js'; // Import GitManager
 /* istanbul ignore next */
 export async function run() {
     const inputs = new Inputs();
+    const git = new GitManager();
+    // const pullRepo = true
+    // if (pullRepo) {
+    //   await git.repo.clone('.')
+    //   console.log(
+    //     `Cloned repository ${process.env.GITHUB_REPOSITORY} to ${process.env.GITHUB_WORKSPACE}`
+    //   )
+    //   await git.repo.fetch('.')
+    //   console.log('Fetched all branches and tags.')
+    //   await git.repo.checkout('.', process.env.GITHUB_REF_NAME || '')
+    //   console.log(`Checked out branch/tag ${process.env.GITHUB_REF_NAME}`)
+    //   await git.repo.pull('.', process.env.GITHUB_REF_NAME || '')
+    //   console.log(
+    //     `Pulled latest changes from branch/tag ${process.env.GITHUB_REF_NAME}`
+    //   )
+    // }
     // Fetch the commit message using GitManager
-    const gitManager = new GitManager();
-    const commitMessage = await gitManager.getLatestCommitMessage();
+    const commitMessage = await git.getLatestCommitMessage();
     // Use a regex to match "major", "minor", or "patch" in a case-insensitive manner
     const shouldRunAll = /\b(major|minor|patch)\b/i.test(commitMessage);
     if (inputs.runMigrations) {

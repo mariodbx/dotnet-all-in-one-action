@@ -19,6 +19,9 @@ export class ef {
         }
         return 'dotnet';
     }
+    getEfCommand() {
+        return this.useGlobalDotnetEf ? [] : ['ef'];
+    }
     async installDotnetEf() {
         try {
             const efCommand = this.useGlobalDotnetEf
@@ -80,7 +83,7 @@ export class ef {
     async getCurrentAppliedMigration(envName, home, migrationsFolder) {
         try {
             const args = [
-                this.getEfTool(),
+                ...this.getEfCommand(),
                 'migrations',
                 'list',
                 '--project',
@@ -112,7 +115,7 @@ export class ef {
     async getLastNonPendingMigration(envName, home, migrationsFolder) {
         try {
             const args = [
-                this.getEfTool(),
+                ...this.getEfCommand(),
                 'migrations',
                 'list',
                 '--project',
@@ -143,7 +146,7 @@ export class ef {
     async addMigration(migrationName, outputDir, context) {
         try {
             const args = [
-                this.getEfTool(),
+                ...this.getEfCommand(),
                 'migrations',
                 'add',
                 migrationName,
@@ -183,7 +186,7 @@ export class ef {
     async listMigrations(envName, home, migrationsFolder) {
         try {
             const args = [
-                this.getEfTool(),
+                ...this.getEfCommand(),
                 'migrations',
                 'list',
                 '--project',

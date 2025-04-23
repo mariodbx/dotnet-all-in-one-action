@@ -27,6 +27,10 @@ export class ef {
     return 'dotnet'
   }
 
+  private getEfCommand(): string[] {
+    return this.useGlobalDotnetEf ? [] : ['ef']
+  }
+
   async installDotnetEf(): Promise<void> {
     try {
       const efCommand = this.useGlobalDotnetEf
@@ -102,7 +106,7 @@ export class ef {
   ): Promise<string> {
     try {
       const args = [
-        this.getEfTool(),
+        ...this.getEfCommand(),
         'migrations',
         'list',
         '--project',
@@ -141,7 +145,7 @@ export class ef {
   ): Promise<string> {
     try {
       const args = [
-        this.getEfTool(),
+        ...this.getEfCommand(),
         'migrations',
         'list',
         '--project',
@@ -179,7 +183,7 @@ export class ef {
   ): Promise<void> {
     try {
       const args = [
-        this.getEfTool(),
+        ...this.getEfCommand(),
         'migrations',
         'add',
         migrationName,
@@ -227,7 +231,7 @@ export class ef {
   ): Promise<string[]> {
     try {
       const args = [
-        this.getEfTool(),
+        ...this.getEfCommand(),
         'migrations',
         'list',
         '--project',
