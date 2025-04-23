@@ -1,13 +1,13 @@
 import * as core from '@actions/core';
 import { DotnetManager } from '../dotnet-manager/DotnetManager.js';
-import { Inputs } from '../Inputs.js';
+import { Inputs } from '../utils/Inputs.js';
 export async function runMigrations() {
     try {
         const inputs = new Inputs();
-        const dotnetManager = new DotnetManager();
-        const baselineMigration = await dotnetManager.getLastNonPendingMigration(inputs.envName, process.env.HOME || '', inputs.migrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+        const dotnet = new DotnetManager(inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+        const baselineMigration = await dotnet.tools.ef.getLastNonPendingMigration(inputs.envName, process.env.HOME || '', inputs.migrationsFolder);
         core.info(`Baseline migration before new migrations: ${baselineMigration || 'None'}`);
-        const newMigration = await dotnetManager.processMigrations(inputs.envName, process.env.HOME || '', inputs.migrationsFolder, inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+        const newMigration = await dotnet.tools.ef.processMigrations(inputs.envName, process.env.HOME || '', inputs.migrationsFolder);
         core.info(newMigration
             ? `New migration applied: ${newMigration}`
             : 'No new migrations were applied.');

@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import { GitManager } from '../git-manager/GitManager.js';
-import { Inputs } from '../Inputs.js';
+import { Inputs } from '../utils/Inputs.js';
 import { Csproj } from '../utils/Csproj.js';
 export async function runDockerBuild() {
     try {
@@ -11,7 +11,7 @@ export async function runDockerBuild() {
         if (inputs.useCommitMessage) {
             const commitSubject = await gitManager.getLatestCommitMessage();
             core.info(`Latest commit subject: "${commitSubject}"`);
-            version = gitManager.extractVersionFromCommit(commitSubject);
+            version = gitManager.release.extractVersionFromCommit(commitSubject);
             if (!version) {
                 core.info('No version bump detected in commit message. Skipping release.');
                 core.setOutput('skip', 'true');

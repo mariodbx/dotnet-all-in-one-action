@@ -1,6 +1,6 @@
 import { TestService } from './Services/TestService.js'
 // import { MigrationService } from './Services/tools/ef.js'
-import { ToolService } from './Services/tools/ToolService.js'
+import { ToolService } from './Services/ToolService.js'
 import { ProjectService } from './Services/ProjectService.js'
 import { Csproj } from '../utils/Csproj.js'
 

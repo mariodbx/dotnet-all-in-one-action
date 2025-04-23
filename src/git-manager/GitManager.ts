@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import { RepositoryService } from './services/RepositoryService.js'
 import { ArtifactService } from './services/ArtifactService.js'
+import { ReleaseService } from './services/ReleaseService.js'
 
 export class GitManager {
   private actor: string
@@ -9,6 +10,7 @@ export class GitManager {
   private repository: string
   repo: RepositoryService
   artifact: ArtifactService
+  release: ReleaseService
 
   constructor(
     options: {
@@ -42,6 +44,7 @@ export class GitManager {
       dependencies
     )
     this.artifact = new ArtifactService(dependencies)
+    this.release = new ReleaseService(dependencies)
   }
 
   public async initialize(): Promise<void> {

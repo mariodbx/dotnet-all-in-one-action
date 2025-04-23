@@ -1,16 +1,15 @@
 // runRelease.ts
 import * as core from '@actions/core'
 import { Timer } from '../utils/Timer.js'
-import { Inputs } from '../Inputs.js'
+import { Inputs } from '../utils/Inputs.js'
 import { GitManager } from '../git-manager/GitManager.js'
 import { Csproj } from '../utils/Csproj.js'
 
 export async function runRelease(): Promise<void> {
   try {
     const inputs = new Inputs()
-    const gitManager = new GitManager()
+    const git = new GitManager()
 
-    // const token = process.env.GITHUB_TOKEN || ''
     const repo = process.env.GITHUB_REPOSITORY || ''
     if (!repo) throw new Error('GITHUB_REPOSITORY is not defined.')
 
@@ -20,13 +19,13 @@ export async function runRelease(): Promise<void> {
     await Timer.wait(5000)
 
     core.info('Running git pull to fetch the latest version...')
-    await gitManager.pullRepo('.', 'main')
+    await git.repo.pull('.', process.env.GITHUB_REF_NAME)
 
     // Determine version based on configuration.
     if (inputs.useCommitMessage) {
-      const commitSubject = await gitManager.getLatestCommitMessage()
+      const commitSubject = await git.getLatestCommitMessage()
       core.info(`Latest commit subject: "${commitSubject}"`)
-      version = gitManager.extractVersionFromCommit(commitSubject)
+      version = git.release.extractVersionFromCommit(commitSubject)
       if (!version) {
         core.info(
           'No version bump detected in commit message. Skipping release.'
@@ -63,14 +62,14 @@ export async function runRelease(): Promise<void> {
     core.setOutput('skip', 'false')
 
     // Check if a release for this version already exists.
-    const exists = await gitManager.releaseExists(repo, version)
+    const exists = await git.release.releaseExists(repo, version)
     if (exists) {
       core.info(`Release v${version} already exists. Skipping creation.`)
       return
     }
 
     // Create a new release (changelog is left empty; it will be added later by runChangelog).
-    await gitManager.createRelease(repo, version, '')
+    await git.release.createRelease(repo, version, '')
     core.info(`Release v${version} created successfully.`)
   } catch (error: unknown) {
     core.setFailed(error instanceof Error ? error.message : String(error))

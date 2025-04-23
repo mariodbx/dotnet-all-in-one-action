@@ -2,12 +2,14 @@ import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import { RepositoryService } from './services/RepositoryService.js';
 import { ArtifactService } from './services/ArtifactService.js';
+import { ReleaseService } from './services/ReleaseService.js';
 export class GitManager {
     actor;
     token;
     repository;
     repo;
     artifact;
+    release;
     constructor(options = {}, dependencies = {}) {
         this.actor = options.actor || process.env['GITHUB_ACTOR'] || '';
         this.token = options.token || process.env['GITHUB_TOKEN'] || '';
@@ -22,6 +24,7 @@ export class GitManager {
         });
         this.repo = new RepositoryService({ actor: this.actor, token: this.token, repo: this.repository }, dependencies);
         this.artifact = new ArtifactService(dependencies);
+        this.release = new ReleaseService(dependencies);
     }
     async initialize() {
         const email = `${this.actor}@users.noreply.github.com`;

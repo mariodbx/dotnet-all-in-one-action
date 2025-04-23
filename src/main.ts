@@ -9,7 +9,7 @@ import { runRelease } from './workflows/runRelease.js'
 import { runDockerBuild } from './workflows/runDockerBuild.js'
 import { runDockerPush } from './workflows/runDockerPush.js'
 // import { runPublish } from './workflows/runPublish.js' // Import the new publish workflow
-import { Inputs } from './Inputs.js'
+import { Inputs } from './utils/Inputs.js'
 import { GitManager } from './git-manager/GitManager.js' // Import GitManager
 
 /* istanbul ignore next */

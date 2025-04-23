@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { Inputs } from '../Inputs.js'
+import { Inputs } from '../utils/Inputs.js'
 import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
 import * as path from 'path'
 import { GitManager } from '../git-manager/GitManager.js'
@@ -9,38 +9,38 @@ export async function runTests(): Promise<void> {
   let newMigration = ''
   let resultFilePath = ''
   let resultFolder = ''
-  // Retrieve and validate inputs
   const inputs = new Inputs()
-  const dotnetManager = new DotnetManager()
+  const dotnetManager = new DotnetManager(
+    inputs.dotnetRoot,
+    inputs.useGlobalDotnetEf
+  )
   const gitManager = new GitManager()
+
   try {
-    // Migrations block: Get baseline and process new migrations if requested.
+    // Handle migrations if enabled
     if (inputs.runTestsMigrations) {
       core.debug('Attempting to run migrations...')
       try {
-        baselineMigration = await dotnetManager.getLastNonPendingMigration(
-          inputs.testsEnvName,
-          process.env.HOME || '',
-          inputs.testMigrationsFolder,
-          inputs.dotnetRoot,
-          inputs.useGlobalDotnetEf
-        )
+        baselineMigration =
+          await dotnetManager.tools.ef.getLastNonPendingMigration(
+            inputs.testsEnvName,
+            process.env.HOME || '',
+            inputs.testMigrationsFolder
+          )
         core.info(
           `Baseline migration before new migrations: ${baselineMigration}`
         )
 
-        newMigration = await dotnetManager.processMigrations(
+        newMigration = await dotnetManager.tools.ef.processMigrations(
           inputs.testsEnvName,
           process.env.HOME || '',
-          inputs.testMigrationsFolder,
-          inputs.dotnetRoot,
-          inputs.useGlobalDotnetEf
+          inputs.testMigrationsFolder
         )
-        if (newMigration) {
-          core.info(`New migration applied: ${newMigration}`)
-        } else {
-          core.info('No new migrations were applied.')
-        }
+        core.info(
+          newMigration
+            ? `New migration applied: ${newMigration}`
+            : 'No new migrations were applied.'
+        )
       } catch (migrationError) {
         core.error('Error during migrations:')
         if (migrationError instanceof Error) {
@@ -52,14 +52,13 @@ export async function runTests(): Promise<void> {
       core.info('Skipping migrations as requested.')
     }
 
-    // Run tests and capture output file path and folder.
+    // Run tests
     try {
       core.debug('Starting test execution...')
-      await dotnetManager.runTests(
-        inputs.testsEnvName,
+      await dotnetManager.tests.runTests(
         inputs.testFolder,
-        inputs.testOutputFolder,
-        inputs.testFormat
+        path.join(inputs.testOutputFolder, `TestResults.${inputs.testFormat}`),
+        [`--logger:${inputs.testFormat}`]
       )
       core.info('Tests executed successfully.')
 
@@ -80,12 +79,10 @@ export async function runTests(): Promise<void> {
           core.info(
             `Rolling back migrations to baseline: ${baselineMigration} due to test failure...`
           )
-          await dotnetManager.rollbackMigration(
+          await dotnetManager.tools.ef.rollbackMigration(
             inputs.testsEnvName,
             process.env.HOME || '',
             inputs.testMigrationsFolder,
-            inputs.dotnetRoot,
-            inputs.useGlobalDotnetEf,
             baselineMigration
           )
           core.info('Rollback completed successfully.')
@@ -117,7 +114,11 @@ export async function runTests(): Promise<void> {
       try {
         if (inputs.uploadTestsResults) {
           core.debug('Uploading test artifact...')
-          await gitManager.uploadTestArtifact(resultFilePath, resultFolder)
+          await gitManager.artifact.upload(
+            'TestResults',
+            [resultFilePath],
+            resultFolder
+          )
           core.info('Artifact uploaded successfully.')
         } else {
           core.debug('Artifact upload skipped as per configuration.')
