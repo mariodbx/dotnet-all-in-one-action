@@ -38,6 +38,11 @@ export class ef {
                 process.env.PATH = updatedEnv.PATH;
                 this.core.info(`Added global tool path to PATH: ${globalToolPath}`);
                 this.core.info(`Current PATH: ${process.env.PATH}`);
+                // Verify that the global tools directory contains dotnet-ef
+                const dotnetEfPath = path.join(globalToolPath, 'dotnet-ef');
+                if (!fs.existsSync(dotnetEfPath)) {
+                    throw new Error(`The dotnet-ef executable was not found in the global tools directory: ${dotnetEfPath}`);
+                }
                 // Verify that dotnet-ef is accessible
                 const verifyCommand = 'dotnet-ef --version';
                 this.core.info('Verifying dotnet-ef installation...');
