@@ -25,25 +25,25 @@ export class ef {
                 // Install globally
                 const efCommand = 'tool install --global dotnet-ef';
                 this.core.info('Installing dotnet-ef tool globally...');
+                const globalToolPath = path.join(process.env.HOME || '/tmp', '.dotnet', 'tools');
+                const updatedEnv = {
+                    ...process.env,
+                    DOTNET_ROOT: this.dotnetRoot,
+                    PATH: `${globalToolPath}:${process.env.PATH}`
+                };
                 await this.exec.exec('dotnet', efCommand.split(' '), {
-                    env: {
-                        ...process.env,
-                        DOTNET_ROOT: this.dotnetRoot
-                    }
+                    env: updatedEnv
                 });
                 // Add the global tools directory to the PATH
-                const globalToolPath = path.join(process.env.HOME || '/tmp', '.dotnet', 'tools');
-                process.env.PATH = `${globalToolPath}:${process.env.PATH}`;
+                process.env.PATH = updatedEnv.PATH;
                 this.core.info(`Added global tool path to PATH: ${globalToolPath}`);
+                this.core.info(`Current PATH: ${process.env.PATH}`);
                 // Verify that dotnet-ef is accessible
                 const verifyCommand = 'dotnet-ef --version';
                 this.core.info('Verifying dotnet-ef installation...');
                 try {
                     await this.exec.exec('dotnet-ef', verifyCommand.split(' '), {
-                        env: {
-                            ...process.env,
-                            PATH: process.env.PATH
-                        }
+                        env: updatedEnv
                     });
                 }
                 catch {
@@ -54,37 +54,28 @@ export class ef {
                 // Install locally using a tool manifest
                 this.core.info('Setting up local tool manifest and installing dotnet-ef...');
                 const toolManifestArgs = ['new', 'tool-manifest', '--force'];
-                const installEfArgs = [
-                    'tool',
-                    'install',
-                    '--local',
-                    'dotnet-ef',
-                    '--version',
-                    'latest'
-                ];
-                // Use a writable directory for creating the tool manifest
+                const installEfArgs = ['tool', 'install', '--local', 'dotnet-ef'];
                 const writableDir = path.join(process.env.HOME || '/tmp', '.dotnet-tools');
                 if (!fs.existsSync(writableDir)) {
                     fs.mkdirSync(writableDir, { recursive: true });
                 }
+                const updatedEnv = {
+                    ...process.env,
+                    DOTNET_ROOT: this.dotnetRoot,
+                    PATH: `${writableDir}:${process.env.PATH}`
+                };
                 // Create the tool manifest
                 this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`);
                 await this.exec.exec('dotnet', toolManifestArgs, {
                     cwd: writableDir,
-                    env: {
-                        ...process.env,
-                        DOTNET_ROOT: this.dotnetRoot
-                    }
+                    env: updatedEnv
                 });
                 this.core.info('Tool manifest created successfully.');
                 // Install dotnet-ef locally
                 this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`);
                 await this.exec.exec('dotnet', installEfArgs, {
                     cwd: writableDir,
-                    env: {
-                        ...process.env,
-                        DOTNET_ROOT: this.dotnetRoot
-                    }
+                    env: updatedEnv
                 });
                 this.core.info('dotnet-ef installed locally via tool manifest.');
             }
