@@ -24,28 +24,15 @@ export class ef {
             if (this.useGlobalDotnetEf) {
                 // Install globally
                 this.core.info('Installing dotnet-ef tool globally...');
-                const globalToolPath = path.join(process.env.HOME || '/tmp', '.dotnet', 'tools');
                 const updatedEnv = {
                     ...process.env,
-                    DOTNET_ROOT: this.dotnetRoot,
-                    PATH: `${globalToolPath}:${process.env.PATH}`
+                    DOTNET_ROOT: this.dotnetRoot
                 };
                 // Install the tool
-                await this.exec.exec('dotnet', ['tool', 'install', '--global', 'dotnet-ef'], {
-                    env: updatedEnv
-                });
-                // Verify the executable exists
-                const dotnetEfPath = path.join(globalToolPath, 'dotnet-ef');
-                if (!fs.existsSync(dotnetEfPath)) {
-                    throw new Error(`The dotnet-ef executable was not found in the global tools directory: ${dotnetEfPath}`);
-                }
-                // Add the global tools directory to the PATH
-                process.env.PATH = updatedEnv.PATH;
-                this.core.info(`Added global tool path to PATH: ${globalToolPath}`);
-                this.core.info(`Current PATH: ${process.env.PATH}`);
+                await this.exec.exec('dotnet', ['tool', 'install', '--global', 'dotnet-ef'], { env: updatedEnv });
                 // Verify that dotnet-ef is accessible
                 this.core.info('Verifying dotnet-ef installation...');
-                await this.exec.exec(dotnetEfPath, ['--version'], { env: updatedEnv });
+                await this.exec.exec('dotnet-ef', ['--version'], { env: updatedEnv });
                 this.core.info('dotnet-ef tool installed and verified successfully.');
             }
             else {
