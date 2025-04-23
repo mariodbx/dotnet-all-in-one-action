@@ -53,12 +53,18 @@ export class ef {
         // Verify that dotnet-ef is accessible
         const verifyCommand = 'dotnet-ef --version'
         this.core.info('Verifying dotnet-ef installation...')
-        await this.exec.exec('dotnet-ef', verifyCommand.split(' '), {
-          env: {
-            ...process.env,
-            PATH: process.env.PATH
-          }
-        })
+        try {
+          await this.exec.exec('dotnet-ef', verifyCommand.split(' '), {
+            env: {
+              ...process.env,
+              PATH: process.env.PATH
+            }
+          })
+        } catch {
+          throw new Error(
+            'Unable to locate executable file: dotnet-ef. Please verify the PATH environment variable.'
+          )
+        }
       } else {
         // Install locally using a tool manifest
         this.core.info(
@@ -71,8 +77,7 @@ export class ef {
           '--local',
           'dotnet-ef',
           '--version',
-          'latest',
-          '--force'
+          'latest'
         ]
 
         // Use a writable directory for creating the tool manifest
