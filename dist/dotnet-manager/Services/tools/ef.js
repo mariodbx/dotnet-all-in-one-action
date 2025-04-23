@@ -1,38 +1,35 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
+import * as fs from 'fs';
+import * as path from 'path';
 export class ef {
     dotnetRoot;
     useGlobalDotnetEf;
     core;
     exec;
     constructor(dotnetRoot, useGlobalDotnetEf, dependencies = { core, exec }) {
-        {
-            this.core = dependencies.core;
-            this.exec = dependencies.exec;
-        }
+        this.core = dependencies.core;
+        this.exec = dependencies.exec;
         this.dotnetRoot = dotnetRoot;
         this.useGlobalDotnetEf = useGlobalDotnetEf;
     }
     getEfTool() {
-        if (this.useGlobalDotnetEf) {
-            return 'dotnet-ef';
-        }
-        return 'dotnet';
+        return this.useGlobalDotnetEf ? 'dotnet-ef' : 'dotnet';
     }
     getEfCommand() {
-        if (this.useGlobalDotnetEf) {
-            return [];
-        }
-        return ['tool', 'run', 'dotnet-ef'];
+        return this.useGlobalDotnetEf ? [] : ['tool', 'run', 'dotnet-ef'];
     }
     async installDotnetEf() {
         try {
             if (this.useGlobalDotnetEf) {
                 // Install globally
-                const efCommand = 'dotnet tool install --global dotnet-ef';
+                const efCommand = 'tool install --global dotnet-ef';
                 this.core.info('Installing dotnet-ef tool globally...');
                 await this.exec.exec('dotnet', efCommand.split(' '), {
-                    env: { DOTNET_ROOT: this.dotnetRoot }
+                    env: {
+                        ...process.env,
+                        DOTNET_ROOT: this.dotnetRoot
+                    }
                 });
                 // Add the global tools directory to the PATH
                 const globalToolPath = `${process.env.HOME}/.dotnet/tools`;
@@ -56,14 +53,20 @@ export class ef {
                 this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`);
                 await this.exec.exec('dotnet', toolManifestArgs, {
                     cwd: this.dotnetRoot,
-                    env: { DOTNET_ROOT: this.dotnetRoot }
+                    env: {
+                        ...process.env,
+                        DOTNET_ROOT: this.dotnetRoot
+                    }
                 });
                 this.core.info('Tool manifest created successfully.');
                 // Install dotnet-ef locally
                 this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`);
                 await this.exec.exec('dotnet', installEfArgs, {
                     cwd: this.dotnetRoot,
-                    env: { DOTNET_ROOT: this.dotnetRoot }
+                    env: {
+                        ...process.env,
+                        DOTNET_ROOT: this.dotnetRoot
+                    }
                 });
                 this.core.info('dotnet-ef installed locally via tool manifest.');
             }
@@ -77,13 +80,19 @@ export class ef {
     }
     async processMigrations(envName, home, migrationsFolder) {
         let migrationOutput = '';
+        // Normalize working directory to avoid ENOTDIR
+        const workDir = fs.existsSync(migrationsFolder) &&
+            fs.statSync(migrationsFolder).isDirectory()
+            ? migrationsFolder
+            : path.dirname(migrationsFolder);
         const baseEnv = {
+            ...process.env,
             DOTNET_ROOT: this.dotnetRoot,
             HOME: process.env.HOME || home,
             ASPNETCORE_ENVIRONMENT: envName
         };
         const migrationOptions = {
-            cwd: migrationsFolder,
+            cwd: workDir,
             env: baseEnv,
             listeners: {
                 stdout: (data) => {
@@ -93,14 +102,12 @@ export class ef {
         };
         const efCmd = this.getEfTool();
         let efArgs = [...this.getEfCommand(), 'migrations', 'list'];
-        // List migrations to check for pending migrations
-        this.core.info(`Listing migrations in folder: ${migrationsFolder}...`);
-        this.core.info(`Running: ${efCmd} ${efArgs.join(' ')}`);
-        await exec.exec(efCmd, efArgs, migrationOptions);
+        this.core.info(`Listing migrations in folder: ${workDir}...`);
+        await this.exec.exec(efCmd, efArgs, migrationOptions);
         this.core.info(`Migration output:\n${migrationOutput}`);
         const pendingMigrations = migrationOutput
-            .split('\n')
-            .filter((line) => line.trim() && !line.includes('[applied]'));
+            .split(/\r?\n/)
+            .filter((line) => line.trim() && !line.toLowerCase().includes('[applied]'));
         let lastMigration = '';
         if (pendingMigrations.length > 0) {
             this.core.info('Pending migrations detected. Applying migrations...');
@@ -108,7 +115,7 @@ export class ef {
             this.core.info(`Last pending migration: ${lastMigration}`);
             efArgs = [...this.getEfCommand(), 'database', 'update'];
             this.core.info(`Running: ${efCmd} ${efArgs.join(' ')}`);
-            await exec.exec(efCmd, efArgs, migrationOptions);
+            await this.exec.exec(efCmd, efArgs, migrationOptions);
             this.core.info('Migrations applied successfully.');
         }
         else {
@@ -128,24 +135,32 @@ export class ef {
                 '--environment',
                 envName
             ];
-            await exec.exec(this.getEfTool(), args, { cwd: home });
-            core.info('Migration rolled back successfully');
+            await this.exec.exec(this.getEfTool(), args, {
+                env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
+            });
+            this.core.info('Migration rolled back successfully');
         }
         catch (error) {
             const message = `Failed to rollback to migration: ${targetMigration} for environment: ${envName}. ${error.message}`;
-            core.error(message);
+            this.core.error(message);
             throw new Error(message);
         }
     }
     async getCurrentAppliedMigration(envName, home, migrationsFolder) {
         let migrationOutput = '';
+        // Normalize working directory
+        const workDir = fs.existsSync(migrationsFolder) &&
+            fs.statSync(migrationsFolder).isDirectory()
+            ? migrationsFolder
+            : path.dirname(migrationsFolder);
         const baseEnv = {
+            ...process.env,
             DOTNET_ROOT: this.dotnetRoot,
             HOME: process.env.HOME || home,
             ASPNETCORE_ENVIRONMENT: envName
         };
         const migrationOptions = {
-            cwd: migrationsFolder,
+            cwd: workDir,
             env: baseEnv,
             listeners: {
                 stdout: (data) => {
@@ -155,11 +170,11 @@ export class ef {
         };
         const efCmd = this.getEfTool();
         const efArgs = [...this.getEfCommand(), 'migrations', 'list'];
-        await exec.exec(efCmd, efArgs, migrationOptions);
+        await this.exec.exec(efCmd, efArgs, migrationOptions);
         this.core.info(`Full migration output:\n${migrationOutput}`);
         const appliedMigrations = migrationOutput
-            .split('\n')
-            .filter((line) => line.includes('[applied]'))
+            .split(/\r?\n/)
+            .filter((line) => line.toLowerCase().includes('[applied]'))
             .map((line) => line.replace(/\[applied\]/i, '').trim());
         const lastApplied = appliedMigrations.length > 0
             ? appliedMigrations[appliedMigrations.length - 1]
@@ -169,13 +184,19 @@ export class ef {
     }
     async getLastNonPendingMigration(envName, home, migrationsFolder) {
         let migrationOutput = '';
+        // Normalize working directory
+        const workDir = fs.existsSync(migrationsFolder) &&
+            fs.statSync(migrationsFolder).isDirectory()
+            ? migrationsFolder
+            : path.dirname(migrationsFolder);
         const baseEnv = {
+            ...process.env,
             DOTNET_ROOT: this.dotnetRoot,
             HOME: process.env.HOME || home,
             ASPNETCORE_ENVIRONMENT: envName
         };
         const migrationOptions = {
-            cwd: migrationsFolder,
+            cwd: workDir,
             env: baseEnv,
             listeners: {
                 stdout: (data) => {
@@ -185,10 +206,10 @@ export class ef {
         };
         const efCmd = this.getEfTool();
         const efArgs = [...this.getEfCommand(), 'migrations', 'list'];
-        await exec.exec(efCmd, efArgs, migrationOptions);
+        await this.exec.exec(efCmd, efArgs, migrationOptions);
         this.core.info(`Full migration output:\n${migrationOutput}`);
         const migrationLines = migrationOutput
-            .split('\n')
+            .split(/\r?\n/)
             .map((line) => line.trim());
         const nonPendingMigrations = migrationLines.filter((line) => line !== '' && !/\(pending\)/i.test(line));
         const lastMigration = nonPendingMigrations.length > 0
@@ -210,11 +231,13 @@ export class ef {
             if (context) {
                 args.push('--context', context);
             }
-            await exec.exec(this.getEfTool(), args);
+            await this.exec.exec(this.getEfTool(), args, {
+                env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
+            });
         }
         catch (error) {
             const message = `Failed to add migration: ${migrationName}. ${error.message}`;
-            core.error(message);
+            this.core.error(message);
             throw new Error(message);
         }
     }
@@ -229,11 +252,14 @@ export class ef {
                 '--environment',
                 envName
             ];
-            await exec.exec(this.getEfTool(), args, { cwd: home });
+            await this.exec.exec(this.getEfTool(), args, {
+                cwd: home,
+                env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
+            });
         }
         catch (error) {
             const message = `Failed to update database for environment: ${envName}. ${error.message}`;
-            core.error(message);
+            this.core.error(message);
             throw new Error(message);
         }
     }
@@ -249,19 +275,20 @@ export class ef {
                 envName
             ];
             let output = '';
-            await exec.exec(this.getEfTool(), args, {
+            await this.exec.exec(this.getEfTool(), args, {
                 cwd: home,
+                env: { ...process.env, DOTNET_ROOT: this.dotnetRoot },
                 listeners: {
                     stdout: (data) => {
                         output += data.toString();
                     }
                 }
             });
-            return output.split('\n').filter((line) => line.trim());
+            return output.split(/\r?\n/).filter((line) => line.trim());
         }
         catch (error) {
             const message = `Failed to list migrations for environment: ${envName}. ${error.message}`;
-            core.error(message);
+            this.core.error(message);
             throw new Error(message);
         }
     }
