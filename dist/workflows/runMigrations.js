@@ -5,6 +5,12 @@ export async function runMigrations() {
     try {
         const inputs = new Inputs();
         const dotnet = new DotnetManager(inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+        // Install dotnet-ef locally if the flag is set to false
+        if (!inputs.useGlobalDotnetEf) {
+            core.info('Installing dotnet-ef locally...');
+            await dotnet.tools.ef.installDotnetEf();
+            core.info('dotnet-ef installed locally.');
+        }
         const baselineMigration = await dotnet.tools.ef.getLastNonPendingMigration(inputs.envName, process.env.HOME || '', inputs.migrationsFolder);
         core.info(`Baseline migration before new migrations: ${baselineMigration || 'None'}`);
         const newMigration = await dotnet.tools.ef.processMigrations(inputs.envName, process.env.HOME || '', inputs.migrationsFolder);

@@ -10,6 +10,13 @@ export async function runMigrations(): Promise<void> {
       inputs.useGlobalDotnetEf
     )
 
+    // Install dotnet-ef locally if the flag is set to false
+    if (!inputs.useGlobalDotnetEf) {
+      core.info('Installing dotnet-ef locally...')
+      await dotnet.tools.ef.installDotnetEf()
+      core.info('dotnet-ef installed locally.')
+    }
+
     const baselineMigration = await dotnet.tools.ef.getLastNonPendingMigration(
       inputs.envName,
       process.env.HOME || '',

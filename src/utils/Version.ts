@@ -1,9 +1,7 @@
 import * as exec from '@actions/exec'
 
 export class Version {
-  private constructor() {
-    // Prevent instantiation
-  }
+  private constructor() {}
 
   /**
    * Parses a version string into its components.
