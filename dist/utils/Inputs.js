@@ -64,6 +64,9 @@ export class Inputs {
     publishLinux;
     publishWindows;
     publishMac;
+    // Format
+    runFormat;
+    formatDirectory;
     constructor() {
         this.homeDirectory = this.getInputOrDefault('home_directory', '/home/node');
         this.dotnetRoot = this.getInputOrDefault('dotnet_root', '/usr/bin/dotnet');
@@ -121,6 +124,9 @@ export class Inputs {
         this.publishLinux = core.getBooleanInput('publish_linux');
         this.publishWindows = core.getBooleanInput('publish_windows');
         this.publishMac = core.getBooleanInput('publish_mac');
+        // Format
+        this.runFormat = this.getInputOrDefaultBoolean('run_format', false);
+        this.formatDirectory = this.getInputOrDefault('format_directory', '.');
     }
     getInputOrDefault(name, defaultValue) {
         return core.getInput(name) || defaultValue;

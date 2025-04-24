@@ -224,6 +224,16 @@ inputs:
     required: false
     default: 'dev, experiment'
 
+  # Format
+  run_format:
+    description: 'Run code formatting step? (true/false)'
+    required: false
+    default: 'false'
+  format_directory:
+    description: 'Directory to format code in.'
+    required: false
+    default: '.'
+
 outputs:
   # Migrations
   lastMigration:

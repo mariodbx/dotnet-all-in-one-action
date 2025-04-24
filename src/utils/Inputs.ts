@@ -70,6 +70,10 @@ export interface IActionInputs {
   publishLinux: boolean
   publishWindows: boolean
   publishMac: boolean
+
+  // Format
+  runFormat: boolean
+  formatDirectory: string
 }
 
 /**
@@ -144,6 +148,10 @@ export class Inputs {
   publishLinux: boolean
   publishWindows: boolean
   publishMac: boolean
+
+  // Format
+  runFormat: boolean
+  formatDirectory: string
 
   constructor() {
     this.homeDirectory = this.getInputOrDefault('home_directory', '/home/node')
@@ -266,6 +274,10 @@ export class Inputs {
     this.publishLinux = core.getBooleanInput('publish_linux')
     this.publishWindows = core.getBooleanInput('publish_windows')
     this.publishMac = core.getBooleanInput('publish_mac')
+
+    // Format
+    this.runFormat = this.getInputOrDefaultBoolean('run_format', false)
+    this.formatDirectory = this.getInputOrDefault('format_directory', '.')
   }
 
   private getInputOrDefault(name: string, defaultValue: string): string {

@@ -8,6 +8,7 @@ import { runVersioning } from './workflows/runVersioning.js';
 import { runRelease } from './workflows/runRelease.js';
 import { runDockerBuild } from './workflows/runDockerBuild.js';
 import { runDockerPush } from './workflows/runDockerPush.js';
+import { runFormat } from './workflows/runFormat.js';
 // import { runPublish } from './workflows/runPublish.js' // Import the new publish workflow
 import { Inputs } from './utils/Inputs.js';
 // import { GitManager } from './git-manager/GitManager.js' // Import GitManager
@@ -41,6 +42,10 @@ export async function run() {
     if (inputs.runTests) {
         console.log('Running tests...');
         await runTests();
+    }
+    if (inputs.runFormat) {
+        console.log('Running code formatting...');
+        await runFormat();
     }
     const shouldRunAll = false;
     if (!shouldRunAll) {
