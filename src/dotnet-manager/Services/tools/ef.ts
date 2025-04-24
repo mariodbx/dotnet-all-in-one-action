@@ -33,8 +33,6 @@ export class ef {
       if (this.useGlobalDotnetEf) {
         this.core.info('Installing dotnet-ef tool globally...')
 
-        // Determine the global tools path based on the operating system
-
         // Install the dotnet-ef tool globally
         await this.exec.exec('dotnet', [
           'tool',
@@ -42,6 +40,14 @@ export class ef {
           '--global',
           'dotnet-ef'
         ])
+
+        // Add the global tools directory to PATH
+        const globalToolsPath = path.join(
+          process.env.HOME || '/tmp',
+          '.dotnet',
+          'tools'
+        )
+        process.env.PATH = `${globalToolsPath}:${process.env.PATH}`
 
         // Verify the installation
         this.core.info('Verifying dotnet-ef installation...')
@@ -94,6 +100,7 @@ export class ef {
       throw new Error(message)
     }
   }
+
   async processMigrations(
     envName: string,
     home: string,
