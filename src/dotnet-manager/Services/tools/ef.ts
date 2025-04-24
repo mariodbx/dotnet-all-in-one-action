@@ -1,7 +1,5 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
-import * as fs from 'fs'
-import * as path from 'path'
 
 export class ef {
   private dotnetRoot: string
@@ -28,21 +26,15 @@ export class ef {
       const toolManifestArgs = ['new', 'tool-manifest', '--force']
       const installEfArgs = ['tool', 'install', '--local', 'dotnet-ef']
 
-      const writableDir = path.join(process.env.HOME || '/tmp', '.dotnet-tools')
-      if (!fs.existsSync(writableDir)) {
-        fs.mkdirSync(writableDir, { recursive: true })
-      }
-
       const updatedEnv = {
         ...process.env,
-        DOTNET_ROOT: this.dotnetRoot,
-        PATH: `${writableDir}:${process.env.PATH}`
+        DOTNET_ROOT: this.dotnetRoot
       }
 
       // Create the tool manifest
       this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`)
       await this.exec.exec('dotnet', toolManifestArgs, {
-        cwd: writableDir,
+        cwd: process.cwd(), // Use the current working directory
         env: updatedEnv
       })
       this.core.info('Tool manifest created successfully.')
@@ -50,7 +42,7 @@ export class ef {
       // Install dotnet-ef locally
       this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`)
       await this.exec.exec('dotnet', installEfArgs, {
-        cwd: writableDir,
+        cwd: process.cwd(), // Use the current working directory
         env: updatedEnv
       })
       this.core.info('dotnet-ef installed locally via tool manifest.')
@@ -86,13 +78,6 @@ export class ef {
 
     let migrationOutput = ''
 
-    // Normalize working directory to avoid ENOTDIR
-    const workDir =
-      fs.existsSync(migrationsFolder) &&
-      fs.statSync(migrationsFolder).isDirectory()
-        ? migrationsFolder
-        : path.dirname(migrationsFolder)
-
     const baseEnv: Record<string, string> = {
       ...process.env,
       DOTNET_ROOT: this.dotnetRoot,
@@ -101,7 +86,7 @@ export class ef {
     }
 
     const migrationOptions: exec.ExecOptions = {
-      cwd: workDir,
+      cwd: migrationsFolder, // Use migrationsFolder as the working directory
       env: baseEnv,
       listeners: {
         stdout: (data: Buffer) => {
@@ -113,7 +98,7 @@ export class ef {
     const efCmd = this.getEfTool()
     let efArgs = [...this.getEfCommand(), 'migrations', 'list']
 
-    this.core.info(`Listing migrations in folder: ${workDir}...`)
+    this.core.info(`Listing migrations in folder: ${migrationsFolder}...`)
     await this.exec.exec(efCmd, efArgs, migrationOptions)
 
     this.core.info(`Migration output:\n${migrationOutput}`)
@@ -164,15 +149,8 @@ export class ef {
         envName
       ]
 
-      // Set the working directory to the migrations folder
-      const workDir =
-        fs.existsSync(migrationsFolder) &&
-        fs.statSync(migrationsFolder).isDirectory()
-          ? migrationsFolder
-          : path.dirname(migrationsFolder)
-
       await this.exec.exec(efCmd, efArgs, {
-        cwd: workDir, // Ensure the correct working directory
+        cwd: migrationsFolder, // Use migrationsFolder as the working directory
         env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
       })
       this.core.info('Migration rolled back successfully')
@@ -192,13 +170,6 @@ export class ef {
 
     let migrationOutput = ''
 
-    // Normalize working directory
-    const workDir =
-      fs.existsSync(migrationsFolder) &&
-      fs.statSync(migrationsFolder).isDirectory()
-        ? migrationsFolder
-        : path.dirname(migrationsFolder)
-
     const baseEnv: Record<string, string> = {
       ...process.env,
       DOTNET_ROOT: this.dotnetRoot,
@@ -207,7 +178,7 @@ export class ef {
     }
 
     const migrationOptions: exec.ExecOptions = {
-      cwd: workDir,
+      cwd: migrationsFolder, // Use migrationsFolder as the working directory
       env: baseEnv,
       listeners: {
         stdout: (data: Buffer) => {
@@ -246,13 +217,6 @@ export class ef {
 
     let migrationOutput = ''
 
-    // Normalize working directory
-    const workDir =
-      fs.existsSync(migrationsFolder) &&
-      fs.statSync(migrationsFolder).isDirectory()
-        ? migrationsFolder
-        : path.dirname(migrationsFolder)
-
     const baseEnv: Record<string, string> = {
       ...process.env,
       DOTNET_ROOT: this.dotnetRoot,
@@ -261,7 +225,7 @@ export class ef {
     }
 
     const migrationOptions: exec.ExecOptions = {
-      cwd: workDir,
+      cwd: migrationsFolder, // Use migrationsFolder as the working directory
       env: baseEnv,
       listeners: {
         stdout: (data: Buffer) => {
@@ -313,6 +277,7 @@ export class ef {
         args.push('--context', context)
       }
       await this.exec.exec(this.getEfTool(), args, {
+        cwd: outputDir, // Use outputDir as the working directory
         env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
       })
     } catch (error) {
@@ -339,8 +304,9 @@ export class ef {
         '--environment',
         envName
       ]
+
       await this.exec.exec(this.getEfTool(), args, {
-        cwd: home,
+        cwd: migrationsFolder, // Use migrationsFolder as the working directory
         env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
       })
     } catch (error) {
@@ -369,8 +335,9 @@ export class ef {
       ]
 
       let output = ''
+
       await this.exec.exec(this.getEfTool(), args, {
-        cwd: home,
+        cwd: migrationsFolder, // Use migrationsFolder as the working directory
         env: { ...process.env, DOTNET_ROOT: this.dotnetRoot },
         listeners: {
           stdout: (data: Buffer) => {
