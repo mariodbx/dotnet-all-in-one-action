@@ -186,7 +186,16 @@ export class ef {
         '--environment',
         envName
       ]
+
+      // Set the working directory to the migrations folder
+      const workDir =
+        fs.existsSync(migrationsFolder) &&
+        fs.statSync(migrationsFolder).isDirectory()
+          ? migrationsFolder
+          : path.dirname(migrationsFolder)
+
       await this.exec.exec(efCmd, efArgs, {
+        cwd: workDir, // Ensure the correct working directory
         env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
       })
       this.core.info('Migration rolled back successfully')
