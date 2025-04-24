@@ -104,6 +104,15 @@ export class ef {
     async rollbackMigration(envName, home, migrationsFolder, targetMigration) {
         await this.ensureInstalled();
         try {
+            const baseEnv = {
+                DOTNET_ROOT: this.dotnetRoot,
+                HOME: process.env.HOME || home,
+                ASPNETCORE_ENVIRONMENT: envName
+            };
+            const execOptions = {
+                cwd: migrationsFolder,
+                env: baseEnv
+            };
             const efCmd = this.getEfTool();
             const efArgs = [
                 ...this.getEfCommand(),
@@ -111,14 +120,9 @@ export class ef {
                 'update',
                 targetMigration,
                 '--project',
-                migrationsFolder,
-                '--environment',
-                envName
+                migrationsFolder
             ];
-            await this.exec.exec(efCmd, efArgs, {
-                cwd: migrationsFolder, // Use migrationsFolder as the working directory
-                env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
-            });
+            await this.exec.exec(efCmd, efArgs, execOptions);
             this.core.info('Migration rolled back successfully');
         }
         catch (error) {
@@ -219,19 +223,25 @@ export class ef {
     async updateDatabase(envName, home, migrationsFolder) {
         await this.ensureInstalled();
         try {
-            const args = [
-                this.getEfTool(),
+            const baseEnv = {
+                DOTNET_ROOT: this.dotnetRoot,
+                HOME: process.env.HOME || home,
+                ASPNETCORE_ENVIRONMENT: envName
+            };
+            const execOptions = {
+                cwd: migrationsFolder,
+                env: baseEnv
+            };
+            const efCmd = this.getEfTool();
+            const efArgs = [
+                ...this.getEfCommand(),
                 'database',
                 'update',
                 '--project',
-                migrationsFolder,
-                '--environment',
-                envName
+                migrationsFolder
             ];
-            await this.exec.exec(this.getEfTool(), args, {
-                cwd: migrationsFolder, // Use migrationsFolder as the working directory
-                env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
-            });
+            await this.exec.exec(efCmd, efArgs, execOptions);
+            this.core.info('Database updated successfully.');
         }
         catch (error) {
             const message = `Failed to update database for environment: ${envName}. ${error.message}`;
@@ -242,19 +252,26 @@ export class ef {
     async listMigrations(envName, home, migrationsFolder) {
         await this.ensureInstalled();
         try {
-            const args = [
+            const baseEnv = {
+                DOTNET_ROOT: this.dotnetRoot,
+                HOME: process.env.HOME || home,
+                ASPNETCORE_ENVIRONMENT: envName
+            };
+            const execOptions = {
+                cwd: migrationsFolder,
+                env: baseEnv
+            };
+            const efCmd = this.getEfTool();
+            const efArgs = [
                 ...this.getEfCommand(),
                 'migrations',
                 'list',
                 '--project',
-                migrationsFolder,
-                '--environment',
-                envName
+                migrationsFolder
             ];
             let output = '';
-            await this.exec.exec(this.getEfTool(), args, {
-                cwd: migrationsFolder, // Use migrationsFolder as the working directory
-                env: { ...process.env, DOTNET_ROOT: this.dotnetRoot },
+            await this.exec.exec(efCmd, efArgs, {
+                ...execOptions,
                 listeners: {
                     stdout: (data) => {
                         output += data.toString();

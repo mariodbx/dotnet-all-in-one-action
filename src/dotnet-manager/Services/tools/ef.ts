@@ -137,6 +137,17 @@ export class ef {
     await this.ensureInstalled()
 
     try {
+      const baseEnv = {
+        DOTNET_ROOT: this.dotnetRoot,
+        HOME: process.env.HOME || home,
+        ASPNETCORE_ENVIRONMENT: envName
+      }
+
+      const execOptions: exec.ExecOptions = {
+        cwd: migrationsFolder,
+        env: baseEnv
+      }
+
       const efCmd = this.getEfTool()
       const efArgs = [
         ...this.getEfCommand(),
@@ -144,15 +155,10 @@ export class ef {
         'update',
         targetMigration,
         '--project',
-        migrationsFolder,
-        '--environment',
-        envName
+        migrationsFolder
       ]
 
-      await this.exec.exec(efCmd, efArgs, {
-        cwd: migrationsFolder, // Use migrationsFolder as the working directory
-        env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
-      })
+      await this.exec.exec(efCmd, efArgs, execOptions)
       this.core.info('Migration rolled back successfully')
     } catch (error) {
       const message = `Failed to rollback to migration: ${targetMigration} for environment: ${envName}. ${(error as Error).message}`
@@ -295,20 +301,28 @@ export class ef {
     await this.ensureInstalled()
 
     try {
-      const args = [
-        this.getEfTool(),
+      const baseEnv = {
+        DOTNET_ROOT: this.dotnetRoot,
+        HOME: process.env.HOME || home,
+        ASPNETCORE_ENVIRONMENT: envName
+      }
+
+      const execOptions: exec.ExecOptions = {
+        cwd: migrationsFolder,
+        env: baseEnv
+      }
+
+      const efCmd = this.getEfTool()
+      const efArgs = [
+        ...this.getEfCommand(),
         'database',
         'update',
         '--project',
-        migrationsFolder,
-        '--environment',
-        envName
+        migrationsFolder
       ]
 
-      await this.exec.exec(this.getEfTool(), args, {
-        cwd: migrationsFolder, // Use migrationsFolder as the working directory
-        env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
-      })
+      await this.exec.exec(efCmd, efArgs, execOptions)
+      this.core.info('Database updated successfully.')
     } catch (error) {
       const message = `Failed to update database for environment: ${envName}. ${(error as Error).message}`
       this.core.error(message)
@@ -324,21 +338,30 @@ export class ef {
     await this.ensureInstalled()
 
     try {
-      const args = [
+      const baseEnv = {
+        DOTNET_ROOT: this.dotnetRoot,
+        HOME: process.env.HOME || home,
+        ASPNETCORE_ENVIRONMENT: envName
+      }
+
+      const execOptions: exec.ExecOptions = {
+        cwd: migrationsFolder,
+        env: baseEnv
+      }
+
+      const efCmd = this.getEfTool()
+      const efArgs = [
         ...this.getEfCommand(),
         'migrations',
         'list',
         '--project',
-        migrationsFolder,
-        '--environment',
-        envName
+        migrationsFolder
       ]
 
       let output = ''
 
-      await this.exec.exec(this.getEfTool(), args, {
-        cwd: migrationsFolder, // Use migrationsFolder as the working directory
-        env: { ...process.env, DOTNET_ROOT: this.dotnetRoot },
+      await this.exec.exec(efCmd, efArgs, {
+        ...execOptions,
         listeners: {
           stdout: (data: Buffer) => {
             output += data.toString()

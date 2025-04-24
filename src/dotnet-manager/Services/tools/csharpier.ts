@@ -11,7 +11,6 @@ export class csharpier {
 
   constructor(dotnetRoot: string, dependencies = { core, exec }) {
     this.dotnetRoot = dotnetRoot
-    // this.useGlobalCsharpier = useGlobalCsharpier || false
     this.core = dependencies.core || core
     this.exec = dependencies.exec || exec
   }
