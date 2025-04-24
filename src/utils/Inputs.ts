@@ -74,6 +74,9 @@ export interface IActionInputs {
   // Format
   runFormat: boolean
   formatDirectory: string
+
+  // Husky
+  runHuskySetup: boolean
 }
 
 /**
@@ -152,6 +155,9 @@ export class Inputs {
   // Format
   runFormat: boolean
   formatDirectory: string
+
+  // Husky
+  runHuskySetup: boolean
 
   constructor() {
     this.homeDirectory = this.getInputOrDefault('home_directory', '/home/node')
@@ -252,15 +258,15 @@ export class Inputs {
     this.runChangelog = this.getInputOrDefaultBoolean('run_changelog', false)
     this.majorKeywords = this.getInputOrDefault(
       'major_keywords',
-      'breaking, overhaul'
+      'breaking, overhaul, major'
     )
     this.minorKeywords = this.getInputOrDefault(
       'minor_keywords',
-      'feature, enhancement'
+      'feature, enhancement, minor'
     )
     this.patchKeywords = this.getInputOrDefault(
       'patch_keywords',
-      'bug-fix, hotfix, patch'
+      'bugfix, hotfix, patch'
     )
     this.hotfixKeywords = this.getInputOrDefault(
       'hotfix_keywords',
@@ -278,6 +284,9 @@ export class Inputs {
     // Format
     this.runFormat = this.getInputOrDefaultBoolean('run_format', false)
     this.formatDirectory = this.getInputOrDefault('format_directory', '.')
+
+    // Husky
+    this.runHuskySetup = this.getInputOrDefaultBoolean('run_husky_setup', false)
   }
 
   private getInputOrDefault(name: string, defaultValue: string): string {

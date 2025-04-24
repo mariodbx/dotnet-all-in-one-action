@@ -10,6 +10,7 @@ import { runDockerBuild } from './workflows/runDockerBuild.js'
 import { runDockerPush } from './workflows/runDockerPush.js'
 import { runFormat } from './workflows/runFormat.js'
 // import { runPublish } from './workflows/runPublish.js' // Import the new publish workflow
+import { runHuskySetup } from './workflows/runHuskySetup.js'
 import { Inputs } from './utils/Inputs.js'
 // import { GitManager } from './git-manager/GitManager.js' // Import GitManager
 
@@ -51,6 +52,10 @@ export async function run() {
   if (inputs.runFormat) {
     console.log('Running code formatting...')
     await runFormat()
+  }
+  if (inputs.runHuskySetup) {
+    console.log('Setting up Husky...')
+    await runHuskySetup()
   }
   const shouldRunAll = false
   if (!shouldRunAll) {

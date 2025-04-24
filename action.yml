@@ -234,6 +234,12 @@ inputs:
     required: false
     default: '.'
 
+  # Husky
+  run_husky_setup:
+    description: 'Run Husky setup step? (true/false)'
+    required: false
+    default: 'false'
+
 outputs:
   # Migrations
   lastMigration:

@@ -5,102 +5,75 @@ import * as path from 'path'
 
 export class ef {
   private dotnetRoot: string
-  private useGlobalDotnetEf: boolean
   private core: typeof core
   private exec: typeof exec
 
-  constructor(
-    dotnetRoot: string,
-    useGlobalDotnetEf: boolean,
-    dependencies = { core, exec }
-  ) {
+  constructor(dotnetRoot: string, dependencies = { core, exec }) {
     this.core = dependencies.core
     this.exec = dependencies.exec
     this.dotnetRoot = dotnetRoot
-    this.useGlobalDotnetEf = useGlobalDotnetEf
   }
 
   private getEfTool(): string {
-    return this.useGlobalDotnetEf ? 'dotnet-ef' : 'dotnet'
+    return 'dotnet'
   }
 
   private getEfCommand(): string[] {
-    return this.useGlobalDotnetEf ? [] : ['tool', 'run', 'dotnet-ef']
+    return ['tool', 'run', 'dotnet-ef']
   }
 
-  // private async getDotnetEfPath(): Promise<string> {
-  //   let efPath = ''
-  //   await this.exec.exec('which', ['dotnet-ef'], {
-  //     listeners: {
-  //       stdout: (data: Buffer) => {
-  //         efPath += data.toString().trim()
-  //       }
-  //     }
-  //   })
-  //   if (!efPath) {
-  //     throw new Error('dotnet-ef not found in PATH')
-  //   }
-  //   return efPath
-  // }
-
-  async installDotnetEf(): Promise<void> {
+  async install(): Promise<void> {
     try {
-      if (this.useGlobalDotnetEf) {
-        throw new Error(
-          'Global dotnet-ef installation is not implemented supported in this environment.'
-        )
-      } else {
-        // Install locally using a tool manifest
-        this.core.info(
-          'Setting up local tool manifest and installing dotnet-ef...'
-        )
-        const toolManifestArgs = ['new', 'tool-manifest', '--force']
-        const installEfArgs = ['tool', 'install', '--local', 'dotnet-ef']
+      this.core.info('Installing dotnet-ef locally...')
+      const toolManifestArgs = ['new', 'tool-manifest', '--force']
+      const installEfArgs = ['tool', 'install', '--local', 'dotnet-ef']
 
-        const writableDir = path.join(
-          process.env.HOME || '/tmp',
-          '.dotnet-tools'
-        )
-        if (!fs.existsSync(writableDir)) {
-          fs.mkdirSync(writableDir, { recursive: true })
-        }
-
-        const updatedEnv = {
-          ...process.env,
-          DOTNET_ROOT: this.dotnetRoot,
-          PATH: `${writableDir}:${process.env.PATH}`
-        }
-
-        // Create the tool manifest
-        this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`)
-        await this.exec.exec('dotnet', toolManifestArgs, {
-          cwd: writableDir,
-          env: updatedEnv
-        })
-        this.core.info('Tool manifest created successfully.')
-
-        // Install dotnet-ef locally
-        this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`)
-        try {
-          await this.exec.exec('dotnet', installEfArgs, {
-            cwd: writableDir,
-            env: updatedEnv
-          })
-          this.core.info('dotnet-ef installed locally via tool manifest.')
-        } catch (error) {
-          if ((error as Error).message.includes('is already installed')) {
-            this.core.info('dotnet-ef tool is already installed locally.')
-          } else {
-            throw new Error(
-              'Failed to install dotnet-ef: Unable to locate executable file. Please verify the PATH environment variable and file permissions.'
-            )
-          }
-        }
+      const writableDir = path.join(process.env.HOME || '/tmp', '.dotnet-tools')
+      if (!fs.existsSync(writableDir)) {
+        fs.mkdirSync(writableDir, { recursive: true })
       }
+
+      const updatedEnv = {
+        ...process.env,
+        DOTNET_ROOT: this.dotnetRoot,
+        PATH: `${writableDir}:${process.env.PATH}`
+      }
+
+      // Create the tool manifest
+      this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`)
+      await this.exec.exec('dotnet', toolManifestArgs, {
+        cwd: writableDir,
+        env: updatedEnv
+      })
+      this.core.info('Tool manifest created successfully.')
+
+      // Install dotnet-ef locally
+      this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`)
+      await this.exec.exec('dotnet', installEfArgs, {
+        cwd: writableDir,
+        env: updatedEnv
+      })
+      this.core.info('dotnet-ef installed locally via tool manifest.')
     } catch (error) {
-      const message = (error as Error).message
-      this.core.error(message)
-      throw new Error(message)
+      const errorMessage = `Failed to install dotnet-ef: ${(error as Error).message}`
+      this.core.error(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
+
+  async ensureInstalled(): Promise<void> {
+    try {
+      const efCmd = this.getEfTool()
+      const efArgs = [...this.getEfCommand(), '--version']
+
+      this.core.info('Checking if dotnet-ef is installed locally...')
+      await this.exec.exec(efCmd, efArgs, {
+        env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
+      })
+      this.core.info('dotnet-ef is already installed locally.')
+    } catch {
+      this.core.info('dotnet-ef is not installed locally. Installing...')
+      await this.install()
     }
   }
 
@@ -109,6 +82,8 @@ export class ef {
     home: string,
     migrationsFolder: string
   ): Promise<string> {
+    await this.ensureInstalled()
+
     let migrationOutput = ''
 
     // Normalize working directory to avoid ENOTDIR
@@ -174,6 +149,8 @@ export class ef {
     migrationsFolder: string,
     targetMigration: string
   ): Promise<void> {
+    await this.ensureInstalled()
+
     try {
       const efCmd = this.getEfTool()
       const efArgs = [
@@ -211,6 +188,8 @@ export class ef {
     home: string,
     migrationsFolder: string
   ): Promise<string> {
+    await this.ensureInstalled()
+
     let migrationOutput = ''
 
     // Normalize working directory
@@ -263,6 +242,8 @@ export class ef {
     home: string,
     migrationsFolder: string
   ): Promise<string> {
+    await this.ensureInstalled()
+
     let migrationOutput = ''
 
     // Normalize working directory
@@ -317,6 +298,8 @@ export class ef {
     outputDir: string,
     context?: string
   ): Promise<void> {
+    await this.ensureInstalled()
+
     try {
       const args = [
         ...this.getEfCommand(),
@@ -344,6 +327,8 @@ export class ef {
     home: string,
     migrationsFolder: string
   ): Promise<void> {
+    await this.ensureInstalled()
+
     try {
       const args = [
         this.getEfTool(),
@@ -370,6 +355,8 @@ export class ef {
     home: string,
     migrationsFolder: string
   ): Promise<string[]> {
+    await this.ensureInstalled()
+
     try {
       const args = [
         ...this.getEfCommand(),
