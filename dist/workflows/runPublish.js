@@ -6,7 +6,7 @@ import { GitManager } from '../git-manager/GitManager.js';
 import { Timer } from '../utils/Timer.js';
 export async function runPublish() {
     const inputs = new Inputs();
-    const dotnet = new DotnetManager(inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+    const dotnet = new DotnetManager(inputs.dotnetRoot);
     const git = new GitManager();
     console.log('Preparing to publish binaries...');
     // Wait for 5 seconds

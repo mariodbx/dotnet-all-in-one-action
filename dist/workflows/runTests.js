@@ -9,7 +9,7 @@ export async function runTests() {
     let resultFilePath = '';
     let resultFolder = '';
     const inputs = new Inputs();
-    const dotnetManager = new DotnetManager(inputs.dotnetRoot, inputs.useGlobalDotnetEf);
+    const dotnetManager = new DotnetManager(inputs.dotnetRoot);
     const gitManager = new GitManager();
     try {
         // Handle migrations if enabled

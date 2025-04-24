@@ -4,12 +4,13 @@ import { DotnetManager } from '../dotnet-manager/DotnetManager.js';
 export async function runFormat() {
     try {
         const inputs = new Inputs();
-        const dotnetManager = new DotnetManager(inputs.dotnetRoot, inputs.useGlobalDotnetEf);
-        core.info('Installing CSharpier...');
+        const dotnetManager = new DotnetManager(inputs.dotnetRoot);
+        const formatFolder = /*inputs.formatFolder*/ '.';
+        core.info(`Formatting code in folder: ${formatFolder}`);
+        // Install CSharpier if necessary
         await dotnetManager.tools.csharpier.install();
-        const formatDirectory = inputs.formatDirectory || '.';
-        core.info(`Formatting code in directory: ${formatDirectory}`);
-        await dotnetManager.tools.csharpier.format(formatDirectory);
+        // Format the code
+        await dotnetManager.tools.csharpier.format(formatFolder);
         core.info('Code formatting completed successfully.');
     }
     catch (error) {
@@ -17,6 +18,9 @@ export async function runFormat() {
         if (error instanceof Error) {
             core.error(`Error: ${error.message}`);
             core.setFailed(error.message);
+        }
+        else {
+            core.setFailed('Unknown error occurred.');
         }
     }
 }

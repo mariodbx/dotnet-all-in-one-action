@@ -10,11 +10,11 @@ export class DotnetManager {
     projects;
     csproj;
     dotnetRoot;
-    constructor(dotnetRoot, useGlobalDotnetEf) {
+    constructor(dotnetRoot) {
         this.dotnetRoot = dotnetRoot;
         // Initialize services with consistent dependency injection
         this.tests = new TestService();
-        this.tools = new ToolService(this.dotnetRoot, useGlobalDotnetEf);
+        this.tools = new ToolService(this.dotnetRoot, []);
         this.projects = new ProjectService(this.dotnetRoot);
         this.csproj = Csproj;
     }

@@ -5,14 +5,11 @@ import { Inputs } from '../utils/Inputs.js'
 export async function runMigrations(): Promise<void> {
   try {
     const inputs = new Inputs()
-    const dotnet = new DotnetManager(
-      inputs.dotnetRoot,
-      inputs.useGlobalDotnetEf
-    )
+    const dotnet = new DotnetManager(inputs.dotnetRoot)
 
     // Install dotnet-ef locally if the flag is set to false
     core.info('Installing dotnet-ef...')
-    await dotnet.tools.ef.installDotnetEf()
+    await dotnet.tools.ef.ensureInstalled()
 
     const baselineMigration = await dotnet.tools.ef.getLastNonPendingMigration(
       inputs.envName,

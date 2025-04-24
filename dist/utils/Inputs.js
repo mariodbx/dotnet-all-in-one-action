@@ -67,6 +67,8 @@ export class Inputs {
     // Format
     runFormat;
     formatDirectory;
+    // Husky
+    runHuskySetup;
     constructor() {
         this.homeDirectory = this.getInputOrDefault('home_directory', '/home/node');
         this.dotnetRoot = this.getInputOrDefault('dotnet_root', '/usr/bin/dotnet');
@@ -113,9 +115,9 @@ export class Inputs {
         this.includeGhcrPackage = this.getInputOrDefaultBoolean('include_ghcr_package', false);
         this.includeDotnetBinaries = core.getBooleanInput('include_dotnet_binaries');
         this.runChangelog = this.getInputOrDefaultBoolean('run_changelog', false);
-        this.majorKeywords = this.getInputOrDefault('major_keywords', 'breaking, overhaul');
-        this.minorKeywords = this.getInputOrDefault('minor_keywords', 'feature, enhancement');
-        this.patchKeywords = this.getInputOrDefault('patch_keywords', 'bug-fix, hotfix, patch');
+        this.majorKeywords = this.getInputOrDefault('major_keywords', 'breaking, overhaul, major');
+        this.minorKeywords = this.getInputOrDefault('minor_keywords', 'feature, enhancement, minor');
+        this.patchKeywords = this.getInputOrDefault('patch_keywords', 'bugfix, hotfix, patch');
         this.hotfixKeywords = this.getInputOrDefault('hotfix_keywords', 'urgent, hotfix');
         this.addedKeywords = this.getInputOrDefault('added_keywords', 'added, new');
         this.devKeywords = this.getInputOrDefault('dev_keywords', 'dev, experiment');
@@ -127,6 +129,8 @@ export class Inputs {
         // Format
         this.runFormat = this.getInputOrDefaultBoolean('run_format', false);
         this.formatDirectory = this.getInputOrDefault('format_directory', '.');
+        // Husky
+        this.runHuskySetup = this.getInputOrDefaultBoolean('run_husky_setup', false);
     }
     getInputOrDefault(name, defaultValue) {
         return core.getInput(name) || defaultValue;

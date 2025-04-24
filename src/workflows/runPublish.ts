@@ -7,7 +7,7 @@ import { Timer } from '../utils/Timer.js'
 
 export async function runPublish(): Promise<void> {
   const inputs = new Inputs()
-  const dotnet = new DotnetManager(inputs.dotnetRoot, inputs.useGlobalDotnetEf)
+  const dotnet = new DotnetManager(inputs.dotnetRoot)
   const git = new GitManager()
 
   console.log('Preparing to publish binaries...')
