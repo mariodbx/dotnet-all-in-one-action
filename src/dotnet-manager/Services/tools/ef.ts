@@ -136,34 +136,42 @@ export class ef {
   ): Promise<void> {
     await this.ensureInstalled()
 
+    // 1) merge into the existing environment so PATH et al. remain intact
+    const baseEnv: Record<string, string> = {
+      ...process.env,
+      DOTNET_ROOT: this.dotnetRoot,
+      HOME: process.env.HOME || home,
+      ASPNETCORE_ENVIRONMENT: envName
+    }
+
+    // 2) wire up listeners so we can see exactly what EF is doing/failing
+    const execOptions: exec.ExecOptions = {
+      cwd: migrationsFolder,
+      env: baseEnv,
+      listeners: {
+        stdout: (data: Buffer) => this.core.info(data.toString()),
+        stderr: (data: Buffer) => this.core.error(data.toString())
+      }
+    }
+
+    // 3) build and run the same EF command
+    const efCmd = this.getEfTool()
+    const efArgs = [
+      ...this.getEfCommand(),
+      'database',
+      'update',
+      targetMigration,
+      '--project',
+      migrationsFolder
+    ]
+
     try {
-      const baseEnv = {
-        DOTNET_ROOT: this.dotnetRoot,
-        HOME: process.env.HOME || home,
-        ASPNETCORE_ENVIRONMENT: envName
-      }
-
-      const execOptions: exec.ExecOptions = {
-        cwd: migrationsFolder,
-        env: baseEnv
-      }
-
-      const efCmd = this.getEfTool()
-      const efArgs = [
-        ...this.getEfCommand(),
-        'database',
-        'update',
-        targetMigration,
-        '--project',
-        migrationsFolder
-      ]
-
       await this.exec.exec(efCmd, efArgs, execOptions)
       this.core.info('Migration rolled back successfully')
     } catch (error) {
-      const message = `Failed to rollback to migration: ${targetMigration} for environment: ${envName}. ${(error as Error).message}`
-      this.core.error(message)
-      throw new Error(message)
+      const msg = `Failed to rollback to migration "${targetMigration}" in "${envName}": ${(error as Error).message}`
+      this.core.error(msg)
+      throw new Error(msg)
     }
   }
 
