@@ -46,28 +46,9 @@ export class ef {
   async installDotnetEf(): Promise<void> {
     try {
       if (this.useGlobalDotnetEf) {
-        this.core.info('Installing dotnet-ef tool globally...')
-
-        // Install the dotnet-ef tool globally
-        try {
-          await this.exec.exec('dotnet', [
-            'tool',
-            'install',
-            '--global',
-            'dotnet-ef'
-          ])
-          this.core.info('dotnet-ef tool installed successfully.')
-        } catch (error) {
-          if ((error as Error).message.includes('is already installed')) {
-            this.core.info('dotnet-ef tool is already installed globally.')
-          } else {
-            throw error
-          }
-        }
-
-        // Verify the installation
-        await this.exec.exec('dotnet-ef', ['--version'])
-        this.core.info('dotnet-ef tool verified successfully.')
+        throw new Error(
+          'Global dotnet-ef installation is not implemented supported in this environment.'
+        )
       } else {
         // Install locally using a tool manifest
         this.core.info(
@@ -110,12 +91,14 @@ export class ef {
           if ((error as Error).message.includes('is already installed')) {
             this.core.info('dotnet-ef tool is already installed locally.')
           } else {
-            throw error
+            throw new Error(
+              'Failed to install dotnet-ef: Unable to locate executable file. Please verify the PATH environment variable and file permissions.'
+            )
           }
         }
       }
     } catch (error) {
-      const message = `Failed to install dotnet-ef: ${(error as Error).message}`
+      const message = (error as Error).message
       this.core.error(message)
       throw new Error(message)
     }
