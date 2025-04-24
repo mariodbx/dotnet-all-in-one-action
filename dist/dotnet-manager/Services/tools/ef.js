@@ -131,8 +131,9 @@ export class ef {
     }
     async rollbackMigration(envName, home, migrationsFolder, targetMigration) {
         try {
-            const args = [
-                this.getEfTool(),
+            const efCmd = this.getEfTool();
+            const efArgs = [
+                ...this.getEfCommand(),
                 'database',
                 'update',
                 targetMigration,
@@ -141,7 +142,7 @@ export class ef {
                 '--environment',
                 envName
             ];
-            await this.exec.exec(this.getEfTool(), args, {
+            await this.exec.exec(efCmd, efArgs, {
                 env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
             });
             this.core.info('Migration rolled back successfully');
