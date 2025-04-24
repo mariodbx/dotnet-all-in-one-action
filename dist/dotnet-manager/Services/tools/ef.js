@@ -19,20 +19,20 @@ export class ef {
     getEfCommand() {
         return this.useGlobalDotnetEf ? [] : ['tool', 'run', 'dotnet-ef'];
     }
-    async getDotnetEfPath() {
-        let efPath = '';
-        await this.exec.exec('which', ['dotnet-ef'], {
-            listeners: {
-                stdout: (data) => {
-                    efPath += data.toString().trim();
-                }
-            }
-        });
-        if (!efPath) {
-            throw new Error('dotnet-ef not found in PATH');
-        }
-        return efPath;
-    }
+    // private async getDotnetEfPath(): Promise<string> {
+    //   let efPath = ''
+    //   await this.exec.exec('which', ['dotnet-ef'], {
+    //     listeners: {
+    //       stdout: (data: Buffer) => {
+    //         efPath += data.toString().trim()
+    //       }
+    //     }
+    //   })
+    //   if (!efPath) {
+    //     throw new Error('dotnet-ef not found in PATH')
+    //   }
+    //   return efPath
+    // }
     async installDotnetEf() {
         try {
             if (this.useGlobalDotnetEf) {
@@ -44,11 +44,12 @@ export class ef {
                     '--global',
                     'dotnet-ef'
                 ]);
-                // Use `which` to find the global dotnet-ef path
-                const efPath = await this.getDotnetEfPath();
-                this.core.info(`Verifying dotnet-ef installation at: ${efPath}`);
+                await this.exec.exec('dotnet-ef', ['--version']);
+                // // Use `which` to find the global dotnet-ef path
+                // const efPath = await this.getDotnetEfPath()
+                // this.core.info(`Verifying dotnet-ef installation at: ${efPath}`)
                 // Verify the installation
-                await this.exec.exec(efPath, ['--version']);
+                // await this.exec.exec(efPath, ['--version'])
                 this.core.info('dotnet-ef tool installed and verified successfully.');
             }
             else {
