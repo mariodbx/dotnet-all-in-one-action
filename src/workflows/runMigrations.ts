@@ -16,7 +16,7 @@ export async function runMigrations(): Promise<void> {
 
     const baselineMigration = await dotnet.tools.ef.getLastNonPendingMigration(
       inputs.envName,
-      process.env.HOME || '',
+      process.env.HOME || 'home/node',
       inputs.migrationsFolder
     )
     core.info(
@@ -25,7 +25,7 @@ export async function runMigrations(): Promise<void> {
 
     const newMigration = await dotnet.tools.ef.processMigrations(
       inputs.envName,
-      process.env.HOME || '',
+      process.env.HOME || 'home/node',
       inputs.migrationsFolder
     )
     core.info(

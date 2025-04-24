@@ -57,13 +57,6 @@ export class ef {
         ])
         await this.exec.exec('dotnet-ef', ['--version'])
 
-        // // Use `which` to find the global dotnet-ef path
-        // const efPath = await this.getDotnetEfPath()
-        // this.core.info(`Verifying dotnet-ef installation at: ${efPath}`)
-
-        // Verify the installation
-        // await this.exec.exec(efPath, ['--version'])
-
         this.core.info('dotnet-ef tool installed and verified successfully.')
       } else {
         // Install locally using a tool manifest
