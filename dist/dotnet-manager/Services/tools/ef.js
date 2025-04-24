@@ -38,14 +38,26 @@ export class ef {
             if (this.useGlobalDotnetEf) {
                 this.core.info('Installing dotnet-ef tool globally...');
                 // Install the dotnet-ef tool globally
-                await this.exec.exec('dotnet', [
-                    'tool',
-                    'install',
-                    '--global',
-                    'dotnet-ef'
-                ]);
+                try {
+                    await this.exec.exec('dotnet', [
+                        'tool',
+                        'install',
+                        '--global',
+                        'dotnet-ef'
+                    ]);
+                    this.core.info('dotnet-ef tool installed successfully.');
+                }
+                catch (error) {
+                    if (error.message.includes('is already installed')) {
+                        this.core.info('dotnet-ef tool is already installed globally.');
+                    }
+                    else {
+                        throw error;
+                    }
+                }
+                // Verify the installation
                 await this.exec.exec('dotnet-ef', ['--version']);
-                this.core.info('dotnet-ef tool installed and verified successfully.');
+                this.core.info('dotnet-ef tool verified successfully.');
             }
             else {
                 // Install locally using a tool manifest
@@ -70,13 +82,22 @@ export class ef {
                 this.core.info('Tool manifest created successfully.');
                 // Install dotnet-ef locally
                 this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`);
-                await this.exec.exec('dotnet', installEfArgs, {
-                    cwd: writableDir,
-                    env: updatedEnv
-                });
-                this.core.info('dotnet-ef installed locally via tool manifest.');
+                try {
+                    await this.exec.exec('dotnet', installEfArgs, {
+                        cwd: writableDir,
+                        env: updatedEnv
+                    });
+                    this.core.info('dotnet-ef installed locally via tool manifest.');
+                }
+                catch (error) {
+                    if (error.message.includes('is already installed')) {
+                        this.core.info('dotnet-ef tool is already installed locally.');
+                    }
+                    else {
+                        throw error;
+                    }
+                }
             }
-            this.core.info('dotnet-ef tool installed successfully.');
         }
         catch (error) {
             const message = `Failed to install dotnet-ef: ${error.message}`;
