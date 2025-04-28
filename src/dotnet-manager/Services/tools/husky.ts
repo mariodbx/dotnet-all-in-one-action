@@ -24,16 +24,22 @@ export class husky {
   ): Promise<void> {
     if (!fs.existsSync(manifestFile)) {
       this.core.info('Creating a new dotnet tool manifest…')
-      await this.exec.exec('dotnet', ['new', 'tool-manifest'])
+      await this.exec.exec('dotnet', ['new', 'tool-manifest'], {
+        cwd: './sample-project' //path.dirname(manifestFile)
+      })
     }
   }
 
   private async installAndInitializeHusky(): Promise<void> {
     this.core.info('Installing Husky.Net tool...')
-    await this.exec.exec('dotnet', ['tool', 'install', 'Husky'])
+    await this.exec.exec('dotnet', ['tool', 'install', 'Husky'], {
+      cwd: './sample-project' // process.cwd()
+    })
 
     this.core.info('Initializing Husky.Net...')
-    await this.exec.exec('dotnet', ['husky', 'install'])
+    await this.exec.exec('dotnet', ['husky', 'install'], {
+      cwd: './sample-project'
+    }) // process.cwd() })
   }
 
   /** Ensure Husky.Net is installed (local tool manifest + dotnet tool) */

@@ -14,10 +14,10 @@ inputs:
     description: 'Home directory for the action'
     required: false
     default: '/home/node'
-  use_global_dotnet_ef:
-    description: 'Use globally installed dotnet-ef instead of local'
-    required: false
-    default: 'false'
+  # use_global_dotnet_ef:
+  #   description: 'Use globally installed dotnet-ef instead of local'
+  #   required: false
+  #   default: 'false'
   dotnet_root:
     description: 'Path to the .NET root directory'
     required: false
@@ -27,11 +27,11 @@ inputs:
   run_migrations:
     description: 'Run migrations? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
   migrations_folder:
     description: 'Path to the migrations folder (default: testFolder)'
     required: false
-    default: ''
+    default: './sample-project/sample-project.MVC'
   migrations_env_name:
     description: 'Environment name for ASP.NET Core'
     required: false
@@ -39,17 +39,17 @@ inputs:
   on_failed_rollback_migrations:
     description: 'Rollback migrations if tests fail? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
 
   # Tests
   run_tests:
     description: 'Run tests? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
   tests_env_name:
     description: 'Environment name for ASP.NET Core'
     required: false
-    default: 'Test'
+    default: 'Development'
   run_tests_migrations:
     description: 'Run tests on migrations? (true/false)'
     required: false
@@ -57,15 +57,15 @@ inputs:
   test_migrations_folder:
     description: 'Path to the test migrations folder'
     required: false
-    default: ''
+    default: './sample-project/sample-project.MVC'
   test_folder:
     description: 'Path to the test project folder'
     required: true
-    default: ''
+    default: './sample-project/sample-project.Tests'
   upload_tests_results:
     description: 'Upload test results? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
   test_output_folder:
     description: 'Path to the test results output folder'
     required: false
@@ -77,21 +77,21 @@ inputs:
   rollback_migrations_on_test_failed:
     description: 'Rollback migrations if tests fail'
     required: false
-    default: 'false'
+    default: 'true'
 
   # Versioning
   run_versioning:
     description: 'Run versioning step? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
   csproj_depth:
     description: 'Maximum depth for locating the .csproj file.'
     required: false
-    default: '1'
+    default: '5'
   csproj_name:
     description: 'Name pattern for the .csproj file (e.g., "*.csproj").'
     required: false
-    default: '*.csproj'
+    default: 'sample-project.MVC.csproj'
   use_commit_message:
     description: 'Use the commit message to extract the version? (true/false)'
     required: false
@@ -164,7 +164,7 @@ inputs:
   run_publish:
     description: 'Run publish step? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
   publish_linux:
     description: 'Flag to publish .NET binaries for Linux.'
     required: false
@@ -176,27 +176,27 @@ inputs:
   publish_mac:
     description: 'Flag to publish .NET binaries for macOS.'
     required: false
-    default: 'false'
+    default: 'true'
 
   # Release
   run_release:
     description: 'Run release step? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
   include_ghcr_package:
     description: 'Include GHCR package in the release changelog? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
   include_dotnet_binaries:
     description: 'Include .NET binaries in the release changelog? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
 
   # Changelog
   run_changelog:
     description: 'Run changelog step? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
   major_keywords:
     description: 'Comma-separated list of keywords to detect major changes.'
     required: false
@@ -228,17 +228,17 @@ inputs:
   run_format:
     description: 'Run code formatting step? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
   format_directory:
     description: 'Directory to format code in.'
     required: false
-    default: '.'
+    default: './sample-project'
 
   # Husky
   run_husky_setup:
     description: 'Run Husky setup step? (true/false)'
     required: false
-    default: 'false'
+    default: 'true'
 
 outputs:
   # Migrations

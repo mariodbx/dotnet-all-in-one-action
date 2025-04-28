@@ -23,7 +23,7 @@ export class ef {
   async install(): Promise<void> {
     try {
       this.core.info('Installing dotnet-ef locally...')
-      const toolManifestArgs = ['new', 'tool-manifest', '--force']
+      const toolManifestArgs = ['new', 'tool-manifest', '--force'] //, '--force'
       const installEfArgs = ['tool', 'install', '--local', 'dotnet-ef']
 
       const updatedEnv = {
@@ -34,7 +34,7 @@ export class ef {
       // Create the tool manifest
       this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`)
       await this.exec.exec('dotnet', toolManifestArgs, {
-        cwd: process.cwd(), // Use the current working directory
+        cwd: './sample-project', //process.cwd(), // Use the current working directory
         env: updatedEnv
       })
       this.core.info('Tool manifest created successfully.')
@@ -42,7 +42,7 @@ export class ef {
       // Install dotnet-ef locally
       this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`)
       await this.exec.exec('dotnet', installEfArgs, {
-        cwd: process.cwd(), // Use the current working directory
+        cwd: './sample-project', //process.cwd(), // Use the current working directory
         env: updatedEnv
       })
       this.core.info('dotnet-ef installed locally via tool manifest.')
@@ -86,7 +86,7 @@ export class ef {
     }
 
     const migrationOptions: exec.ExecOptions = {
-      cwd: migrationsFolder, // Use migrationsFolder as the working directory
+      cwd: migrationsFolder,
       env: baseEnv,
       listeners: {
         stdout: (data: Buffer) => {
@@ -136,7 +136,6 @@ export class ef {
   ): Promise<void> {
     await this.ensureInstalled()
 
-    // 1) merge into the existing environment so PATH et al. remain intact
     const baseEnv: Record<string, string> = {
       ...process.env,
       DOTNET_ROOT: this.dotnetRoot,
@@ -144,7 +143,6 @@ export class ef {
       ASPNETCORE_ENVIRONMENT: envName
     }
 
-    // 2) wire up listeners so we can see exactly what EF is doing/failing
     const execOptions: exec.ExecOptions = {
       cwd: migrationsFolder,
       env: baseEnv,
@@ -154,15 +152,14 @@ export class ef {
       }
     }
 
-    // 3) build and run the same EF command
     const efCmd = this.getEfTool()
     const efArgs = [
       ...this.getEfCommand(),
       'database',
       'update',
-      targetMigration,
-      '--project',
-      migrationsFolder
+      targetMigration
+      // '--project',
+      // migrationsFolder
     ]
 
     try {
@@ -192,7 +189,7 @@ export class ef {
     }
 
     const migrationOptions: exec.ExecOptions = {
-      cwd: migrationsFolder, // Use migrationsFolder as the working directory
+      cwd: migrationsFolder,
       env: baseEnv,
       listeners: {
         stdout: (data: Buffer) => {

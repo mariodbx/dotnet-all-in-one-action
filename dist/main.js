@@ -36,7 +36,7 @@ export async function run() {
     // const commitMessage = await git.getLatestCommitMessage()
     // // Use a regex to match "major", "minor", or "patch" in a case-insensitive manner
     // const shouldRunAll = /\b(major|minor|patch)\b/i.test(commitMessage)
-    if (inputs.runMigrations) {
+    if (!inputs.runMigrations) {
         console.log('Running migrations...');
         await runMigrations();
     }

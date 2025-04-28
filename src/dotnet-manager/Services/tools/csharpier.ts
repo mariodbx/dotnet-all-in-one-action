@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as fs from 'fs'
-import * as path from 'path'
+// import * as path from 'path'
 
 export class csharpier {
   private dotnetRoot: string
@@ -45,7 +45,7 @@ export class csharpier {
       const toolManifestArgs = ['new', 'tool-manifest', '--force']
       const installCsharpierArgs = ['tool', 'install', '--local', 'csharpier']
 
-      const writableDir = path.join(process.env.HOME || '/tmp', '.dotnet-tools')
+      const writableDir = './sample-project' //path.join(process.env.HOME || '/tmp', '.dotnet-tools')
       if (!fs.existsSync(writableDir)) {
         fs.mkdirSync(writableDir, { recursive: true })
       }
@@ -59,7 +59,7 @@ export class csharpier {
       // Create the tool manifest
       this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`)
       await this.exec.exec('dotnet', toolManifestArgs, {
-        cwd: writableDir,
+        cwd: './sample-project', //writableDir,
         env: updatedEnv
       })
       this.core.info('Tool manifest created successfully.')
@@ -67,7 +67,7 @@ export class csharpier {
       // Install CSharpier locally
       this.core.info(`Running: dotnet ${installCsharpierArgs.join(' ')}`)
       await this.exec.exec('dotnet', installCsharpierArgs, {
-        cwd: writableDir,
+        cwd: './sample-project', // writableDir,
         env: updatedEnv
       })
       this.core.info('CSharpier installed locally via tool manifest.')
@@ -82,11 +82,12 @@ export class csharpier {
     await this.ensureLocalCsharpierInstalled()
     try {
       const csharpierCmd = this.getCsharpierTool()
-      const csharpierArgs = [...this.getCsharpierCommand(), directory]
+      const csharpierArgs = [...this.getCsharpierCommand(), 'format', directory]
 
       this.core.info(`Formatting code in directory: ${directory}...`)
       await this.exec.exec(csharpierCmd, csharpierArgs, {
-        env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
+        env: { ...process.env, DOTNET_ROOT: this.dotnetRoot },
+        cwd: './sample-project'
       })
       this.core.info('Code formatted successfully.')
     } catch (error) {

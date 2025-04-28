@@ -18,7 +18,7 @@ export class ef {
     async install() {
         try {
             this.core.info('Installing dotnet-ef locally...');
-            const toolManifestArgs = ['new', 'tool-manifest', '--force'];
+            const toolManifestArgs = ['new', 'tool-manifest', '--force']; //, '--force'
             const installEfArgs = ['tool', 'install', '--local', 'dotnet-ef'];
             const updatedEnv = {
                 ...process.env,
@@ -27,14 +27,14 @@ export class ef {
             // Create the tool manifest
             this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`);
             await this.exec.exec('dotnet', toolManifestArgs, {
-                cwd: process.cwd(), // Use the current working directory
+                cwd: './sample-project', //process.cwd(), // Use the current working directory
                 env: updatedEnv
             });
             this.core.info('Tool manifest created successfully.');
             // Install dotnet-ef locally
             this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`);
             await this.exec.exec('dotnet', installEfArgs, {
-                cwd: process.cwd(), // Use the current working directory
+                cwd: './sample-project', //process.cwd(), // Use the current working directory
                 env: updatedEnv
             });
             this.core.info('dotnet-ef installed locally via tool manifest.');
@@ -70,7 +70,7 @@ export class ef {
             ASPNETCORE_ENVIRONMENT: envName
         };
         const migrationOptions = {
-            cwd: migrationsFolder, // Use migrationsFolder as the working directory
+            cwd: migrationsFolder,
             env: baseEnv,
             listeners: {
                 stdout: (data) => {
@@ -103,14 +103,12 @@ export class ef {
     }
     async rollbackMigration(envName, home, migrationsFolder, targetMigration) {
         await this.ensureInstalled();
-        // 1) merge into the existing environment so PATH et al. remain intact
         const baseEnv = {
             ...process.env,
             DOTNET_ROOT: this.dotnetRoot,
             HOME: process.env.HOME || home,
             ASPNETCORE_ENVIRONMENT: envName
         };
-        // 2) wire up listeners so we can see exactly what EF is doing/failing
         const execOptions = {
             cwd: migrationsFolder,
             env: baseEnv,
@@ -119,15 +117,14 @@ export class ef {
                 stderr: (data) => this.core.error(data.toString())
             }
         };
-        // 3) build and run the same EF command
         const efCmd = this.getEfTool();
         const efArgs = [
             ...this.getEfCommand(),
             'database',
             'update',
-            targetMigration,
-            '--project',
-            migrationsFolder
+            targetMigration
+            // '--project',
+            // migrationsFolder
         ];
         try {
             await this.exec.exec(efCmd, efArgs, execOptions);
@@ -149,7 +146,7 @@ export class ef {
             ASPNETCORE_ENVIRONMENT: envName
         };
         const migrationOptions = {
-            cwd: migrationsFolder, // Use migrationsFolder as the working directory
+            cwd: migrationsFolder,
             env: baseEnv,
             listeners: {
                 stdout: (data) => {
