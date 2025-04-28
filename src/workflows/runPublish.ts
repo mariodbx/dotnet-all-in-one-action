@@ -7,7 +7,7 @@ import { Timer } from '../utils/Timer.js'
 
 export async function runPublish(): Promise<void> {
   const inputs = new Inputs()
-  const dotnet = new DotnetManager(inputs.dotnetRoot)
+  const dotnet = new DotnetManager()
   const git = new GitManager()
 
   console.log('Preparing to publish binaries...')
@@ -47,12 +47,12 @@ export async function runPublish(): Promise<void> {
   console.log('Publishing completed.')
 
   // Extract version from .csproj
-  const csprojPath = await dotnet.csproj.findCsproj(
+  const csprojPath = await dotnet.Csproj.findCsproj(
     inputs.csprojDepth,
     inputs.csprojName
   )
-  const csprojContent = await dotnet.csproj.readCsproj(csprojPath)
-  const version = dotnet.csproj.extractVersion(csprojContent)
+  const csprojContent = await dotnet.Csproj.readCsproj(csprojPath)
+  const version = dotnet.Csproj.extractVersion(csprojContent)
 
   // Commit and push changes
   const commitMessage = `Publish binaries for platforms with version ${version}`

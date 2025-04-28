@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import { GitManager } from '../git-manager/GitManager.js'
 import { Inputs } from '../utils/Inputs.js'
-import { Csproj } from '../utils/Csproj.js'
+import { Csproj } from '../dotnet-manager/utils/Csproj.js'
 
 export async function runDockerBuild(): Promise<void> {
   try {

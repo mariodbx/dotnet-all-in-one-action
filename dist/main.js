@@ -12,30 +12,15 @@ import { runFormat } from './workflows/runFormat.js';
 // import { runPublish } from './workflows/runPublish.js' // Import the new publish workflow
 import { runHuskySetup } from './workflows/runHuskySetup.js';
 import { Inputs } from './utils/Inputs.js';
-// import { GitManager } from './git-manager/GitManager.js' // Import GitManager
+import { GitManager } from './git-manager/GitManager.js'; // Import GitManager
 /* istanbul ignore next */
 export async function run() {
     const inputs = new Inputs();
-    // const git = new GitManager()
-    // // const pullRepo = true
-    // // if (pullRepo) {
-    // //   await git.repo.clone('.')
-    // //   console.log(
-    // //     `Cloned repository ${process.env.GITHUB_REPOSITORY} to ${process.env.GITHUB_WORKSPACE}`
-    // //   )
-    // //   await git.repo.fetch('.')
-    // //   console.log('Fetched all branches and tags.')
-    // //   await git.repo.checkout('.', process.env.GITHUB_REF_NAME || '')
-    // //   console.log(`Checked out branch/tag ${process.env.GITHUB_REF_NAME}`)
-    // //   await git.repo.pull('.', process.env.GITHUB_REF_NAME || '')
-    // //   console.log(
-    // //     `Pulled latest changes from branch/tag ${process.env.GITHUB_REF_NAME}`
-    // //   )
-    // // }
-    // // Fetch the commit message using GitManager
-    // const commitMessage = await git.getLatestCommitMessage()
-    // // Use a regex to match "major", "minor", or "patch" in a case-insensitive manner
-    // const shouldRunAll = /\b(major|minor|patch)\b/i.test(commitMessage)
+    const git = new GitManager();
+    // Fetch the commit message using GitManager
+    const commitMessage = await git.getLatestCommitMessage();
+    // Use a regex to match "major", "minor", or "patch" in a case-insensitive manner
+    const shouldRunAll = /\b(major|minor|patch)\b/i.test(commitMessage);
     if (!inputs.runMigrations) {
         console.log('Running migrations...');
         await runMigrations();
@@ -52,7 +37,7 @@ export async function run() {
         console.log('Setting up Husky...');
         await runHuskySetup();
     }
-    const shouldRunAll = false;
+    // const shouldRunAll = false
     if (!shouldRunAll) {
         console.log('Skipping remaining steps as commit message does not contain "major", "minor", or "patch".');
         return;

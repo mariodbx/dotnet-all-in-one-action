@@ -9,6 +9,7 @@ export interface IActionInputs {
   // General
   homeDirectory: string
   dotnetRoot: string
+  projectDirectoryRoot: string
   useGlobalDotnetEf: boolean
 
   // Migrations
@@ -90,6 +91,7 @@ export class Inputs {
   // General
   homeDirectory: string
   dotnetRoot: string
+  projectDirectoryRoot: string
   useGlobalDotnetEf: boolean
 
   // Migrations
@@ -162,6 +164,10 @@ export class Inputs {
   constructor() {
     this.homeDirectory = this.getInputOrDefault('home_directory', '/home/node')
     this.dotnetRoot = this.getInputOrDefault('dotnet_root', '/usr/bin/dotnet')
+    this.projectDirectoryRoot = this.getInputOrDefault(
+      'project_directory_root',
+      '.'
+    )
     this.useGlobalDotnetEf = this.getInputOrDefaultBoolean(
       'use_global_dotnet_ef',
       false

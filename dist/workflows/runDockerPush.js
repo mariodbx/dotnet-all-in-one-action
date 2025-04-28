@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import { Inputs } from '../utils/Inputs.js';
 import { DockerManager } from '../docker-manager/DockerManager.js';
-import { Csproj } from '../utils/Csproj.js';
+import { Csproj } from '../dotnet-manager/utils/Csproj.js';
 export async function checkGhcrImageExists(imageName) {
     try {
         await exec.exec('docker', ['pull', imageName], { silent: true });

@@ -1,40 +1,50 @@
-import * as core from '@actions/core';
-import * as exec from '@actions/exec';
 export class TestService {
-    core;
-    exec;
-    constructor(dependencies = { core, exec }) {
-        this.core = dependencies.core;
-        this.exec = dependencies.exec;
+    deps;
+    dotnetRoot;
+    testFolder;
+    uploadResults;
+    resultsFolder;
+    resultsFormat;
+    constructor(deps, dotnetRoot, testFolder, uploadResults, resultsFolder, resultsFormat) {
+        this.deps = deps;
+        this.dotnetRoot = dotnetRoot;
+        this.testFolder = testFolder;
+        this.uploadResults = uploadResults;
+        this.resultsFolder = resultsFolder;
+        this.resultsFormat = resultsFormat;
     }
-    async runTests(projectPath, testResultsPath, additionalArgs = []) {
-        try {
-            const args = [
-                'test',
-                projectPath,
-                '--logger',
-                `trx;LogFileName=${testResultsPath}`,
-                ...additionalArgs
-            ];
-            await this.exec.exec('dotnet', args);
-            this.core.info(`Tests executed successfully. Results saved to ${testResultsPath}`);
-        }
-        catch (error) {
-            const message = `Failed to execute tests for project: ${projectPath}. ${error.message}`;
-            this.core.error(message);
-            throw new Error(message);
-        }
+    getLoggerFlag() {
+        return this.uploadResults ? ['--logger'] : [];
     }
-    async parseTestResults(testResultsPath) {
+    getLoggerArg() {
+        if (!this.uploadResults)
+            return [];
+        return [
+            `${this.resultsFormat};LogFileName=${this.resultsFolder}.${this.resultsFormat}`
+        ];
+    }
+    async runTests(additionalArgs = []) {
+        const args = [
+            'test',
+            this.testFolder,
+            ...this.getLoggerFlag(),
+            ...this.getLoggerArg(),
+            ...additionalArgs
+        ];
         try {
-            // Placeholder for parsing logic. In a real implementation, you would parse the TRX file.
-            this.core.info(`Parsing test results from ${testResultsPath}`);
-            return `Test results parsed successfully from ${testResultsPath}`;
+            await this.deps.exec.exec('dotnet', args, {
+                env: {
+                    ...process.env,
+                    DOTNET_ROOT: this.dotnetRoot,
+                    HOME: process.env.HOME || '/home/node' // Ensure HOME is set
+                }
+            });
+            this.deps.core.info(`✔ Tests passed. Results in ${this.resultsFolder}.${this.resultsFormat}`);
         }
-        catch (error) {
-            const message = `Failed to parse test results from: ${testResultsPath}. ${error.message}`;
-            this.core.error(message);
-            throw new Error(message);
+        catch (err) {
+            const msg = err.message;
+            this.deps.core.error(msg);
+            throw new Error(msg);
         }
     }
 }

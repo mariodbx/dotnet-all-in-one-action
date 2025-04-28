@@ -22,6 +22,10 @@ inputs:
     description: 'Path to the .NET root directory'
     required: false
     default: '/usr/bin/dotnet'
+  project_directory_root:
+    description: 'Path to the project directory'
+    required: true
+    default: './sample-project'
 
   # Migrations
   run_migrations:

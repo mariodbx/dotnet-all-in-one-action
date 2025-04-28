@@ -5,7 +5,7 @@ import { Inputs } from '../utils/Inputs.js'
 export async function runMigrations(): Promise<void> {
   try {
     const inputs = new Inputs()
-    const dotnet = new DotnetManager(inputs.dotnetRoot)
+    const dotnet = new DotnetManager()
 
     // Install dotnet-ef locally if the flag is set to false
     core.info('Installing dotnet-ef...')

@@ -1,11 +1,9 @@
 import * as core from '@actions/core'
-import { Inputs } from '../utils/Inputs.js'
 import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
 
 export async function runFormat(): Promise<void> {
   try {
-    const inputs = new Inputs()
-    const dotnetManager = new DotnetManager(inputs.dotnetRoot)
+    const dotnetManager = new DotnetManager()
 
     const formatFolder = /*inputs.formatFolder*/ '.'
     core.info(`Formatting code in folder: ${formatFolder}`)

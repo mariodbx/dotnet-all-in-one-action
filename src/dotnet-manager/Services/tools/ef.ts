@@ -1,384 +1,345 @@
-import * as core from '@actions/core'
-import * as exec from '@actions/exec'
+import type { IDependencies } from '../../../models/Dependencies.js'
+import * as fs from 'fs'
+import * as path from 'path'
 
-export class ef {
-  private dotnetRoot: string
-  private core: typeof core
-  private exec: typeof exec
+export class EF {
+  constructor(
+    private readonly deps: IDependencies,
+    private readonly dotnetRoot: string,
+    private readonly projectDirectoryRoot: string
+  ) {}
 
-  constructor(dotnetRoot: string, dependencies = { core, exec }) {
-    this.core = dependencies.core
-    this.exec = dependencies.exec
-    this.dotnetRoot = dotnetRoot
-  }
-
-  private getEfTool(): string {
+  private getTool(): string {
     return 'dotnet'
   }
 
-  private getEfCommand(): string[] {
+  private getBaseArgs(): string[] {
     return ['tool', 'run', 'dotnet-ef']
   }
 
-  async install(): Promise<void> {
-    try {
-      this.core.info('Installing dotnet-ef locally...')
-      const toolManifestArgs = ['new', 'tool-manifest', '--force'] //, '--force'
-      const installEfArgs = ['tool', 'install', '--local', 'dotnet-ef']
-
-      const updatedEnv = {
-        ...process.env,
-        DOTNET_ROOT: this.dotnetRoot
+  /**
+   * Ensure that the .config/dotnet-tools.json manifest exists
+   */
+  private async ensureToolManifest(): Promise<void> {
+    const manifestPath = path.join(
+      this.projectDirectoryRoot,
+      '.config',
+      'dotnet-tools.json'
+    )
+    if (!fs.existsSync(manifestPath)) {
+      this.deps.core.info('Creating dotnet tool manifest…')
+      try {
+        await this.deps.exec.exec(this.getTool(), ['new', 'tool-manifest'], {
+          cwd: this.projectDirectoryRoot
+        })
+        this.deps.core.info('✔ Tool manifest created.')
+      } catch (err) {
+        const msg = `Failed to create tool manifest: ${(err as Error).message}`
+        this.deps.core.error(msg)
+        throw new Error(msg)
       }
-
-      // Create the tool manifest
-      this.core.info(`Running: dotnet ${toolManifestArgs.join(' ')}`)
-      await this.exec.exec('dotnet', toolManifestArgs, {
-        cwd: './sample-project', //process.cwd(), // Use the current working directory
-        env: updatedEnv
-      })
-      this.core.info('Tool manifest created successfully.')
-
-      // Install dotnet-ef locally
-      this.core.info(`Running: dotnet ${installEfArgs.join(' ')}`)
-      await this.exec.exec('dotnet', installEfArgs, {
-        cwd: './sample-project', //process.cwd(), // Use the current working directory
-        env: updatedEnv
-      })
-      this.core.info('dotnet-ef installed locally via tool manifest.')
-    } catch (error) {
-      const errorMessage = `Failed to install dotnet-ef: ${(error as Error).message}`
-      this.core.error(errorMessage)
-      throw new Error(errorMessage)
+    } else {
+      this.deps.core.info('✔ Tool manifest already exists.')
     }
   }
 
+  /**
+   * Install dotnet-ef as a local tool
+   */
+  async install(): Promise<void> {
+    await this.ensureToolManifest()
+    this.deps.core.info('Installing dotnet-ef locally…')
+    try {
+      await this.deps.exec.exec(
+        this.getTool(),
+        ['tool', 'install', '--local', 'dotnet-ef'],
+        { cwd: this.projectDirectoryRoot }
+      )
+      this.deps.core.info('✔ dotnet-ef installed.')
+    } catch (err) {
+      const msg = `Failed to install dotnet-ef: ${(err as Error).message}`
+      this.deps.core.error(msg)
+      throw new Error(msg)
+    }
+  }
+
+  /**
+   * Check for existing install, install if missing
+   */
   async ensureInstalled(): Promise<void> {
     try {
-      const efCmd = this.getEfTool()
-      const efArgs = [...this.getEfCommand(), '--version']
-
-      this.core.info('Checking if dotnet-ef is installed locally...')
-      await this.exec.exec(efCmd, efArgs, {
-        env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
-      })
-      this.core.info('dotnet-ef is already installed locally.')
+      this.deps.core.info('Checking dotnet-ef…')
+      await this.deps.exec.exec(
+        this.getTool(),
+        [...this.getBaseArgs(), '--version'],
+        { env: { DOTNET_ROOT: this.dotnetRoot } }
+      )
+      this.deps.core.info('✔ dotnet-ef already installed.')
     } catch {
-      this.core.info('dotnet-ef is not installed locally. Installing...')
+      this.deps.core.info('dotnet-ef not found; installing…')
       await this.install()
     }
   }
 
+  /**
+   * List and apply pending migrations. Returns the last applied migration name, or empty string if none.
+   */
   async processMigrations(
     envName: string,
     home: string,
     migrationsFolder: string
   ): Promise<string> {
     await this.ensureInstalled()
-
-    let migrationOutput = ''
-
-    const baseEnv: Record<string, string> = {
+    let output = ''
+    const env = {
       ...process.env,
       DOTNET_ROOT: this.dotnetRoot,
-      HOME: process.env.HOME || home,
+      HOME: home,
       ASPNETCORE_ENVIRONMENT: envName
     }
-
-    const migrationOptions: exec.ExecOptions = {
+    const opts = {
       cwd: migrationsFolder,
-      env: baseEnv,
+      env,
       listeners: {
-        stdout: (data: Buffer) => {
-          migrationOutput += data.toString()
+        stdout: (b: Buffer) => {
+          output += b.toString()
         }
       }
     }
 
-    const efCmd = this.getEfTool()
-    let efArgs = [...this.getEfCommand(), 'migrations', 'list']
+    this.deps.core.info(`Listing migrations in ${migrationsFolder}…`)
+    await this.deps.exec.exec(
+      this.getTool(),
+      [...this.getBaseArgs(), 'migrations', 'list'],
+      opts
+    )
 
-    this.core.info(`Listing migrations in folder: ${migrationsFolder}...`)
-    await this.exec.exec(efCmd, efArgs, migrationOptions)
-
-    this.core.info(`Migration output:\n${migrationOutput}`)
-
-    const pendingMigrations = migrationOutput
+    const pending = output
       .split(/\r?\n/)
       .filter(
         (line) => line.trim() && !line.toLowerCase().includes('[applied]')
       )
 
-    let lastMigration = ''
-
-    if (pendingMigrations.length > 0) {
-      this.core.info('Pending migrations detected. Applying migrations...')
-      lastMigration = pendingMigrations[pendingMigrations.length - 1].trim()
-      this.core.info(`Last pending migration: ${lastMigration}`)
-
-      efArgs = [...this.getEfCommand(), 'database', 'update']
-      this.core.info(`Running: ${efCmd} ${efArgs.join(' ')}`)
-      await this.exec.exec(efCmd, efArgs, migrationOptions)
-
-      this.core.info('Migrations applied successfully.')
-    } else {
-      this.core.info('No pending migrations detected.')
+    if (pending.length === 0) {
+      this.deps.core.info('No pending migrations.')
+      return ''
     }
 
-    return lastMigration
+    const last = pending[pending.length - 1].trim()
+    this.deps.core.info(`Applying migrations, last: ${last}…`)
+    await this.deps.exec.exec(
+      this.getTool(),
+      [...this.getBaseArgs(), 'database', 'update'],
+      opts
+    )
+    this.deps.core.info('✔ Migrations applied.')
+
+    return last
   }
 
+  /**
+   * Rollback to a specific migration
+   */
   async rollbackMigration(
     envName: string,
     home: string,
     migrationsFolder: string,
-    targetMigration: string
+    target: string
   ): Promise<void> {
     await this.ensureInstalled()
-
-    const baseEnv: Record<string, string> = {
+    const env = {
       ...process.env,
       DOTNET_ROOT: this.dotnetRoot,
-      HOME: process.env.HOME || home,
+      HOME: home,
       ASPNETCORE_ENVIRONMENT: envName
     }
-
-    const execOptions: exec.ExecOptions = {
+    const opts = {
       cwd: migrationsFolder,
-      env: baseEnv,
+      env,
       listeners: {
-        stdout: (data: Buffer) => this.core.info(data.toString()),
-        stderr: (data: Buffer) => this.core.error(data.toString())
+        stdout: (b: Buffer) => this.deps.core.info(b.toString()),
+        stderr: (b: Buffer) => this.deps.core.error(b.toString())
       }
     }
-
-    const efCmd = this.getEfTool()
-    const efArgs = [
-      ...this.getEfCommand(),
-      'database',
-      'update',
-      targetMigration
-      // '--project',
-      // migrationsFolder
-    ]
-
     try {
-      await this.exec.exec(efCmd, efArgs, execOptions)
-      this.core.info('Migration rolled back successfully')
-    } catch (error) {
-      const msg = `Failed to rollback to migration "${targetMigration}" in "${envName}": ${(error as Error).message}`
-      this.core.error(msg)
+      await this.deps.exec.exec(
+        this.getTool(),
+        [...this.getBaseArgs(), 'database', 'update', target],
+        opts
+      )
+      this.deps.core.info('✔ Rolled back successfully.')
+    } catch (err) {
+      const msg = `Rollback to "${target}" failed: ${(err as Error).message}`
+      this.deps.core.error(msg)
       throw new Error(msg)
     }
   }
 
+  /**
+   * Get the name of the last applied migration, or '0' if none
+   */
   async getCurrentAppliedMigration(
     envName: string,
     home: string,
     migrationsFolder: string
   ): Promise<string> {
     await this.ensureInstalled()
-
-    let migrationOutput = ''
-
-    const baseEnv: Record<string, string> = {
+    let output = ''
+    const env = {
       ...process.env,
       DOTNET_ROOT: this.dotnetRoot,
-      HOME: process.env.HOME || home,
+      HOME: home,
       ASPNETCORE_ENVIRONMENT: envName
     }
-
-    const migrationOptions: exec.ExecOptions = {
+    const opts = {
       cwd: migrationsFolder,
-      env: baseEnv,
+      env,
       listeners: {
-        stdout: (data: Buffer) => {
-          migrationOutput += data.toString()
+        stdout: (b: Buffer) => {
+          output += b.toString()
         }
       }
     }
+    await this.deps.exec.exec(
+      this.getTool(),
+      [...this.getBaseArgs(), 'migrations', 'list'],
+      opts
+    )
 
-    const efCmd = this.getEfTool()
-    const efArgs = [...this.getEfCommand(), 'migrations', 'list']
-
-    await this.exec.exec(efCmd, efArgs, migrationOptions)
-
-    this.core.info(`Full migration output:\n${migrationOutput}`)
-
-    const appliedMigrations = migrationOutput
+    const applied = output
       .split(/\r?\n/)
       .filter((line) => line.toLowerCase().includes('[applied]'))
       .map((line) => line.replace(/\[applied\]/i, '').trim())
 
-    const lastApplied =
-      appliedMigrations.length > 0
-        ? appliedMigrations[appliedMigrations.length - 1]
-        : '0'
-
-    this.core.info(`Current applied migration (baseline): ${lastApplied}`)
-    return lastApplied
+    if (applied.length === 0) {
+      this.deps.core.info('No applied migrations. Returning baseline.')
+      return '0'
+    }
+    const last = applied[applied.length - 1]
+    this.deps.core.info(`Current applied: ${last}`)
+    return last
   }
 
+  /**
+   * Get the name of the last non-pending migration, or '0' if none
+   */
   async getLastNonPendingMigration(
     envName: string,
     home: string,
     migrationsFolder: string
   ): Promise<string> {
     await this.ensureInstalled()
-
-    let migrationOutput = ''
-
-    const baseEnv: Record<string, string> = {
+    let output = ''
+    const env = {
       ...process.env,
       DOTNET_ROOT: this.dotnetRoot,
-      HOME: process.env.HOME || home,
+      HOME: home,
       ASPNETCORE_ENVIRONMENT: envName
     }
-
-    const migrationOptions: exec.ExecOptions = {
-      cwd: migrationsFolder, // Use migrationsFolder as the working directory
-      env: baseEnv,
+    const opts = {
+      cwd: migrationsFolder,
+      env,
       listeners: {
-        stdout: (data: Buffer) => {
-          migrationOutput += data.toString()
+        stdout: (b: Buffer) => {
+          output += b.toString()
         }
       }
     }
-
-    const efCmd = this.getEfTool()
-    const efArgs = [...this.getEfCommand(), 'migrations', 'list']
-
-    await this.exec.exec(efCmd, efArgs, migrationOptions)
-
-    this.core.info(`Full migration output:\n${migrationOutput}`)
-
-    const migrationLines = migrationOutput
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-    const nonPendingMigrations = migrationLines.filter(
-      (line) => line !== '' && !/\(pending\)/i.test(line)
+    await this.deps.exec.exec(
+      this.getTool(),
+      [...this.getBaseArgs(), 'migrations', 'list'],
+      opts
     )
 
-    const lastMigration =
-      nonPendingMigrations.length > 0
-        ? nonPendingMigrations[nonPendingMigrations.length - 1]
-        : '0'
-
-    this.core.info(`Last non-pending migration: ${lastMigration}`)
-    return lastMigration
-  }
-
-  async addMigration(
-    migrationName: string,
-    outputDir: string,
-    context?: string
-  ): Promise<void> {
-    await this.ensureInstalled()
-
-    try {
-      const args = [
-        ...this.getEfCommand(),
-        'migrations',
-        'add',
-        migrationName,
-        '--output-dir',
-        outputDir
-      ]
-      if (context) {
-        args.push('--context', context)
-      }
-      await this.exec.exec(this.getEfTool(), args, {
-        cwd: outputDir, // Use outputDir as the working directory
-        env: { ...process.env, DOTNET_ROOT: this.dotnetRoot }
-      })
-    } catch (error) {
-      const message = `Failed to add migration: ${migrationName}. ${(error as Error).message}`
-      this.core.error(message)
-      throw new Error(message)
+    const lines = output.split(/\r?\n/).map((l) => l.trim())
+    const nonPending = lines.filter((l) => l && !/\(pending\)/i.test(l))
+    if (nonPending.length === 0) {
+      this.deps.core.info('No non-pending migrations. Returning baseline.')
+      return '0'
     }
+    const last = nonPending[nonPending.length - 1]
+    this.deps.core.info(`Last non-pending: ${last}`)
+    return last
   }
 
-  async updateDatabase(
-    envName: string,
-    home: string,
-    migrationsFolder: string
-  ): Promise<void> {
-    await this.ensureInstalled()
-
-    try {
-      const baseEnv = {
-        DOTNET_ROOT: this.dotnetRoot,
-        HOME: process.env.HOME || home,
-        ASPNETCORE_ENVIRONMENT: envName
-      }
-
-      const execOptions: exec.ExecOptions = {
-        cwd: migrationsFolder,
-        env: baseEnv
-      }
-
-      const efCmd = this.getEfTool()
-      const efArgs = [
-        ...this.getEfCommand(),
-        'database',
-        'update',
-        '--project',
-        migrationsFolder
-      ]
-
-      await this.exec.exec(efCmd, efArgs, execOptions)
-      this.core.info('Database updated successfully.')
-    } catch (error) {
-      const message = `Failed to update database for environment: ${envName}. ${(error as Error).message}`
-      this.core.error(message)
-      throw new Error(message)
-    }
-  }
-
+  /**
+   * List all migrations
+   */
   async listMigrations(
     envName: string,
     home: string,
     migrationsFolder: string
   ): Promise<string[]> {
     await this.ensureInstalled()
-
-    try {
-      const baseEnv = {
-        DOTNET_ROOT: this.dotnetRoot,
-        HOME: process.env.HOME || home,
-        ASPNETCORE_ENVIRONMENT: envName
+    let output = ''
+    const env = {
+      ...process.env,
+      DOTNET_ROOT: this.dotnetRoot,
+      HOME: home,
+      ASPNETCORE_ENVIRONMENT: envName
+    }
+    const opts = {
+      cwd: migrationsFolder,
+      env,
+      listeners: {
+        stdout: (b: Buffer) => {
+          output += b.toString()
+        }
       }
-
-      const execOptions: exec.ExecOptions = {
-        cwd: migrationsFolder,
-        env: baseEnv
-      }
-
-      const efCmd = this.getEfTool()
-      const efArgs = [
-        ...this.getEfCommand(),
+    }
+    await this.deps.exec.exec(
+      this.getTool(),
+      [
+        ...this.getBaseArgs(),
         'migrations',
         'list',
         '--project',
         migrationsFolder
-      ]
+      ],
+      opts
+    )
+    return output.split(/\r?\n/).filter((l) => l.trim())
+  }
 
-      let output = ''
-
-      await this.exec.exec(efCmd, efArgs, {
-        ...execOptions,
-        listeners: {
-          stdout: (data: Buffer) => {
-            output += data.toString()
-          }
-        }
-      })
-
-      return output.split(/\r?\n/).filter((line) => line.trim())
-    } catch (error) {
-      const message = `Failed to list migrations for environment: ${envName}. ${(error as Error).message}`
-      this.core.error(message)
-      throw new Error(message)
+  /**
+   * Shortcut for update-database
+   */
+  async updateDatabase(
+    envName: string,
+    home: string,
+    migrationsFolder: string
+  ): Promise<void> {
+    await this.ensureInstalled()
+    const env = {
+      ...process.env,
+      DOTNET_ROOT: this.dotnetRoot,
+      HOME: home,
+      ASPNETCORE_ENVIRONMENT: envName
+    }
+    try {
+      await this.deps.exec.exec(
+        this.getTool(),
+        [
+          ...this.getBaseArgs(),
+          'database',
+          'update',
+          '--project',
+          migrationsFolder
+        ],
+        { cwd: migrationsFolder, env }
+      )
+      this.deps.core.info('✔ Database updated.')
+    } catch (err) {
+      const msg = `Database update failed: ${(err as Error).message}`
+      this.deps.core.error(msg)
+      throw new Error(msg)
     }
   }
 }
+
+// Example usage:
+// import { EfTool } from './services/tools/EfTool.js';
+// import { IDependencies } from '../models/Dependencies.js';
+// const deps: IDependencies = { core, exec };
+// const ef = new EfTool(deps, inputs.dotnetRoot, inputs.projectDirectoryRoot);
+// await ef.processMigrations('Development', process.env.HOME||'', './Migrations');

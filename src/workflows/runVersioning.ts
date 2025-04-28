@@ -1,9 +1,9 @@
 import * as core from '@actions/core'
 import { Inputs } from '../utils/Inputs.js'
 import { GitManager } from '../git-manager/GitManager.js'
-import { Version } from '../utils/Version.js'
+import { Version } from '../dotnet-manager/utils/Version.js'
 import { Timer } from '../utils/Timer.js'
-import { Csproj } from '../utils/Csproj.js'
+import { Csproj } from '../dotnet-manager/utils/Csproj.js'
 
 export async function runVersioning(): Promise<void> {
   try {

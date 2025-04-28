@@ -1,17 +1,23 @@
-import { ef } from './tools/ef.js'
-import { csharpier } from './tools/csharpier.js'
-import { husky } from './tools/husky.js'
+// src/services/ToolService.ts
+import type { IDependencies } from '../../models/Dependencies.js'
+import { EF } from './tools/ef.js'
+import { CSharpier } from './tools/csharpier.js'
+import { Husky } from './tools/husky.js'
 
 export class ToolService {
-  private dotnetRoot: string
-  ef: ef
-  csharpier: csharpier
-  husky: husky
+  readonly ef: EF
+  readonly csharpier: CSharpier
+  readonly husky: Husky
 
-  constructor(dotnetRoot: string, allowedKeywords: string[]) {
-    this.dotnetRoot = dotnetRoot
-    this.ef = new ef(this.dotnetRoot)
-    this.csharpier = new csharpier(this.dotnetRoot)
-    this.husky = new husky(allowedKeywords)
+  constructor(
+    readonly deps: IDependencies,
+    dotnetRoot: string,
+    projectDirectoryRoot: string,
+    allowedKeywords: string[]
+  ) {
+    // If any tool needs core/exec, you can pass deps too
+    this.ef = new EF(deps, dotnetRoot, projectDirectoryRoot)
+    this.csharpier = new CSharpier(deps, dotnetRoot, projectDirectoryRoot)
+    this.husky = new Husky(deps, projectDirectoryRoot, allowedKeywords)
   }
 }

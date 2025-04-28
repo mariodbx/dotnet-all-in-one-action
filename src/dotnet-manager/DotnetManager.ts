@@ -1,27 +1,53 @@
+// src/DotnetManager.ts
+import * as core from '@actions/core'
+import * as exec from '@actions/exec'
+import { Inputs } from '../utils/Inputs.js'
+import { IDependencies } from '../models/Dependencies.js'
 import { TestService } from './Services/TestService.js'
-// import { MigrationService } from './Services/tools/ef.js'
-import { ToolService } from './Services/ToolService.js'
 import { ProjectService } from './Services/ProjectService.js'
-import { Csproj } from '../utils/Csproj.js'
+import { ToolService } from './Services/ToolService.js'
+import { Csproj } from './utils/Csproj.js'
+import { Version } from './utils/Version.js'
 
 export class DotnetManager {
-  tests: TestService
-  // migrations: MigrationService
-  tools: ToolService
-  projects: ProjectService
-  csproj: typeof Csproj
-  private dotnetRoot: string
+  readonly deps: IDependencies //private
+  readonly inputs = new Inputs()
 
-  constructor(dotnetRoot: string) {
-    this.dotnetRoot = dotnetRoot
-    // Initialize services with consistent dependency injection
-    this.tests = new TestService()
-    this.tools = new ToolService(this.dotnetRoot, [])
-    this.projects = new ProjectService(this.dotnetRoot)
-    this.csproj = Csproj
+  readonly tests: TestService
+  readonly projects: ProjectService
+  readonly tools: ToolService
+  readonly Csproj = Csproj
+  readonly Version = Version
+
+  constructor(
+    deps: IDependencies = { core, exec },
+    inputs: Inputs = new Inputs()
+  ) {
+    this.deps = deps
+    this.inputs = inputs
+
+    // instantiate all child services with the same deps & config
+    this.tests = new TestService(
+      deps,
+      inputs.dotnetRoot,
+      inputs.testFolder,
+      inputs.uploadTestsResults,
+      inputs.testOutputFolder,
+      inputs.testFormat
+    )
+    this.projects = new ProjectService(deps, inputs.dotnetRoot)
+    this.tools = new ToolService(
+      deps,
+      inputs.dotnetRoot,
+      inputs.projectDirectoryRoot,
+      [
+        ...inputs.majorKeywords,
+        ...inputs.minorKeywords,
+        ...inputs.patchKeywords,
+        ...inputs.hotfixKeywords,
+        ...inputs.addedKeywords,
+        ...inputs.devKeywords
+      ]
+    )
   }
 }
-// const dotnet = new DotnetManager(
-//   core.getInput('dotnet-root') || '',
-//   core.getInput('use-global-dotnet-ef') === 'true'
-// )

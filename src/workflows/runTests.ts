@@ -7,7 +7,7 @@ import { GitManager } from '../git-manager/GitManager.js'
 
 export async function runTests(): Promise<void> {
   const inputs = new Inputs()
-  const dotnetManager = new DotnetManager(inputs.dotnetRoot)
+  const dotnetManager = new DotnetManager()
   const gitManager = new GitManager()
 
   // Decide on a single “results” folder + filename
@@ -57,10 +57,7 @@ export async function runTests(): Promise<void> {
     // === 3) Run `dotnet test` with explicit logger + results-directory ===
     try {
       core.debug('Executing dotnet test…')
-      await dotnetManager.tests.runTests(
-        inputs.testFolder,
-        inputs.testOutputFolder + '.' + inputs.testFormat
-      )
+      await dotnetManager.tests.runTests()
       core.info('Tests completed successfully.')
     } catch (testErr) {
       core.error('Tests failed.')

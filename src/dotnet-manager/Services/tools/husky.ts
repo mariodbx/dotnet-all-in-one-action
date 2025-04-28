@@ -1,130 +1,86 @@
-import * as core from '@actions/core'
-import * as exec from '@actions/exec'
+// src/services/tools/HuskyService.ts
+import type { IDependencies } from '../../../models/Dependencies.js'
 import * as fs from 'fs'
 import * as path from 'path'
 
-export class husky {
-  private core: typeof core
-  private exec: typeof exec
-  private allowedKeywords: string[]
+export class Husky {
+  constructor(
+    private readonly deps: IDependencies,
+    private readonly projectDirectoryRoot: string,
+    private readonly allowedKeywords: string[]
+  ) {}
 
-  constructor(allowedKeywords: string[], dependencies = { core, exec }) {
-    this.allowedKeywords = allowedKeywords
-    this.core = dependencies.core
-    this.exec = dependencies.exec
-  }
-
-  private async checkHuskyFolder(huskyDir: string): Promise<boolean> {
-    this.core.info('Checking for existing .husky folder...')
-    return fs.existsSync(huskyDir)
-  }
-
-  private async createToolManifestIfMissing(
-    manifestFile: string
-  ): Promise<void> {
-    if (!fs.existsSync(manifestFile)) {
-      this.core.info('Creating a new dotnet tool manifest…')
-      await this.exec.exec('dotnet', ['new', 'tool-manifest'], {
-        cwd: './sample-project' //path.dirname(manifestFile)
-      })
+  private async ensureToolManifest(): Promise<void> {
+    const manifest = path.join(
+      this.projectDirectoryRoot,
+      '.config',
+      'dotnet-tools.json'
+    )
+    if (!fs.existsSync(manifest)) {
+      this.deps.core.info('Creating dotnet tool manifest…')
+      try {
+        await this.deps.exec.exec('dotnet', ['new', 'tool-manifest'], {
+          cwd: this.projectDirectoryRoot
+        })
+      } catch (error) {
+        const errorMessage = `Failed to create dotnet tool manifest: ${(error as Error).message}`
+        this.deps.core.error(errorMessage)
+        throw new Error(errorMessage)
+      }
+    } else {
+      this.deps.core.info('✔ Dotnet tool manifest already exists.')
     }
   }
 
-  private async installAndInitializeHusky(): Promise<void> {
-    this.core.info('Installing Husky.Net tool...')
-    await this.exec.exec('dotnet', ['tool', 'install', 'Husky'], {
-      cwd: './sample-project' // process.cwd()
-    })
+  private async installHusky(): Promise<void> {
+    await this.ensureToolManifest() // Ensure the tool manifest exists without overwriting it
 
-    this.core.info('Initializing Husky.Net...')
-    await this.exec.exec('dotnet', ['husky', 'install'], {
-      cwd: './sample-project'
-    }) // process.cwd() })
+    this.deps.core.info('Installing Husky.Net…')
+    await this.deps.exec.exec('dotnet', ['tool', 'install', 'Husky'], {
+      cwd: this.projectDirectoryRoot
+    })
+    this.deps.core.info('Initializing Husky.Net…')
+    await this.deps.exec.exec('dotnet', ['husky', 'install'], {
+      cwd: this.projectDirectoryRoot
+    })
   }
 
-  /** Ensure Husky.Net is installed (local tool manifest + dotnet tool) */
-  async ensureHuskyInstalled(): Promise<void> {
-    const dotnetConfigDir = path.join('.config')
-    const manifestFile = path.join(dotnetConfigDir, 'dotnet-tools.json')
+  async ensureInstalled(): Promise<void> {
     const huskyDir = '.husky'
-
-    try {
-      const huskyExists = await this.checkHuskyFolder(huskyDir)
-      if (!huskyExists) {
-        this.core.info('No .husky folder found; installing Husky.Net…')
-        await this.createToolManifestIfMissing(manifestFile)
-        await this.installAndInitializeHusky()
-      } else {
-        this.core.info('Husky.Net already initialized.')
-      }
-    } catch (err) {
-      const msg = `Failed to ensure Husky.Net installation: ${(err as Error).message}`
-      this.core.error(msg)
-      throw new Error(msg)
+    if (!fs.existsSync(huskyDir)) {
+      this.deps.core.info('No .husky folder; setting up Husky.Net…')
+      await this.ensureToolManifest()
+      await this.installHusky()
+    } else {
+      this.deps.core.info('✔ Husky.Net already initialized.')
     }
   }
 
   async setupCommitMsgHook(): Promise<void> {
-    await this.ensureHuskyInstalled()
-    try {
-      const huskyDir = path.join('.husky')
-      const commitMsgHookPath = path.join(huskyDir, 'commit-msg')
+    await this.ensureInstalled()
+    const dir = path.join(this.projectDirectoryRoot, '.husky')
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
 
-      if (!fs.existsSync(huskyDir)) {
-        fs.mkdirSync(huskyDir, { recursive: true })
-      }
-
-      this.core.info('Creating commit-msg hook...')
-      const hookContent = `#!/bin/sh
-# .husky/commit-msg
-# This script enforces that the commit message begins with one of the allowed keywords.
-
-# The commit message file is passed as the first parameter.
+    const hook = path.join(dir, 'commit-msg')
+    const content = `#!/bin/sh
 commit_msg_file="$1"
-
-# Check if the commit message file exists.
 if [ ! -f "$commit_msg_file" ]; then
-  echo "Error: Commit message file not found!"
-  exit 1
+  echo "Commit-msg file missing"; exit 1
 fi
-
-# Extract the first non-empty line from the commit message.
 first_line=$(sed -n '/./{p;q;}' "$commit_msg_file")
-
-# Extract the first word.
-raw_first_word=$(echo "$first_line" | awk '{print $1}')
-
-# Convert to lowercase and remove everything to the right of the first non-alphanumeric character.
-first_word=$(echo "$raw_first_word" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z].*//')
-
-# Define the allowed keywords.
-allowed_words=(${this.allowedKeywords.map((word) => `"${word}"`).join(' ')})
-
-# Check if the cleaned first word is one of the allowed keywords.
-word_found=0
-for word in "\${allowed_words[@]}"; do
-  if [ "first_word" = "word" ]; then
-    word_found=1
-    break
-  fi
+first_word=$(echo "$first_line" | awk '{print tolower($1)}' | sed 's/[^a-z].*//')
+allowed=(${this.allowedKeywords.map((w) => `"${w}"`).join(' ')})
+found=0
+for w in "\${allowed[@]}"; do
+  [ "$first_word" = "$w" ] && found=1 && break
 done
-
-# If the first word is not an allowed keyword, print an error message.
-if [ word_found -eq 0 ]; then
-  echo "ERROR: Commit message must start with one of the allowed keywords:"
-  echo "  Allowed keywords: ${this.allowedKeywords.join(', ')}"
+if [ $found -eq 0 ]; then
+  echo "ERROR: Must start with: ${this.allowedKeywords.join(', ')}"
   exit 1
 fi
-
-# If everything is fine, allow the commit.
 exit 0
 `
-      fs.writeFileSync(commitMsgHookPath, hookContent, { mode: 0o755 })
-      this.core.info('commit-msg hook created successfully.')
-    } catch (error) {
-      const errorMessage = `Failed to set up commit-msg hook: ${(error as Error).message}`
-      this.core.error(errorMessage)
-      throw new Error(errorMessage)
-    }
+    fs.writeFileSync(hook, content, { mode: 0o755 })
+    this.deps.core.info('✔ commit-msg hook created.')
   }
 }

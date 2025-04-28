@@ -6,7 +6,7 @@ import { GitManager } from '../git-manager/GitManager.js';
 import { Timer } from '../utils/Timer.js';
 export async function runPublish() {
     const inputs = new Inputs();
-    const dotnet = new DotnetManager(inputs.dotnetRoot);
+    const dotnet = new DotnetManager();
     const git = new GitManager();
     console.log('Preparing to publish binaries...');
     // Wait for 5 seconds
@@ -36,9 +36,9 @@ export async function runPublish() {
     }
     console.log('Publishing completed.');
     // Extract version from .csproj
-    const csprojPath = await dotnet.csproj.findCsproj(inputs.csprojDepth, inputs.csprojName);
-    const csprojContent = await dotnet.csproj.readCsproj(csprojPath);
-    const version = dotnet.csproj.extractVersion(csprojContent);
+    const csprojPath = await dotnet.Csproj.findCsproj(inputs.csprojDepth, inputs.csprojName);
+    const csprojContent = await dotnet.Csproj.readCsproj(csprojPath);
+    const version = dotnet.Csproj.extractVersion(csprojContent);
     // Commit and push changes
     const commitMessage = `Publish binaries for platforms with version ${version}`;
     await git.repo.commitAndPush('.', commitMessage);
