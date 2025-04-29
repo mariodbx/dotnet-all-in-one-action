@@ -24,14 +24,14 @@ inputs:
     default: '/usr/bin/dotnet'
   project_directory_root:
     description: 'Path to the project directory'
-    required: true
+    required: false
     default: '.'
 
   # Migrations
   run_migrations:
     description: 'Run migrations? (true/false)'
     required: false
-    default: 'true'
+    default: 'false'
   migrations_folder:
     description: 'Path to the migrations folder (default: testFolder)'
     required: false
@@ -41,7 +41,7 @@ inputs:
     required: false
     default: 'Development'
   on_failed_rollback_migrations:
-    description: 'Rollback migrations if tests fail? (true/false)'
+    description: 'Rollback migrations if something fail? (true/false)'
     required: false
     default: 'true'
 
@@ -49,11 +49,11 @@ inputs:
   run_tests:
     description: 'Run tests? (true/false)'
     required: false
-    default: 'true'
+    default: 'false'
   tests_env_name:
     description: 'Environment name for ASP.NET Core'
     required: false
-    default: 'Development'
+    default: 'Test'
   run_tests_migrations:
     description: 'Run tests on migrations? (true/false)'
     required: false
@@ -65,7 +65,7 @@ inputs:
   test_folder:
     description: 'Path to the test project folder'
     required: true
-    default: '.'
+    default: ''
   upload_tests_results:
     description: 'Upload test results? (true/false)'
     required: false
@@ -95,7 +95,7 @@ inputs:
   csproj_name:
     description: 'Name pattern for the .csproj file (e.g., "*.csproj").'
     required: false
-    default: 'sample-project.MVC.csproj'
+    default: ''
   use_commit_message:
     description: 'Use the commit message to extract the version? (true/false)'
     required: false
@@ -168,7 +168,7 @@ inputs:
   run_publish:
     description: 'Run publish step? (true/false)'
     required: false
-    default: 'true'
+    default: 'false'
   publish_linux:
     description: 'Flag to publish .NET binaries for Linux.'
     required: false
@@ -186,7 +186,7 @@ inputs:
   run_release:
     description: 'Run release step? (true/false)'
     required: false
-    default: 'true'
+    default: 'false'
   include_ghcr_package:
     description: 'Include GHCR package in the release changelog? (true/false)'
     required: false
@@ -200,7 +200,7 @@ inputs:
   run_changelog:
     description: 'Run changelog step? (true/false)'
     required: false
-    default: 'true'
+    default: 'false'
   major_keywords:
     description: 'Comma-separated list of keywords to detect major changes.'
     required: false
@@ -232,11 +232,11 @@ inputs:
   run_format:
     description: 'Run code formatting step? (true/false)'
     required: false
-    default: 'true'
+    default: 'false'
   format_directory:
     description: 'Directory to format code in.'
     required: false
-    default: '.t'
+    default: '.'
 
   # Husky
   run_husky_setup:

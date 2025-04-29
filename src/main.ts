@@ -12,20 +12,15 @@ import { runFormat } from './workflows/runFormat.js'
 import { runPublish } from './workflows/runPublish.js' // Import the new publish workflow
 import { runHuskySetup } from './workflows/runHuskySetup.js'
 import { Inputs } from './utils/Inputs.js'
-// import { GitManager } from './git-manager/GitManager.js' // Import GitManager
 
 /* istanbul ignore next */
 export async function run() {
   const inputs = new Inputs()
-  // if (inputs.runHuskySetup) {
-  console.log('Setting up Husky...')
-  await runHuskySetup()
-  // }
+  if (inputs.runHuskySetup) {
+    console.log('Setting up Husky...')
+    await runHuskySetup()
+  }
   // const git = new GitManager()
-  // Fetch the commit message using GitManager
-
-  // Use a regex to match "major", "minor", or "patch" in a case-insensitive manner
-  // const shouldRunAll = /\b(major|minor|patch)\b/i.test(commitMessage)
 
   if (inputs.runTests) {
     console.log('Running tests...')
@@ -39,6 +34,8 @@ export async function run() {
   if (inputs.runVersioning) {
     console.log('Running versioning...')
     await runVersioning()
+  } else {
+    return
   }
   if (inputs.runDockerBuild) {
     console.log('Running Docker build...')
