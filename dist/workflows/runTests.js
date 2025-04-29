@@ -11,10 +11,7 @@ export async function runTests() {
     // Decide on a single “results” folder + filename
     const resultsDir = 'TestResults'; // e.g. "TestResults"
     const resultFileName = `TestResults.${inputs.testFormat}`; // e.g. "TestResults.trx"
-    const resultFilePath = './sample-project/sample-project.Tests/' +
-        inputs.testOutputFolder +
-        '.' +
-        inputs.testFormat; //path.join(resultsDir, resultFileName)
+    const resultFilePath = inputs.testOutputFolder + '.' + inputs.testFormat; //path.join(resultsDir, resultFileName)
     let baselineMigration = '';
     let newMigration = '';
     try {

@@ -25,7 +25,7 @@ inputs:
   project_directory_root:
     description: 'Path to the project directory'
     required: true
-    default: './sample-project'
+    default: '.'
 
   # Migrations
   run_migrations:
@@ -35,7 +35,7 @@ inputs:
   migrations_folder:
     description: 'Path to the migrations folder (default: testFolder)'
     required: false
-    default: './sample-project/sample-project.MVC'
+    default: '.'
   migrations_env_name:
     description: 'Environment name for ASP.NET Core'
     required: false
@@ -61,11 +61,11 @@ inputs:
   test_migrations_folder:
     description: 'Path to the test migrations folder'
     required: false
-    default: './sample-project/sample-project.MVC'
+    default: ''
   test_folder:
     description: 'Path to the test project folder'
     required: true
-    default: './sample-project/sample-project.Tests'
+    default: '.'
   upload_tests_results:
     description: 'Upload test results? (true/false)'
     required: false
@@ -236,7 +236,7 @@ inputs:
   format_directory:
     description: 'Directory to format code in.'
     required: false
-    default: './sample-project'
+    default: '.t'
 
   # Husky
   run_husky_setup:
