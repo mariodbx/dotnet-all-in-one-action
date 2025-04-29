@@ -29,6 +29,7 @@ export class DotnetManager {
     this.tests = new TestService(
       deps,
       inputs.dotnetRoot,
+      inputs.projectDirectoryRoot,
       inputs.testFolder,
       inputs.uploadTestsResults,
       inputs.testOutputFolder,

@@ -5,6 +5,7 @@ export class TestService {
   constructor(
     private readonly deps: IDependencies,
     private readonly dotnetRoot: string,
+    private readonly projectDirectoryRoot: string,
     private readonly testFolder: string,
     private readonly uploadResults: boolean,
     private readonly resultsFolder: string,
@@ -37,7 +38,7 @@ export class TestService {
           DOTNET_ROOT: this.dotnetRoot,
           HOME: process.env.HOME || '/home/node' // Ensure HOME is set
         },
-        cwd: this.testFolder
+        cwd: this.projectDirectoryRoot
       })
       this.deps.core.info(
         `✔ Tests passed. Results in ${this.resultsFolder}.${this.resultsFormat}`

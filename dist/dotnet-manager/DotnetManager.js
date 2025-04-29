@@ -18,7 +18,7 @@ export class DotnetManager {
     constructor(deps = { core, exec }, inputs = new Inputs()) {
         this.deps = deps;
         this.inputs = inputs;
-        this.tests = new TestService(deps, inputs.dotnetRoot, inputs.testFolder, inputs.uploadTestsResults, inputs.testOutputFolder, inputs.testFormat);
+        this.tests = new TestService(deps, inputs.dotnetRoot, inputs.projectDirectoryRoot, inputs.testFolder, inputs.uploadTestsResults, inputs.testOutputFolder, inputs.testFormat);
         this.projects = new ProjectService(deps, inputs.dotnetRoot);
         // PASS the grouped keywords map, not a big flat string array:
         this.tools = new ToolService(deps, inputs.dotnetRoot, inputs.projectDirectoryRoot, inputs.keywordGroups);
