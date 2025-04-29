@@ -1173,12 +1173,6 @@
       "any",
       "base"
     ],
-    "linux-x64": [
-      "linux",
-      "unix-x64",
-      "unix",
-      "any",
-      "base"
-    ]
+    "linux-x64": ["linux", "unix-x64", "unix", "any", "base"]
   }
 }

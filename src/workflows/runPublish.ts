@@ -4,7 +4,6 @@ import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
 import { Inputs } from '../utils/Inputs.js'
 import { GitManager } from '../git-manager/GitManager.js'
 import { Timer } from '../utils/Timer.js'
-import { ProjectService } from '../dotnet-manager/Services/ProjectService.js'
 
 export async function runPublish(): Promise<void> {
   const inputs = new Inputs()

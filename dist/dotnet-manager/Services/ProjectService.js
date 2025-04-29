@@ -5,10 +5,24 @@ export class ProjectService {
         this.deps = deps;
         this.dotnetRoot = dotnetRoot;
     }
-    async publish(configuration, outputDir, additionalFlags = []) {
+    async publish(mainProject, configuration, outputDir, additionalFlags = []) {
         this.deps.core.info(`Publishing .NET project (${configuration}) → ${outputDir}`);
         try {
-            await this.deps.exec.exec('dotnet', ['publish', '-c', configuration, '-o', outputDir, ...additionalFlags], { env: { DOTNET_ROOT: this.dotnetRoot } });
+            await this.deps.exec.exec('dotnet', [
+                'publish',
+                mainProject,
+                '-c',
+                configuration,
+                '-o',
+                outputDir,
+                ...additionalFlags
+            ], {
+                env: {
+                    DOTNET_ROOT: this.dotnetRoot,
+                    HOME: process.env.HOME || '/home/node' // Ensure HOME is set
+                },
+                cwd: this.deps.core.getInput('projectDirectoryRoot')
+            });
             this.deps.core.info('✔ Project published.');
         }
         catch (err) {

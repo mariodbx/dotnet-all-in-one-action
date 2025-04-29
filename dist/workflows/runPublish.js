@@ -14,7 +14,7 @@ export async function runPublish() {
     await Timer.wait(5000);
     // Pull the latest changes
     core.info('Pulling the latest changes from the repository...');
-    await git.repo.pull('.', process.env['GITHUB_REF_NAME']);
+    await git.repo.pull('.', 'oop'); //process.env['GITHUB_REF_NAME']
     const publishDirs = [
         { platform: 'Linux', path: './publish/linux', runtime: 'linux-x64' },
         { platform: 'Windows', path: './publish/windows', runtime: 'win-x64' },
@@ -27,11 +27,8 @@ export async function runPublish() {
             core.info(`Cleaning old publish directory for ${dir.platform}...`);
             await fs.rm(dir.path, { recursive: true, force: true });
             core.info(`Publishing .NET binaries for ${dir.platform}...`);
-            await dotnet.projects.publish('Release', dir.path, [
-                '--self-contained',
-                '--runtime',
-                dir.runtime
-            ]);
+            await dotnet.projects.publish('sample-project', //inputs.migrationsFolder,
+            'Release', dir.path, ['--self-contained', '--runtime', dir.runtime]);
         }
     }
     console.log('Publishing completed.');

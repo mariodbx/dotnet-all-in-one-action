@@ -12,7 +12,7 @@ export async function runVersioning() {
         // Wait and fetch the latest changes
         await Timer.wait(5000);
         core.info('Waiting for 5 seconds before ensuring the latest version...');
-        await gitManager.repo.pull('.', process.env['GITHUB_REF_NAME']);
+        await gitManager.repo.pull('.', 'oop' /*process.env['GITHUB_REF_NAME']*/);
         core.info('Fetched the latest changes from the repository.');
         // Get the latest commit message
         const commitMessage = await gitManager.getLatestCommitMessage();

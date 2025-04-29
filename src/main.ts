@@ -23,40 +23,31 @@ export async function run() {
   // }
   // const git = new GitManager()
   // Fetch the commit message using GitManager
-  // const commitMessage = await git.getLatestCommitMessage()
 
   // Use a regex to match "major", "minor", or "patch" in a case-insensitive manner
   // const shouldRunAll = /\b(major|minor|patch)\b/i.test(commitMessage)
 
-  // if (inputs.runTests) {
-  //   console.log('Running tests...')
-  //   await runTests()
-  // }
-  // if (inputs.runFormat) {
-  //   console.log('Running code formatting...')
-  //   await runFormat()
-  // }
+  if (inputs.runTests) {
+    console.log('Running tests...')
+    await runTests()
+  }
+  if (inputs.runFormat) {
+    console.log('Running code formatting...')
+    await runFormat()
+  }
 
-  // // const shouldRunAll = false
-  // // if (!shouldRunAll) {
-  // //   console.log(
-  // //     'Skipping remaining steps as commit message does not contain "major", "minor", or "patch".'
-  // //   )
-  // //   return
-  // // }
-
-  // if (inputs.runVersioning) {
-  //   console.log('Running versioning...')
-  //   await runVersioning()
-  // }
-  // if (inputs.runDockerBuild) {
-  //   console.log('Running Docker build...')
-  //   await runDockerBuild()
-  // }
-  // if (inputs.runDockerPush) {
-  //   console.log('Running Docker push...')
-  //   await runDockerPush()
-  // }
+  if (inputs.runVersioning) {
+    console.log('Running versioning...')
+    await runVersioning()
+  }
+  if (inputs.runDockerBuild) {
+    console.log('Running Docker build...')
+    await runDockerBuild()
+  }
+  if (inputs.runDockerPush) {
+    console.log('Running Docker push...')
+    await runDockerPush()
+  }
   if (inputs.runPublish) {
     console.log('Running publish...')
     await runPublish()
