@@ -53,7 +53,7 @@ export async function run() {
     console.log('Running release...')
     await runRelease()
   }
-  if (!inputs.runMigrations) {
+  if (inputs.runMigrations) {
     console.log('Running migrations...')
     await runMigrations()
   }
