@@ -19,7 +19,7 @@ export async function runRelease(): Promise<void> {
     await Timer.wait(5000)
 
     core.info('Running git pull to fetch the latest version...')
-    await git.repo.pull('.', 'oop') //process.env.GITHUB_REF_NAME
+    await git.repo.pull('.', process.env.GITHUB_REF_NAME) //process.env.GITHUB_REF_NAME
 
     // Determine version based on configuration.
     if (inputs.useCommitMessage) {
