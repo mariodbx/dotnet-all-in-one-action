@@ -1,54 +1,51 @@
 import * as core from '@actions/core'
-import { GitManager } from '../git-manager/GitManager.js'
 import { Inputs } from '../utils/Inputs.js'
-import { Csproj } from '../dotnet-manager/utils/Csproj.js'
+import { DockerManager } from '../docker-manager/DockerManager.js'
 
 export async function runDockerBuild(): Promise<void> {
-  try {
-    const inputs = new Inputs()
-    const gitManager = new GitManager()
-    let version: string | null = null
+  const inputs = new Inputs()
 
-    // Determine version based on commit message or .csproj file.
-    if (inputs.useCommitMessage) {
-      const commitSubject = await gitManager.getLatestCommitMessage()
-      core.info(`Latest commit subject: "${commitSubject}"`)
-      version = gitManager.release.extractVersionFromCommit(commitSubject)
-      if (!version) {
-        core.info(
-          'No version bump detected in commit message. Skipping release.'
-        )
-        core.setOutput('skip', 'true')
-        return
-      }
-    } else {
-      const csprojPath = await Csproj.findCsproj(
-        inputs.csprojDepth,
-        inputs.csprojName
+  const dockerManager = new DockerManager(inputs.registryType)
+
+  // Login to the registry
+  await dockerManager.login()
+
+  if (inputs.dockerComposeFiles) {
+    // Build using Docker Compose
+    const composeFiles = inputs.dockerComposeFiles.split(',')
+    for (const composeFile of composeFiles) {
+      const trimmedComposeFile = composeFile.trim()
+      core.info(`Building using Docker Compose file: ${trimmedComposeFile}`)
+      await dockerManager.buildCompose(trimmedComposeFile)
+    }
+  } else {
+    // Build individual Docker images
+    const dockerfiles = inputs.dockerfiles.split(',')
+    const contexts = inputs.dockerfileContexts.split(',')
+    const images = inputs.dockerfileImages.split(',')
+
+    if (
+      dockerfiles.length !== contexts.length ||
+      contexts.length !== images.length
+    ) {
+      throw new Error(
+        'Mismatch between the number of dockerfiles, contexts, and images. Ensure they are aligned.'
       )
-      if (!csprojPath) {
-        throw new Error(
-          `No .csproj file found with name "${inputs.csprojName}".`
-        )
-      }
-      core.info(`Found .csproj file: ${csprojPath}`)
-      const csprojContent = await Csproj.readCsproj(csprojPath)
-      version = Csproj.extractVersion(csprojContent)
-      if (!version) {
-        core.info('No version found in the .csproj file. Skipping release.')
-        core.setOutput('skip', 'true')
-        return
-      }
     }
 
-    core.info(`Extracted version: ${version}`)
-    core.setOutput('version', version)
-    core.setOutput('skip', 'false')
-  } catch (error) {
-    core.error('An error occurred during Docker build.')
-    if (error instanceof Error) {
-      core.error(`Error: ${error.message}`)
-      core.setFailed(error.message)
+    for (let i = 0; i < dockerfiles.length; i++) {
+      const dockerfile = dockerfiles[i].trim()
+      const context = contexts[i].trim()
+      const image = images[i].trim()
+
+      core.info(`Building Docker image for: ${image}`)
+      const imageWithVersion = await dockerManager.buildDocker(
+        dockerfile,
+        context,
+        inputs.version,
+        image
+      )
+      core.info(`Successfully built: ${imageWithVersion}`)
     }
   }
 }
