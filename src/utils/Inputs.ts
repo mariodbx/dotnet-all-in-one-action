@@ -205,7 +205,7 @@ export class Inputs {
     this.testFormat = this.getInputOrDefault('test_format', 'html')
     this.rollbackMigrationsOnTestFailed = this.getInputOrDefaultBoolean(
       'rollback_migrations_on_test_failed',
-      false
+      true
     )
 
     // Versioning

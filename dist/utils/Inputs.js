@@ -89,7 +89,7 @@ export class Inputs {
         this.uploadTestsResults = this.getInputOrDefaultBoolean('upload_tests_results', false);
         this.testOutputFolder = this.getInputOrDefault('test_output_folder', 'TestResults');
         this.testFormat = this.getInputOrDefault('test_format', 'html');
-        this.rollbackMigrationsOnTestFailed = this.getInputOrDefaultBoolean('rollback_migrations_on_test_failed', false);
+        this.rollbackMigrationsOnTestFailed = this.getInputOrDefaultBoolean('rollback_migrations_on_test_failed', true);
         // Versioning
         this.version = this.getInputOrDefault('version', '0.0.0');
         this.runVersioning = this.getInputOrDefaultBoolean('run_versioning', false);
