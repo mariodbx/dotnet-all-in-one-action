@@ -172,15 +172,15 @@ inputs:
   publish_linux:
     description: 'Flag to publish .NET binaries for Linux.'
     required: false
-    default: 'true'
+    default: 'false'
   publish_windows:
     description: 'Flag to publish .NET binaries for Windows.'
     required: false
-    default: 'true'
+    default: 'false'
   publish_mac:
     description: 'Flag to publish .NET binaries for macOS.'
     required: false
-    default: 'true'
+    default: 'false'
 
   # Release
   run_release:
