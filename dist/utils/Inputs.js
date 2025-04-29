@@ -117,12 +117,12 @@ export class Inputs {
         this.includeGhcrPackage = this.getInputOrDefaultBoolean('include_ghcr_package', false);
         this.includeDotnetBinaries = core.getBooleanInput('include_dotnet_binaries');
         this.runChangelog = this.getInputOrDefaultBoolean('run_changelog', false);
-        this.majorKeywords = this.getInputOrDefault('major_keywords', 'breaking, overhaul, major');
-        this.minorKeywords = this.getInputOrDefault('minor_keywords', 'feature, enhancement, minor');
-        this.patchKeywords = this.getInputOrDefault('patch_keywords', 'bugfix, hotfix, patch');
-        this.hotfixKeywords = this.getInputOrDefault('hotfix_keywords', 'urgent, hotfix');
-        this.addedKeywords = this.getInputOrDefault('added_keywords', 'added, new');
-        this.devKeywords = this.getInputOrDefault('dev_keywords', 'dev, experiment');
+        this.majorKeywords = this.parseCsv(this.getInputOrDefault('major_keywords', 'breaking, overhaul, major'));
+        this.minorKeywords = this.parseCsv(this.getInputOrDefault('minor_keywords', 'feature, enhancement, minor'));
+        this.patchKeywords = this.parseCsv(this.getInputOrDefault('patch_keywords', 'bugfix, hotfix, patch'));
+        this.hotfixKeywords = this.parseCsv(this.getInputOrDefault('hotfix_keywords', 'urgent, hotfix'));
+        this.addedKeywords = this.parseCsv(this.getInputOrDefault('added_keywords', 'added, new'));
+        this.devKeywords = this.parseCsv(this.getInputOrDefault('dev_keywords', 'dev, experiment'));
         // Publish
         this.runPublish = core.getBooleanInput('run_publish');
         this.publishLinux = core.getBooleanInput('publish_linux');
@@ -140,5 +140,23 @@ export class Inputs {
     getInputOrDefaultBoolean(name, defaultValue) {
         const value = core.getInput(name);
         return value ? value.toLowerCase() === 'true' : defaultValue;
+    }
+    /** Split on commas, trim whitespace, drop empties */
+    parseCsv(raw) {
+        return raw
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+    }
+    /** Expose grouped keywords for Husky */
+    get keywordGroups() {
+        return {
+            Major: this.majorKeywords,
+            Minor: this.minorKeywords,
+            Patch: this.patchKeywords,
+            Hotfix: this.hotfixKeywords,
+            Added: this.addedKeywords,
+            Dev: this.devKeywords
+        };
     }
 }

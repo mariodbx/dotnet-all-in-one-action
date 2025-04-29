@@ -59,12 +59,12 @@ export interface IActionInputs {
   includeGhcrPackage: boolean
   includeDotnetBinaries: boolean
   runChangelog: boolean
-  majorKeywords: string
-  minorKeywords: string
-  patchKeywords: string
-  hotfixKeywords: string
-  addedKeywords: string
-  devKeywords: string
+  majorKeywords: string[]
+  minorKeywords: string[]
+  patchKeywords: string[]
+  hotfixKeywords: string[]
+  addedKeywords: string[]
+  devKeywords: string[]
 
   // Publish
   runPublish: boolean
@@ -141,12 +141,12 @@ export class Inputs {
   includeGhcrPackage: boolean
   includeDotnetBinaries: boolean
   runChangelog: boolean
-  majorKeywords: string
-  minorKeywords: string
-  patchKeywords: string
-  hotfixKeywords: string
-  addedKeywords: string
-  devKeywords: string
+  majorKeywords: string[]
+  minorKeywords: string[]
+  patchKeywords: string[]
+  hotfixKeywords: string[]
+  addedKeywords: string[]
+  devKeywords: string[]
 
   // Publish
   runPublish: boolean
@@ -262,24 +262,25 @@ export class Inputs {
     )
     this.includeDotnetBinaries = core.getBooleanInput('include_dotnet_binaries')
     this.runChangelog = this.getInputOrDefaultBoolean('run_changelog', false)
-    this.majorKeywords = this.getInputOrDefault(
-      'major_keywords',
-      'breaking, overhaul, major'
+
+    this.majorKeywords = this.parseCsv(
+      this.getInputOrDefault('major_keywords', 'breaking, overhaul, major')
     )
-    this.minorKeywords = this.getInputOrDefault(
-      'minor_keywords',
-      'feature, enhancement, minor'
+    this.minorKeywords = this.parseCsv(
+      this.getInputOrDefault('minor_keywords', 'feature, enhancement, minor')
     )
-    this.patchKeywords = this.getInputOrDefault(
-      'patch_keywords',
-      'bugfix, hotfix, patch'
+    this.patchKeywords = this.parseCsv(
+      this.getInputOrDefault('patch_keywords', 'bugfix, hotfix, patch')
     )
-    this.hotfixKeywords = this.getInputOrDefault(
-      'hotfix_keywords',
-      'urgent, hotfix'
+    this.hotfixKeywords = this.parseCsv(
+      this.getInputOrDefault('hotfix_keywords', 'urgent, hotfix')
     )
-    this.addedKeywords = this.getInputOrDefault('added_keywords', 'added, new')
-    this.devKeywords = this.getInputOrDefault('dev_keywords', 'dev, experiment')
+    this.addedKeywords = this.parseCsv(
+      this.getInputOrDefault('added_keywords', 'added, new')
+    )
+    this.devKeywords = this.parseCsv(
+      this.getInputOrDefault('dev_keywords', 'dev, experiment')
+    )
 
     // Publish
     this.runPublish = core.getBooleanInput('run_publish')
@@ -305,5 +306,24 @@ export class Inputs {
   ): boolean {
     const value = core.getInput(name)
     return value ? value.toLowerCase() === 'true' : defaultValue
+  }
+  /** Split on commas, trim whitespace, drop empties */
+  private parseCsv(raw: string): string[] {
+    return raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  }
+
+  /** Expose grouped keywords for Husky */
+  get keywordGroups(): Record<string, string[]> {
+    return {
+      Major: this.majorKeywords,
+      Minor: this.minorKeywords,
+      Patch: this.patchKeywords,
+      Hotfix: this.hotfixKeywords,
+      Added: this.addedKeywords,
+      Dev: this.devKeywords
+    }
   }
 }

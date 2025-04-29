@@ -8,8 +8,8 @@ import { ToolService } from './Services/ToolService.js';
 import { Csproj } from './utils/Csproj.js';
 import { Version } from './utils/Version.js';
 export class DotnetManager {
-    deps; //private
-    inputs = new Inputs();
+    deps;
+    inputs;
     tests;
     projects;
     tools;
@@ -18,16 +18,9 @@ export class DotnetManager {
     constructor(deps = { core, exec }, inputs = new Inputs()) {
         this.deps = deps;
         this.inputs = inputs;
-        // instantiate all child services with the same deps & config
         this.tests = new TestService(deps, inputs.dotnetRoot, inputs.testFolder, inputs.uploadTestsResults, inputs.testOutputFolder, inputs.testFormat);
         this.projects = new ProjectService(deps, inputs.dotnetRoot);
-        this.tools = new ToolService(deps, inputs.dotnetRoot, inputs.projectDirectoryRoot, [
-            ...inputs.majorKeywords,
-            ...inputs.minorKeywords,
-            ...inputs.patchKeywords,
-            ...inputs.hotfixKeywords,
-            ...inputs.addedKeywords,
-            ...inputs.devKeywords
-        ]);
+        // PASS the grouped keywords map, not a big flat string array:
+        this.tools = new ToolService(deps, inputs.dotnetRoot, inputs.projectDirectoryRoot, inputs.keywordGroups);
     }
 }

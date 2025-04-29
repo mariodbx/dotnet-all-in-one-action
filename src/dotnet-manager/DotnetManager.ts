@@ -10,8 +10,8 @@ import { Csproj } from './utils/Csproj.js'
 import { Version } from './utils/Version.js'
 
 export class DotnetManager {
-  readonly deps: IDependencies //private
-  readonly inputs = new Inputs()
+  readonly deps: IDependencies
+  readonly inputs: Inputs
 
   readonly tests: TestService
   readonly projects: ProjectService
@@ -26,7 +26,6 @@ export class DotnetManager {
     this.deps = deps
     this.inputs = inputs
 
-    // instantiate all child services with the same deps & config
     this.tests = new TestService(
       deps,
       inputs.dotnetRoot,
@@ -36,18 +35,13 @@ export class DotnetManager {
       inputs.testFormat
     )
     this.projects = new ProjectService(deps, inputs.dotnetRoot)
+
+    // PASS the grouped keywords map, not a big flat string array:
     this.tools = new ToolService(
       deps,
       inputs.dotnetRoot,
       inputs.projectDirectoryRoot,
-      [
-        ...inputs.majorKeywords,
-        ...inputs.minorKeywords,
-        ...inputs.patchKeywords,
-        ...inputs.hotfixKeywords,
-        ...inputs.addedKeywords,
-        ...inputs.devKeywords
-      ]
+      inputs.keywordGroups
     )
   }
 }

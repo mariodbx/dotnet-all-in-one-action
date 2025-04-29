@@ -1,4 +1,4 @@
-// src/services/ToolService.ts
+// src/Services/ToolService.ts
 import type { IDependencies } from '../../models/Dependencies.js'
 import { EF } from './tools/ef.js'
 import { CSharpier } from './tools/csharpier.js'
@@ -13,11 +13,11 @@ export class ToolService {
     readonly deps: IDependencies,
     dotnetRoot: string,
     projectDirectoryRoot: string,
-    allowedKeywords: string[]
+    // Now a map of groups → keyword lists
+    keywordGroups: Record<string, string[]>
   ) {
-    // If any tool needs core/exec, you can pass deps too
     this.ef = new EF(deps, dotnetRoot, projectDirectoryRoot)
     this.csharpier = new CSharpier(deps, dotnetRoot, projectDirectoryRoot)
-    this.husky = new Husky(deps, projectDirectoryRoot, allowedKeywords)
+    this.husky = new Husky(deps, projectDirectoryRoot, keywordGroups)
   }
 }

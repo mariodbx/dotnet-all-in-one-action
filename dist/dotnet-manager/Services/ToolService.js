@@ -6,11 +6,12 @@ export class ToolService {
     ef;
     csharpier;
     husky;
-    constructor(deps, dotnetRoot, projectDirectoryRoot, allowedKeywords) {
+    constructor(deps, dotnetRoot, projectDirectoryRoot, 
+    // Now a map of groups → keyword lists
+    keywordGroups) {
         this.deps = deps;
-        // If any tool needs core/exec, you can pass deps too
         this.ef = new EF(deps, dotnetRoot, projectDirectoryRoot);
         this.csharpier = new CSharpier(deps, dotnetRoot, projectDirectoryRoot);
-        this.husky = new Husky(deps, projectDirectoryRoot, allowedKeywords);
+        this.husky = new Husky(deps, projectDirectoryRoot, keywordGroups);
     }
 }
