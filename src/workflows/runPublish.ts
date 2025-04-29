@@ -4,6 +4,7 @@ import { DotnetManager } from '../dotnet-manager/DotnetManager.js'
 import { Inputs } from '../utils/Inputs.js'
 import { GitManager } from '../git-manager/GitManager.js'
 import { Timer } from '../utils/Timer.js'
+import { ProjectService } from '../dotnet-manager/Services/ProjectService.js'
 
 export async function runPublish(): Promise<void> {
   const inputs = new Inputs()
@@ -18,7 +19,7 @@ export async function runPublish(): Promise<void> {
 
   // Pull the latest changes
   core.info('Pulling the latest changes from the repository...')
-  await git.repo.pull('.', process.env['GITHUB_REF_NAME'])
+  await git.repo.pull('.', 'oop') //process.env['GITHUB_REF_NAME']
 
   const publishDirs = [
     { platform: 'Linux', path: './publish/linux', runtime: 'linux-x64' },
@@ -36,11 +37,12 @@ export async function runPublish(): Promise<void> {
       await fs.rm(dir.path, { recursive: true, force: true })
 
       core.info(`Publishing .NET binaries for ${dir.platform}...`)
-      await dotnet.projects.publish('Release', dir.path, [
-        '--self-contained',
-        '--runtime',
-        dir.runtime
-      ])
+      await dotnet.projects.publish(
+        'sample-project', //inputs.migrationsFolder,
+        'Release',
+        dir.path,
+        ['--self-contained', '--runtime', dir.runtime]
+      )
     }
   }
 
