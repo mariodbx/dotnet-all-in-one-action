@@ -4,8 +4,6 @@ import { DockerManager } from '../docker-manager/DockerManager.js';
 export async function runDockerBuild() {
     const inputs = new Inputs();
     const dockerManager = new DockerManager(inputs.registryType);
-    // Login to the registry
-    await dockerManager.login();
     if (inputs.dockerComposeFiles) {
         // Build using Docker Compose
         const composeFiles = inputs.dockerComposeFiles.split(',');
