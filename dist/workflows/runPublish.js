@@ -14,6 +14,8 @@ export async function runPublish() {
     await Timer.wait(5000);
     // Pull the latest changes
     core.info('Pulling the latest changes from the repository...');
+    git.repo.clone('.');
+    git.repo.fetch('.');
     await git.repo.pull('.', process.env.GITHUB_REF_NAME); //process.env['GITHUB_REF_NAME']
     const publishDirs = [
         { platform: 'Linux', path: './publish/linux', runtime: 'linux-x64' },
