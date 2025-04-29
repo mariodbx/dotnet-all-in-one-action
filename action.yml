@@ -87,7 +87,7 @@ inputs:
   run_versioning:
     description: 'Run versioning step? (true/false)'
     required: false
-    default: 'true'
+    default: 'false'
   csproj_depth:
     description: 'Maximum depth for locating the .csproj file.'
     required: false
