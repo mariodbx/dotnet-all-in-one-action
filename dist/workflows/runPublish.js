@@ -27,7 +27,7 @@ export async function runPublish() {
             core.info(`Cleaning old publish directory for ${dir.platform}...`);
             await fs.rm(dir.path, { recursive: true, force: true });
             core.info(`Publishing .NET binaries for ${dir.platform}...`);
-            await dotnet.projects.publish('sample-project', //inputs.migrationsFolder,
+            await dotnet.projects.publish('.', // 'sample-project', //inputs.migrationsFolder,
             'Release', dir.path, ['--self-contained', '--runtime', dir.runtime]);
         }
     }

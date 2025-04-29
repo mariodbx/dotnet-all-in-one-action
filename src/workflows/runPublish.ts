@@ -37,7 +37,7 @@ export async function runPublish(): Promise<void> {
 
       core.info(`Publishing .NET binaries for ${dir.platform}...`)
       await dotnet.projects.publish(
-        'sample-project', //inputs.migrationsFolder,
+        '.', // 'sample-project', //inputs.migrationsFolder,
         'Release',
         dir.path,
         ['--self-contained', '--runtime', dir.runtime]
