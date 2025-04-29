@@ -17,6 +17,10 @@ import { Inputs } from './utils/Inputs.js'
 /* istanbul ignore next */
 export async function run() {
   const inputs = new Inputs()
+  if (inputs.runHuskySetup) {
+    console.log('Setting up Husky...')
+    await runHuskySetup()
+  }
   // const git = new GitManager()
   // Fetch the commit message using GitManager
   // const commitMessage = await git.getLatestCommitMessage()
@@ -36,10 +40,7 @@ export async function run() {
   //   console.log('Running code formatting...')
   //   await runFormat()
   // }
-  if (inputs.runHuskySetup) {
-    console.log('Setting up Husky...')
-    await runHuskySetup()
-  }
+
   // const shouldRunAll = false
   // if (!shouldRunAll) {
   //   console.log(

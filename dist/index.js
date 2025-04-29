@@ -27878,7 +27878,7 @@ class Husky {
     keywordGroups;
     /**
      * @param deps               your tooling deps (core/exec)
-     * @param projectDirectory   root of your repo
+     * @param projectDirectoryRoot   root of your repo
      * @param keywordGroups      e.g. { Major: ['breaking','overhaul'], Minor: ['feature','enhancement'], … }
      */
     constructor(deps, projectDirectoryRoot, keywordGroups) {
@@ -27927,28 +27927,20 @@ class Husky {
             this.deps.core.info('✔ Husky.Net already initialized.');
         }
     }
-    async setupCommitMsgHook() {
-        await this.ensureInstalled();
+    /** Generate `.husky/accepted-words.sh` */
+    async ensureAcceptedWordsScript() {
         const huskyDir = path.join(this.projectDirectoryRoot, '.husky');
-        if (!fs.existsSync(huskyDir)) {
-            fs.mkdirSync(huskyDir, { recursive: true });
-        }
-        const hookPath = path.join(huskyDir, 'commit-msg');
-        // 1) Flatten all keywords:
+        const scriptPath = path.join(huskyDir, 'accepted-words.sh');
         const allKeywords = Object.values(this.keywordGroups).flat();
-        // 2) Build Bash array literal:
-        const bashArray = allKeywords.map((w) => `"${w}"`).join(' ');
-        // (we’ll reuse keywordGroups to build comments & echo blocks)
-        // 3) Comment block: "#   Major:    breaking, overhaul, major"
         const commentBlock = Object.entries(this.keywordGroups)
             .map(([group, words]) => `#   ${group}:    ${words.join(', ')}`)
             .join('\n');
-        // 4) Echo block: "  Major:    breaking, overhaul, major"
         const echoBlock = Object.entries(this.keywordGroups)
             .map(([group, words]) => `  ${group}:    ${words.join(', ')}`)
             .join('\n');
+        const bashArray = allKeywords.map((w) => `"${w}"`).join(' ');
         const content = `#!/bin/sh
-# .husky/commit-msg
+# accepted-words.sh
 # This script enforces that the commit message begins with one of the allowed keywords.
 # Allowed keywords:
 ${commentBlock}
@@ -27956,28 +27948,19 @@ ${commentBlock}
 # The commit message file is passed as the first parameter.
 commit_msg_file="$1"
 
-# Check if the commit message file exists.
 if [ ! -f "$commit_msg_file" ]; then
   echo "Error: Commit message file not found!"
   exit 1
 fi
 
-# Extract the first non-empty line from the commit message.
 first_line=$(sed -n '/./{p;q;}' "$commit_msg_file")
-
-# Extract the first word.
 raw_first_word=$(echo "$first_line" | awk '{print $1}')
-
-# Convert to lowercase and remove everything to the right of the first non-alphanumeric character.
-# This means if the word is "Major:HEHE", only "major" is extracted.
 first_word=$(echo "$raw_first_word" \
   | tr '[:upper:]' '[:lower:]' \
   | sed 's/[^a-zA-Z].*//')
 
-# Define the allowed keywords.
 allowed_words=(${bashArray})
 
-# Check if the cleaned first word is one of the allowed keywords.
 word_found=0
 for word in "\${allowed_words[@]}"; do
   if [ "$first_word" = "$word" ]; then
@@ -27986,18 +27969,44 @@ for word in "\${allowed_words[@]}"; do
   fi
 done
 
-# If the first word is not an allowed keyword, print an error message.
 if [ $word_found -eq 0 ]; then
   echo "ERROR: Commit message must start with one of the allowed keywords:"
 ${echoBlock}
   exit 1
 fi
 
-# If everything is fine, allow the commit.
 exit 0
 `;
-        fs.writeFileSync(hookPath, content, { mode: 0o755 });
-        this.deps.core.info('✔ .husky/commit-msg hook created.');
+        fs.writeFileSync(scriptPath, content, { mode: 0o755 });
+        this.deps.core.info('✔ .husky/accepted-words.sh created.');
+    }
+    /**
+     * Create/update `.husky/commit-msg` to call accepted-words.sh.
+     * Won't rewrite if it already references accepted-words.sh.
+     */
+    async setupCommitMsgHook() {
+        await this.ensureInstalled();
+        const huskyDir = path.join(this.projectDirectoryRoot, '.husky');
+        if (!fs.existsSync(huskyDir)) {
+            fs.mkdirSync(huskyDir, { recursive: true });
+        }
+        const hookPath = path.join(huskyDir, 'commit-msg');
+        await this.ensureAcceptedWordsScript();
+        // NOTE: no backslashes before $ here, so ESLint no-useless-escape won't complain
+        const hookContent = `#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+bash "$(dirname "$0")/accepted-words.sh" "$1"
+`;
+        if (fs.existsSync(hookPath)) {
+            const existing = fs.readFileSync(hookPath, 'utf8');
+            if (existing.includes('accepted-words.sh')) {
+                this.deps.core.info('✔ .husky/commit-msg already references accepted-words.sh');
+                return;
+            }
+        }
+        fs.writeFileSync(hookPath, hookContent, { mode: 0o755 });
+        this.deps.core.info('✔ .husky/commit-msg hook updated to call accepted-words.sh');
     }
 }
 
