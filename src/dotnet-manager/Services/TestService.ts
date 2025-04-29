@@ -36,7 +36,8 @@ export class TestService {
           ...process.env,
           DOTNET_ROOT: this.dotnetRoot,
           HOME: process.env.HOME || '/home/node' // Ensure HOME is set
-        }
+        },
+        cwd: this.testFolder
       })
       this.deps.core.info(
         `✔ Tests passed. Results in ${this.resultsFolder}.${this.resultsFormat}`
